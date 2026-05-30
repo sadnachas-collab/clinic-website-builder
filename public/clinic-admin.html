@@ -998,8 +998,12 @@
 </div>`).join(''); lucide.createIcons();        }        function addInteriorImg() {             const url = prompt('Вставьте прямую ссылку на фото (URL).\nПоддерживаются ссылки из ВКонтакте, фотохостингов и Google Диска:');             if(url) {                 dbMainPage.interior.push({ id: Date.now(), img: formatImageUrl(url) });                 persistData(); renderInterior(); showToast('Добавлено');             }         }        function deleteInterior(id) { if(confirm('Удалить?')) { dbMainPage.interior = dbMainPage.interior.filter(x => x.id !== id); persistData(); renderInterior(); } }        // --- РАЗДЕЛ: О КЛИНИКЕ ---
         function renderAboutPageData() { renderDocs(); renderFaq(); }        function renderDocs() {            document.getElementById('admin-docs-list').innerHTML = dbMainPage.docs.map(d => `                <div class="relative group aspect-[1/1.3] rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
 <img src="${d.img}" onerror="this.src='https://placehold.co/400x520/f3f4f6/a1a1aa?text=Ошибка+загрузки'" class="w-full h-full object-cover">
-<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-<button onclick="deleteDoc(${d.id})" class="bg-red-500 text-white p-2 rounded-full hover:bg-red-600">
+<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
+<button onclick="openImagePreview('${d.img}')" class="bg-white text-brand-700 p-2 rounded-full hover:bg-gray-100" title="Просмотр">
+<i data-lucide="eye" class="w-5 h-5">
+</i>
+</button>
+<button onclick="deleteDoc(${d.id})" class="bg-red-500 text-white p-2 rounded-full hover:bg-red-600" title="Удалить">
 <i data-lucide="trash-2" class="w-5 h-5">
 </i>
 </button>
