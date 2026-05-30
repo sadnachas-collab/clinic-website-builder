@@ -169,13 +169,17 @@
 <div class="flex items-center gap-3 lg:gap-6 shrink-0">
 <div class="flex items-center gap-3">
 <div class="text-right hidden sm:block">
-<p id="current-user-name" class="text-sm font-semibold text-brand-900">Елена В.</p>
-<p id="current-user-role" class="text-[10px] text-gray-400 uppercase tracking-wider font-bold">Главный врач</p>
+<p id="current-user-name" class="text-sm font-semibold text-brand-900">Админ</p>
+<p id="current-user-role" class="text-[10px] text-gray-400 uppercase tracking-wider font-bold">—</p>
 </div>
 <div class="w-10 h-10 lg:w-11 lg:h-11 rounded-full bg-brand-200 border border-gray-200 overflow-hidden shadow-sm flex items-center justify-center text-white shrink-0">
 <i data-lucide="user" class="w-5 h-5">
 </i>
 </div>
+<button type="button" onclick="if(window.top)window.top.location.href='/logout';else window.location.href='/logout';" class="ml-2 px-3 py-2 text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition flex items-center gap-2" title="Выйти">
+<i data-lucide="log-out" class="w-4 h-4"></i>
+<span class="hidden sm:inline">Выйти</span>
+</button>
 </div>
 </div>
 </header>
