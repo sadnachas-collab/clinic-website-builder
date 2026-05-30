@@ -1781,7 +1781,8 @@
                 window.editRow(tmpId);
             };
 
-            // Сохранить (insert если новая, update если существующая)
+            // Сохранить (insert если новая или id не UUID, update если существующая)
+            const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
             window.saveRow = async function(id){
                 const row = document.getElementById('row-' + id);
                 if (!row) return;
@@ -1791,15 +1792,16 @@
                 const description = inputs[1] ? inputs[1].value : '';
                 const price = inputs[2] ? inputs[2].value : '';
                 const item = (window.dbServices || []).find(function(s){ return s.id === id; });
+                const isInsert = !item || item.isNew || !UUID_RE.test(String(id));
                 try {
-                    if (item && item.isNew) {
+                    if (isInsert) {
                         const { data, error } = await sb
                             .from('services')
                             .insert({ name: name, description: description, price: price })
                             .select('id,name,description,price')
                             .single();
                         if (error) throw error;
-                        window.dbServices = window.dbServices.filter(function(s){ return s.id !== id; });
+                        window.dbServices = (window.dbServices || []).filter(function(s){ return s.id !== id; });
                         window.dbServices.unshift({ id: data.id, name: data.name || '', desc: data.description || '', price: data.price || '' });
                     } else {
                         const { error } = await sb
@@ -1807,7 +1809,7 @@
                             .update({ name: name, description: description, price: price })
                             .eq('id', id);
                         if (error) throw error;
-                        if (item) { item.name = name; item.desc = description; item.price = price; }
+                        item.name = name; item.desc = description; item.price = price;
                     }
                     window.isAddingNewService = false;
                     window.renderTable();
