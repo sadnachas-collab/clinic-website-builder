@@ -2102,6 +2102,62 @@
                 }
             };
         }
+
+        // ===== ТЕКСТЫ ГЛАВНОЙ (page_content key='main_texts') =====
+        async function loadMainTexts(){
+            const { data, error } = await sb
+                .from('page_content')
+                .select('value')
+                .eq('key', 'main_texts')
+                .maybeSingle();
+            if (error) { console.error(error); notify('Ошибка загрузки текстов: '+errMsg(error)); return; }
+            const v = (data && data.value) || {};
+            try {
+                if (v.hero)     dbMainPage.hero     = Object.assign({}, dbMainPage.hero,     v.hero);
+                if (v.about)    dbMainPage.about    = Object.assign({}, dbMainPage.about,    v.about);
+                if (v.contacts) dbMainPage.contacts = Object.assign({}, dbMainPage.contacts, v.contacts);
+                window.dbMainPage = dbMainPage;
+            } catch(e){ console.error(e); }
+            try { window.renderMainPageData && window.renderMainPageData(); } catch(e){ console.error(e); }
+        }
+
+        function overrideMainTexts(){
+            window.saveBasicSettings = async function(){
+                const getVal = function(id){ const el = document.getElementById(id); return el ? el.value : ''; };
+                const payload = {
+                    hero: Object.assign({}, dbMainPage.hero, {
+                        title: getVal('mp-hero-title')
+                    }),
+                    about: Object.assign({}, dbMainPage.about, {
+                        title: getVal('mp-about-title'),
+                        text:  getVal('mp-about-text')
+                    }),
+                    contacts: {
+                        phone:    getVal('mp-phone'),
+                        schedule: getVal('mp-schedule'),
+                        address:  getVal('mp-address'),
+                        vk:       getVal('mp-vk'),
+                        tg:       getVal('mp-tg'),
+                        wa:       getVal('mp-wa')
+                    }
+                };
+                try {
+                    const { error } = await sb
+                        .from('page_content')
+                        .upsert({ key: 'main_texts', value: payload }, { onConflict: 'key' });
+                    if (error) throw error;
+                    dbMainPage.hero = payload.hero;
+                    dbMainPage.about = payload.about;
+                    dbMainPage.contacts = payload.contacts;
+                    window.dbMainPage = dbMainPage;
+                    try { window.persistData && window.persistData(); } catch(_){}
+                    notify('Настройки сохранены');
+                } catch(e){
+                    console.error(e);
+                    notify('Ошибка сохранения: ' + errMsg(e));
+                }
+            };
+        }
     })();
     </script>
 
