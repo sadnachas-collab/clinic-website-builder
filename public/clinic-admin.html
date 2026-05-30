@@ -1719,6 +1719,7 @@
                     ready = true;
                     overrideServices();
                     await loadServices();
+                    await loadPriceFile();
                 }
             } catch(e){
                 console.error('[admin] bootstrap error', e);
