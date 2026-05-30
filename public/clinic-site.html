@@ -97,19 +97,20 @@
 <span class="font-bold text-[13px] tracking-wider">MAX</span>
 </a>
 </div>
-<button onclick="toggleSocialWidget()" class="w-14 h-14 bg-white border border-[#D0C0B1]/40 text-[#2A2522] rounded-full flex items-center justify-center shadow-[0_10px_25px_rgb(0,0,0,0.1)] hover:border-[#746258] hover:text-[#746258] active:scale-95 transition-all">
-<i data-lucide="message-circle" id="social-widget-icon" class="w-6 h-6 transition-transform duration-300">
+<button onclick="toggleSocialWidget()" aria-label="Соцсети" class="w-12 h-12 sm:w-14 sm:h-14 bg-white border border-[#D0C0B1]/40 text-[#2A2522] rounded-full flex items-center justify-center shadow-[0_10px_25px_rgb(0,0,0,0.1)] hover:border-[#746258] hover:text-[#746258] active:scale-95 transition-all">
+<i data-lucide="message-circle" id="social-widget-icon" class="w-5 h-5 sm:w-6 sm:h-6 transition-transform duration-300">
 </i>
-<i data-lucide="x" id="social-widget-close" class="w-6 h-6 absolute opacity-0 rotate-[-90deg] transition-all duration-300">
+<i data-lucide="x" id="social-widget-close" class="w-5 h-5 sm:w-6 sm:h-6 absolute opacity-0 rotate-[-90deg] transition-all duration-300">
 </i>
 </button>
 </div>
 <!-- Кнопка Записаться -->
-<button onclick="openBooking('')" class="h-14 px-8 sm:px-10 bg-[#746258] text-white rounded-[2rem] flex items-center justify-center shadow-[0_10px_25px_rgb(116,98,88,0.3)] hover:bg-[#5A4C44] hover:shadow-[0_15px_35px_rgb(116,98,88,0.4)] hover:-translate-y-1 active:translate-y-0 active:scale-95 transition-all duration-300 group">
-<span class="font-bold text-xs sm:text-sm uppercase tracking-widest whitespace-nowrap">Записаться</span>
-<i data-lucide="calendar-plus" class="w-5 h-5 ml-3 opacity-90 group-hover:scale-110 transition-transform">
+<button onclick="openBooking('')" class="h-12 sm:h-14 px-5 sm:px-10 bg-[#746258] text-white rounded-[2rem] flex items-center justify-center shadow-[0_10px_25px_rgb(116,98,88,0.3)] hover:bg-[#5A4C44] hover:shadow-[0_15px_35px_rgb(116,98,88,0.4)] hover:-translate-y-1 active:translate-y-0 active:scale-95 transition-all duration-300 group">
+<span class="font-bold text-[11px] sm:text-sm uppercase tracking-widest whitespace-nowrap">Записаться</span>
+<i data-lucide="calendar-plus" class="w-4 h-4 sm:w-5 sm:h-5 ml-2 sm:ml-3 opacity-90 group-hover:scale-110 transition-transform">
 </i>
 </button>
+</div>
 </div>
 <!-- Скрипт для плавающего виджета -->
 <script>    function toggleSocialWidget() {        const menu = document.getElementById('social-widget-menu');        const icon = document.getElementById('social-widget-icon');        const close = document.getElementById('social-widget-close');                menu.classList.toggle('opacity-0');        menu.classList.toggle('pointer-events-none');        menu.classList.toggle('translate-y-4');                if (menu.classList.contains('opacity-0')) {            icon.classList.remove('opacity-0', 'rotate-90');            close.classList.add('opacity-0', 'rotate-[-90deg]');        } else {            icon.classList.add('opacity-0', 'rotate-90');            close.classList.remove('opacity-0', 'rotate-[-90deg]');        }    }</script>
