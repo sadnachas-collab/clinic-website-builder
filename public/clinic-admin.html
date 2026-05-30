@@ -1128,26 +1128,45 @@
             else { n.innerText = "Нет файла"; s.innerText = "—"; n.classList.add('text-gray-400'); }
             if(v) v.disabled = !dbPriceFile.exists;
         }
-        function handleFileUpload(e) {
+        async function handleFileUpload(e) {
             const f = e.target.files[0]; if(!f) return;
-            if(f.size > 4 * 1024 * 1024) { showToast('Файл слишком большой (макс. 4 МБ)'); e.target.value=''; return; }
-            const reader = new FileReader();
-            reader.onload = ev => {
-                dbPriceFile = { name: f.name, size: (f.size/(1024*1024)).toFixed(2)+" MB", exists: true, dataUrl: ev.target.result, mime: f.type };
-                try { localStorage.setItem('dbPriceFile', JSON.stringify(dbPriceFile)); }
-                catch(err) { showToast('Не удалось сохранить — переполнено локальное хранилище'); return; }
+            if(!window.sb) { showToast('Нет подключения к БД'); e.target.value=''; return; }
+            if(f.size > 20 * 1024 * 1024) { showToast('Файл слишком большой (макс. 20 МБ)'); e.target.value=''; return; }
+            try {
+                const safe = (f.name || 'price').replace(/[^a-zA-Z0-9._-]+/g,'_');
+                const path = 'price/' + Date.now() + '-' + safe;
+                const { error: upErr } = await window.sb.storage.from('documents').upload(path, f, { upsert: true, contentType: f.type || 'application/octet-stream' });
+                if(upErr) throw upErr;
+                const { data: pub } = window.sb.storage.from('documents').getPublicUrl(path);
+                const url = pub && pub.publicUrl;
+                // Один актуальный прайс — чистим прежние
+                await window.sb.from('price_files').delete().not('id','is',null);
+                const { error: insErr } = await window.sb.from('price_files').insert({ title: 'Прайс-лист', file_url: url, file_name: f.name });
+                if(insErr) throw insErr;
+                dbPriceFile = { name: f.name, size: (f.size/(1024*1024)).toFixed(2)+' MB', exists: true, url: url, mime: f.type };
                 renderPriceFile(); showToast('Загружено');
-            };
-            reader.readAsDataURL(f);
+            } catch(err) {
+                console.error(err); showToast('Ошибка загрузки: ' + (err && err.message ? err.message : err));
+            } finally {
+                e.target.value = '';
+            }
         }
         function viewPriceFile() {
-            if(!dbPriceFile.exists) return;
-            if(!dbPriceFile.dataUrl) { showToast('Файл не загружен. Нажмите «Загрузить новый», чтобы добавить.'); return; }
-            const w = window.open(); if(!w) { showToast('Браузер заблокировал открытие вкладки'); return; }
-            const name = dbPriceFile.name || 'file';
-            w.document.write(`<title>${name}</title><body style="margin:0"><iframe src="${dbPriceFile.dataUrl}" style="border:0;width:100vw;height:100vh"></iframe></body>`);
+            if(!dbPriceFile.exists || !dbPriceFile.url) { showToast('Файл не загружен'); return; }
+            window.open(dbPriceFile.url, '_blank', 'noopener');
         }
-        function deletePriceFile() { if(!dbPriceFile.exists) return; customConfirm('Удалить файл прайс-листа?').then(function(ok){ if(!ok) return; dbPriceFile = { name: "", size: "", exists: false }; localStorage.setItem('dbPriceFile', JSON.stringify(dbPriceFile)); renderPriceFile(); showToast('Удалено'); document.getElementById('price-file-upload').value = ''; }); }
+        function deletePriceFile() {
+            if(!dbPriceFile.exists) return;
+            customConfirm('Удалить файл прайс-листа?').then(async function(ok){
+                if(!ok) return;
+                try {
+                    if(window.sb) await window.sb.from('price_files').delete().not('id','is',null);
+                } catch(err){ console.error(err); }
+                dbPriceFile = { name: '', size: '', exists: false };
+                renderPriceFile(); showToast('Удалено');
+                const inp = document.getElementById('price-file-upload'); if(inp) inp.value = '';
+            });
+        }
         // --- ЛАЙТБОКС ДЛЯ ПРОСМОТРА ИЗОБРАЖЕНИЙ ---
         function openImagePreview(url) {
             if(!url) { showToast('Нет изображения'); return; }
