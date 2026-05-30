@@ -1160,7 +1160,47 @@
         }
         function viewPriceFile() {
             if(!dbPriceFile.exists || !dbPriceFile.url) { showToast('Файл не загружен'); return; }
-            window.open(dbPriceFile.url, '_blank', 'noopener');
+            const url = dbPriceFile.url;
+            const name = dbPriceFile.name || 'Файл';
+            const ext = (name.split('.').pop() || '').toLowerCase();
+            const isImg = ['jpg','jpeg','png','gif','webp','svg'].includes(ext);
+            const isPdf = ext === 'pdf' || /\.pdf(\?|$)/i.test(url);
+            let inner;
+            if (isPdf) {
+                inner = `<iframe src="${url}#toolbar=1" class="w-full h-full border-0" title="${name}"></iframe>`;
+            } else if (isImg) {
+                inner = `<div class="w-full h-full flex items-center justify-center bg-gray-100 overflow-auto"><img src="${url}" alt="${name}" class="max-w-full max-h-full object-contain"/></div>`;
+            } else {
+                inner = `<div class="w-full h-full flex flex-col items-center justify-center gap-4 bg-gray-50 p-8 text-center">
+                    <i data-lucide="file" class="w-16 h-16 text-gray-400"></i>
+                    <p class="text-sm text-gray-600">Этот тип файла нельзя посмотреть в браузере.<br>Скачайте файл, чтобы открыть.</p>
+                    <a href="${url}" download="${name}" target="_blank" rel="noopener" class="bg-brand-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-brand-800">Скачать файл</a>
+                </div>`;
+            }
+            const wrap = document.createElement('div');
+            wrap.id = 'price-file-viewer';
+            wrap.className = 'fixed inset-0 z-[100] bg-black/70 flex items-center justify-center p-4';
+            wrap.innerHTML = `
+                <div class="bg-white rounded-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden shadow-2xl">
+                    <div class="flex items-center justify-between p-4 border-b border-gray-100 shrink-0">
+                        <div class="min-w-0">
+                            <p class="text-sm font-bold text-brand-900 truncate">${name}</p>
+                            <p class="text-xs text-gray-400">Просмотр прайс-листа</p>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <a href="${url}" download="${name}" target="_blank" rel="noopener" class="bg-white border border-gray-200 text-brand-900 px-4 py-2 rounded-xl text-xs font-bold hover:bg-gray-50">Скачать</a>
+                            <button type="button" id="price-file-viewer-close" class="bg-white border border-gray-200 text-gray-600 w-9 h-9 rounded-xl flex items-center justify-center hover:bg-gray-50"><i data-lucide="x" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                    <div class="flex-1 min-h-0">${inner}</div>
+                </div>`;
+            document.body.appendChild(wrap);
+            try { lucide.createIcons(); } catch(_){}
+            const close = () => { try { wrap.remove(); } catch(_){} document.removeEventListener('keydown', onKey); };
+            const onKey = (e) => { if (e.key === 'Escape') close(); };
+            wrap.addEventListener('click', (e) => { if (e.target === wrap) close(); });
+            wrap.querySelector('#price-file-viewer-close').addEventListener('click', close);
+            document.addEventListener('keydown', onKey);
         }
         function deletePriceFile() {
             if(!dbPriceFile.exists) return;
