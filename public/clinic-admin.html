@@ -2437,6 +2437,7 @@
                     +     (dateLabel ? '<p class="text-[11px] text-gray-400">' + esc(dateLabel) + '</p>' : '')
                     +   '</div>'
                     +   '<div class="flex gap-2 shrink-0">'
+                    +     (r.isNew ? '' : '<button onclick="previewReview(\'' + rid + '\')" title="Предпросмотр" class="text-gray-400 hover:text-brand-600"><i data-lucide="eye" class="w-4 h-4"></i></button>')
                     +     '<button onclick="editReview(\'' + rid + '\')" class="text-gray-400 hover:text-brand-600"><i data-lucide="edit-3" class="w-4 h-4"></i></button>'
                     +     '<button onclick="deleteReview(\'' + rid + '\')" class="text-gray-400 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>'
                     +   '</div>'
