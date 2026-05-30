@@ -903,9 +903,7 @@
         let isAddingAdmin = false;        function renderAdmins() {            document.getElementById('admin-users-list').innerHTML = dbAdmins.map(a => `                <div id="admin-row-${a.id}" class="flex flex-col gap-4 p-5 border rounded-2xl ${a.isOwner ? 'bg-brand-50/30 border-brand-200' : 'bg-white hover:bg-gray-50'} shadow-sm transition-all group">
 <div class="flex justify-between items-center view-mode">
 <div class="flex items-center gap-4">
-<div class="w-12 h-12 rounded-full ${a.isOwner ? 'bg-brand-600 text-white shadow-md' : 'bg-gray-100 text-gray-500 border border-gray-200'} flex items-center justify-center shrink-0">                                ${a.isOwner ? '<i data-lucide="crown" class="w-6 h-6">
-</i>' : '<i data-lucide="user" class="w-6 h-6">
-</i>'}                            </div>
+<div class="w-12 h-12 rounded-full ${a.isOwner ? 'bg-brand-600 text-white shadow-md' : 'bg-gray-100 text-gray-500 border border-gray-200'} flex items-center justify-center shrink-0">                                ${a.isOwner ? '<i data-lucide="crown" class="w-6 h-6"></i>' : '<i data-lucide="user" class="w-6 h-6"></i>'}                            </div>
 <div>
 <p class="font-bold text-brand-900 text-lg">${a.name} ${a.isOwner ? '<span class="ml-2 text-[9px] font-bold text-[#746258] uppercase tracking-widest border border-[#746258] px-2 py-0.5 rounded-full bg-white align-middle">Владелец</span>' : ''}</p>
 <p class="text-sm text-gray-500">${a.role}</p>
