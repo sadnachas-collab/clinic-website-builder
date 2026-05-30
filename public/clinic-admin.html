@@ -9,8 +9,30 @@
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest">
 </script>
+<link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.min.js"></script>
 <script>        tailwind.config = {            theme: {                extend: {                    fontFamily: {                        sans: ['Montserrat', 'sans-serif'],                    },                    colors: {                        brand: {                            50: '#FDFBF9',                            200: '#D0C0B1',                            600: '#746258',                            800: '#5A4C44',                            900: '#2A2522'                        }                    }                }            }        }    </script>
-<style>        body { background-color: #f3f4f6; }        .hide-scrollbar::-webkit-scrollbar { display: none; }        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }                .admin-section { display: none; opacity: 0; transition: opacity 0.3s ease; }        .admin-section.active { display: block; opacity: 1; animation: fadeIn 0.4s ease forwards; }                .nav-btn { text-align: left; }                @keyframes fadeIn {            from { opacity: 0; transform: translateY(10px); }            to { opacity: 1; transform: translateY(0); }        }    </style>
+<style>        body { background-color: #f3f4f6; }        .hide-scrollbar::-webkit-scrollbar { display: none; }        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }                .admin-section { display: none; opacity: 0; transition: opacity 0.3s ease; }        .admin-section.active { display: block; opacity: 1; animation: fadeIn 0.4s ease forwards; }                .nav-btn { text-align: left; }                @keyframes fadeIn {            from { opacity: 0; transform: translateY(10px); }            to { opacity: 1; transform: translateY(0); }        }
+        /* ---- Rich text editor (Quill) ---- */
+        .rich-wrap { border: 1px solid #e5e7eb; border-radius: 0.75rem; background: #fff; overflow: hidden; }
+        .rich-wrap .ql-toolbar.ql-snow { border: none; border-bottom: 1px solid #f1f1f1; background: #FDFBF9; border-radius: 0.75rem 0.75rem 0 0; padding: 6px 8px; }
+        .rich-wrap .ql-container.ql-snow { border: none; font-family: 'Montserrat', sans-serif; font-size: 14px; min-height: 90px; }
+        .rich-wrap .ql-editor { min-height: 90px; padding: 12px 14px; color: #2A2522; line-height: 1.55; }
+        .rich-wrap.large .ql-editor { min-height: 220px; }
+        .rich-wrap .ql-editor h3 { font-size: 1.05rem; font-weight: 700; color: #2A2522; margin: 0.6em 0 0.3em; }
+        .rich-wrap .ql-editor .lead { font-size: 1.05rem; font-weight: 500; color: #5A4C44; }
+        .rich-wrap .ql-editor a { color: #746258; text-decoration: underline; }
+        .rich-wrap .ql-snow .ql-picker.ql-header .ql-picker-label::before,
+        .rich-wrap .ql-snow .ql-picker.ql-header .ql-picker-item::before { content: 'Обычный'; }
+        .rich-wrap .ql-snow .ql-picker.ql-header .ql-picker-label[data-value="3"]::before,
+        .rich-wrap .ql-snow .ql-picker.ql-header .ql-picker-item[data-value="3"]::before { content: 'Подзаголовок'; font-weight: 700; }
+        .rich-wrap .ql-snow .ql-picker.ql-header .ql-picker-label[data-value="lead"]::before,
+        .rich-wrap .ql-snow .ql-picker.ql-header .ql-picker-item[data-value="lead"]::before { content: 'Крупный текст'; }
+        /* акцентные цвета — только два */
+        .rich-wrap .ql-snow .ql-color-picker .ql-picker-item[data-value="#746258"] { background-color: #746258; }
+        .rich-wrap .ql-snow .ql-color-picker .ql-picker-item[data-value="#b91c1c"] { background-color: #b91c1c; }
+    </style>
+
 </head>
 <body class="text-brand-900 font-sans">
 <!-- УВЕДОМЛЕНИЕ (TOAST) -->
