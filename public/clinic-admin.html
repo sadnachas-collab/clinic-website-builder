@@ -1063,7 +1063,53 @@
 <button onclick="saveRow(${srv.id})" class="edit-mode hidden px-4 py-2 bg-green-600 text-white rounded-lg text-xs font-bold uppercase tracking-widest">Сохранить</button>
 <button onclick="cancelEditRow(${srv.id})" class="edit-mode hidden ml-1 px-4 py-2 bg-white border border-gray-200 text-gray-600 rounded-lg text-xs font-bold uppercase tracking-widest">Отмена</button>
 </td>
-</tr>`).join(''); lucide.createIcons();        }        function addService() { if(isAddingNewService) return; isAddingNewService = true; const newId = Date.now(); dbServices.unshift({ id: newId, name: "", desc: "", price: "", isNew: true }); renderTable(); editRow(newId); }        function editRow(id) { const row = document.getElementById(`row-${id}`); row.querySelectorAll('.view-mode').forEach(el => el.classList.add('hidden')); row.querySelectorAll('.edit-mode').forEach(el => el.classList.remove('hidden')); row.classList.add('bg-brand-50/30'); }        function saveRow(id) { const row = document.getElementById(`row-${id}`); const inputs = row.querySelectorAll('.edit-mode[type="text"]'); const idx = dbServices.findIndex(s => s.id === id); if(idx !== -1) { const name = inputs[0].value.trim(); if(!name) return showToast('Введите название!'); dbServices[idx].name = name; dbServices[idx].desc = inputs[1].value; dbServices[idx].price = inputs[2].value; delete dbServices[idx].isNew; } isAddingNewService = false; persistData(); renderTable(); showToast('Услуга сохранена'); }        function cancelEditRow(id) { const idx = dbServices.findIndex(s => s.id === id); if(idx !== -1 && dbServices[idx].isNew) dbServices.splice(idx, 1); isAddingNewService = false; renderTable(); }        function deleteRow(id) { if(confirm('Удалить?')) { dbServices = dbServices.filter(s => s.id !== id); persistData(); renderTable(); } }        function renderPriceFile() { const n = document.getElementById('price-file-name'); const s = document.getElementById('price-file-size'); if(dbPriceFile.exists) { n.innerText = dbPriceFile.name; s.innerText = dbPriceFile.size; n.classList.remove('text-gray-400'); } else { n.innerText = "Нет файла"; s.innerText = "—"; n.classList.add('text-gray-400'); } }        function handleFileUpload(e) { const f = e.target.files[0]; if(!f) return; dbPriceFile = { name: f.name, size: (f.size/(1024*1024)).toFixed(2)+" MB", exists: true }; localStorage.setItem('dbPriceFile', JSON.stringify(dbPriceFile)); renderPriceFile(); showToast('Загружено'); }        function deletePriceFile() { if(!dbPriceFile.exists) return; if(confirm('Удалить?')) { dbPriceFile = { name: "", size: "", exists: false }; localStorage.setItem('dbPriceFile', JSON.stringify(dbPriceFile)); renderPriceFile(); showToast('Удалено'); document.getElementById('price-file-upload').value = ''; } }        // --- РАЗДЕЛ: УСЛУГИ (КАТАЛОГ И ДЕТАЛЬНЫЕ) ---
+</tr>`).join(''); lucide.createIcons();        }        function addService() { if(isAddingNewService) return; isAddingNewService = true; const newId = Date.now(); dbServices.unshift({ id: newId, name: "", desc: "", price: "", isNew: true }); renderTable(); editRow(newId); }        function editRow(id) { const row = document.getElementById(`row-${id}`); row.querySelectorAll('.view-mode').forEach(el => el.classList.add('hidden')); row.querySelectorAll('.edit-mode').forEach(el => el.classList.remove('hidden')); row.classList.add('bg-brand-50/30'); }        function saveRow(id) { const row = document.getElementById(`row-${id}`); const inputs = row.querySelectorAll('.edit-mode[type="text"]'); const idx = dbServices.findIndex(s => s.id === id); if(idx !== -1) { const name = inputs[0].value.trim(); if(!name) return showToast('Введите название!'); dbServices[idx].name = name; dbServices[idx].desc = inputs[1].value; dbServices[idx].price = inputs[2].value; delete dbServices[idx].isNew; } isAddingNewService = false; persistData(); renderTable(); showToast('Услуга сохранена'); }        function cancelEditRow(id) { const idx = dbServices.findIndex(s => s.id === id); if(idx !== -1 && dbServices[idx].isNew) dbServices.splice(idx, 1); isAddingNewService = false; renderTable(); }        function deleteRow(id) { if(confirm('Удалить?')) { dbServices = dbServices.filter(s => s.id !== id); persistData(); renderTable(); } }
+        function renderPriceFile() {
+            const n = document.getElementById('price-file-name');
+            const s = document.getElementById('price-file-size');
+            const v = document.getElementById('price-file-view-btn');
+            if(dbPriceFile.exists) { n.innerText = dbPriceFile.name; s.innerText = dbPriceFile.size; n.classList.remove('text-gray-400'); }
+            else { n.innerText = "Нет файла"; s.innerText = "—"; n.classList.add('text-gray-400'); }
+            if(v) v.disabled = !dbPriceFile.exists;
+        }
+        function handleFileUpload(e) {
+            const f = e.target.files[0]; if(!f) return;
+            if(f.size > 4 * 1024 * 1024) { showToast('Файл слишком большой (макс. 4 МБ)'); e.target.value=''; return; }
+            const reader = new FileReader();
+            reader.onload = ev => {
+                dbPriceFile = { name: f.name, size: (f.size/(1024*1024)).toFixed(2)+" MB", exists: true, dataUrl: ev.target.result, mime: f.type };
+                try { localStorage.setItem('dbPriceFile', JSON.stringify(dbPriceFile)); }
+                catch(err) { showToast('Не удалось сохранить — переполнено локальное хранилище'); return; }
+                renderPriceFile(); showToast('Загружено');
+            };
+            reader.readAsDataURL(f);
+        }
+        function viewPriceFile() {
+            if(!dbPriceFile.exists) return;
+            if(!dbPriceFile.dataUrl) { showToast('Файл не загружен. Нажмите «Загрузить новый», чтобы добавить.'); return; }
+            const w = window.open(); if(!w) { showToast('Браузер заблокировал открытие вкладки'); return; }
+            const name = dbPriceFile.name || 'file';
+            w.document.write(`<title>${name}</title><body style="margin:0"><iframe src="${dbPriceFile.dataUrl}" style="border:0;width:100vw;height:100vh"></iframe></body>`);
+        }
+        function deletePriceFile() { if(!dbPriceFile.exists) return; if(confirm('Удалить?')) { dbPriceFile = { name: "", size: "", exists: false }; localStorage.setItem('dbPriceFile', JSON.stringify(dbPriceFile)); renderPriceFile(); showToast('Удалено'); document.getElementById('price-file-upload').value = ''; } }
+        // --- ЛАЙТБОКС ДЛЯ ПРОСМОТРА ИЗОБРАЖЕНИЙ ---
+        function openImagePreview(url) {
+            if(!url) { showToast('Нет изображения'); return; }
+            let ov = document.getElementById('admin-image-preview');
+            if(!ov) {
+                ov = document.createElement('div');
+                ov.id = 'admin-image-preview';
+                ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;z-index:9999;cursor:zoom-out;padding:24px;';
+                ov.innerHTML = '<img style="max-width:92vw;max-height:92vh;object-fit:contain;border-radius:8px;box-shadow:0 12px 40px rgba(0,0,0,.5)"><button type="button" style="position:absolute;top:16px;right:16px;background:#fff;border:none;width:40px;height:40px;border-radius:9999px;font-size:24px;cursor:pointer;line-height:1;">×</button>';
+                document.body.appendChild(ov);
+                const close = () => { ov.style.display='none'; };
+                ov.addEventListener('click', e => { if(e.target === ov || e.target.tagName === 'BUTTON') close(); });
+                document.addEventListener('keydown', e => { if(e.key === 'Escape' && ov.style.display !== 'none') close(); });
+            }
+            ov.querySelector('img').src = url;
+            ov.style.display = 'flex';
+        }
+        // --- РАЗДЕЛ: УСЛУГИ (КАТАЛОГ И ДЕТАЛЬНЫЕ) ---
         function renderCatCategories() {            document.getElementById('admin-cat-list').innerHTML = dbCatCategories.map(c => `                <div id="cat-row-${c.id}" class="flex gap-4 p-4 border border-gray-200 rounded-2xl bg-white hover:bg-gray-50 group">
 <img src="${c.img}" onerror="this.src='https://placehold.co/400x400/f3f4f6/a1a1aa?text=Ошибка+загрузки'" class="w-20 h-20 rounded-xl object-cover bg-gray-100 border border-gray-200">
 <div class="flex-1 view-mode">
