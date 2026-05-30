@@ -607,9 +607,14 @@
 <h2 class="text-xl font-bold text-brand-900 flex items-center gap-2">
 <i data-lucide="shield-check" class="w-6 h-6 text-brand-600"></i> Категории документов
 </h2>
+<div class="flex flex-wrap gap-2">
 <button type="button" onclick="addConsumerCategory()" class="bg-brand-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-brand-800 transition-colors shadow-sm flex items-center gap-2">
 <i data-lucide="plus" class="w-4 h-4"></i> Добавить категорию
 </button>
+<button type="button" onclick="saveConsumerDocs()" class="bg-green-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-green-700 transition-colors shadow-sm flex items-center gap-2">
+<i data-lucide="save" class="w-4 h-4"></i> Сохранить
+</button>
+</div>
 </div>
 <p class="text-sm text-gray-500 mb-6">Загруженные сюда документы автоматически появляются на сайте в разделе «Уголок потребителя». Максимальный размер файла — 4 МБ (PDF, DOC, JPG).</p>
 <div id="consumer-categories-list" class="space-y-5"></div>
@@ -619,9 +624,14 @@
 <h2 class="text-xl font-bold text-brand-900 flex items-center gap-2">
 <i data-lucide="building-2" class="w-6 h-6 text-brand-600"></i> Контролирующие органы
 </h2>
+<div class="flex flex-wrap gap-2">
 <button type="button" onclick="addAuthority()" class="bg-brand-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-brand-800 transition-colors shadow-sm flex items-center gap-2">
 <i data-lucide="plus" class="w-4 h-4"></i> Добавить орган
 </button>
+<button type="button" onclick="saveAuthorities()" class="bg-green-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-green-700 transition-colors shadow-sm flex items-center gap-2">
+<i data-lucide="save" class="w-4 h-4"></i> Сохранить
+</button>
+</div>
 </div>
 <div id="consumer-authorities-list" class="space-y-4"></div>
 </div>
@@ -1393,6 +1403,19 @@
         window.deleteConsumerCategory = deleteConsumerCategory;
         window.addConsumerDocument = addConsumerDocument;
         window.renameConsumerDocument = renameConsumerDocument;
+        function saveAuthorities(){
+            // Снимаем фокус, чтобы успел сработать onchange у активного поля
+            if (document.activeElement && typeof document.activeElement.blur === 'function') document.activeElement.blur();
+            persistData();
+            showToast('Контролирующие органы сохранены');
+        }
+        function saveConsumerDocs(){
+            if (document.activeElement && typeof document.activeElement.blur === 'function') document.activeElement.blur();
+            persistData();
+            showToast('Документы сохранены');
+        }
+        window.saveAuthorities = saveAuthorities;
+        window.saveConsumerDocs = saveConsumerDocs;
         window.deleteConsumerDocument = deleteConsumerDocument;
         window.addAuthority = addAuthority;
         window.updateAuthority = updateAuthority;
