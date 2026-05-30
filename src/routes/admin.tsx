@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 export const Route = createFileRoute("/admin")({
   head: () => ({
     meta: [
-      { title: "Админ-панель | VORONÉNKO" },
+      { title: "Админ-панель | VORONENKO" },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
