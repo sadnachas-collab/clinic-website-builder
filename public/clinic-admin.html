@@ -682,7 +682,144 @@
         let dbAdmins; try { const raw = localStorage.getItem('dbAdmins'); const parsed = raw ? JSON.parse(raw) : null; dbAdmins = Array.isArray(parsed) && parsed.length ? parsed : JSON.parse(JSON.stringify(defaultAdmins)); } catch(_) { dbAdmins = JSON.parse(JSON.stringify(defaultAdmins)); } if (!dbAdmins.some(a => a && a.login === 'admin')) { dbAdmins.unshift(JSON.parse(JSON.stringify(defaultAdmins[0]))); } try { localStorage.setItem('dbAdmins', JSON.stringify(dbAdmins)); } catch(_){}                let dbMainPage = JSON.parse(localStorage.getItem('dbMainPage'));        if (!dbMainPage) {            dbMainPage = defaultMainPage;        } else {            // ПАТЧ: Восстановление недостающих полей для старых кэшей (исправляет ошибку в Safari)
             dbMainPage.contacts = dbMainPage.contacts || defaultMainPage.contacts;            dbMainPage.hero = dbMainPage.hero || defaultMainPage.hero;            dbMainPage.about = dbMainPage.about || defaultMainPage.about;            dbMainPage.promos = dbMainPage.promos || defaultMainPage.promos;            dbMainPage.reviews = dbMainPage.reviews || defaultMainPage.reviews;            dbMainPage.interior = dbMainPage.interior || defaultMainPage.interior;            dbMainPage.docs = dbMainPage.docs || defaultMainPage.docs;            dbMainPage.faq = dbMainPage.faq || defaultMainPage.faq;        }
         let dbServices = JSON.parse(localStorage.getItem('dbServices')) || defaultServices;        let dbSpecialists = JSON.parse(localStorage.getItem('dbSpecialists')) || defaultSpecialists;        let dbFooter = JSON.parse(localStorage.getItem('dbFooter')) || defaultFooter;        let dbCatCategories = JSON.parse(localStorage.getItem('dbCatCategories')) || defaultCatCategories;        let dbCatProcedures = JSON.parse(localStorage.getItem('dbCatProcedures')) || defaultCatProcedures;        let dbPriceFile = JSON.parse(localStorage.getItem('dbPriceFile')) || { name: "price.pdf", size: "2.4 MB", exists: true };        function persistData() {            localStorage.setItem('dbAdmins', JSON.stringify(dbAdmins));            localStorage.setItem('dbMainPage', JSON.stringify(dbMainPage));            localStorage.setItem('dbServices', JSON.stringify(dbServices));            localStorage.setItem('dbSpecialists', JSON.stringify(dbSpecialists));            localStorage.setItem('dbFooter', JSON.stringify(dbFooter));            localStorage.setItem('dbCatCategories', JSON.stringify(dbCatCategories));            localStorage.setItem('dbCatProcedures', JSON.stringify(dbCatProcedures));            updateDashboardStats();         }        // --- АВТОРИЗАЦИЯ ---
-        function openAdminPanel(user) { try { updateHeaderUser(user); } catch(_){} const ls=document.getElementById('login-screen'); const ap=document.getElementById('admin-panel'); if(ls){ ls.classList.add('opacity-0'); setTimeout(()=>ls.classList.add('hidden'),300);} if(ap){ ap.classList.remove('hidden'); requestAnimationFrame(()=>ap.classList.remove('opacity-0'));} try { initAllData(); } catch(e){ console.error('initAllData error',e);} } document.addEventListener("DOMContentLoaded", () => { try { const savedLogin = localStorage.getItem('savedAdminLogin'); if (savedLogin) { const el=document.getElementById('admin-login'); if(el) el.value=savedLogin; const rm=document.getElementById('remember-me'); if(rm) rm.checked=true; } const loggedInUserId = localStorage.getItem('loggedInAdminId') || sessionStorage.getItem('loggedInAdminId'); if (loggedInUserId) { const currentUser = dbAdmins.find(a => a && a.id != null && a.id.toString() === loggedInUserId); if (currentUser) { openAdminPanel(currentUser); } else { localStorage.removeItem('loggedInAdminId'); sessionStorage.removeItem('loggedInAdminId'); } } } catch(e){ console.error('auth init error', e); } }); window.handleLogin = function(e) { if (e && e.preventDefault) e.preventDefault(); if (e && e.stopPropagation) e.stopPropagation(); const loginEl=document.getElementById('admin-login'); const pwdEl=document.getElementById('admin-pwd'); const rmEl=document.getElementById('remember-me'); const errorMsg=document.getElementById('login-error'); const loginVal=(loginEl && loginEl.value || '').trim(); const pwdVal=(pwdEl && pwdEl.value || ''); const rememberMe = !!(rmEl && rmEl.checked); if (!Array.isArray(dbAdmins) || !dbAdmins.length) { try { dbAdmins = JSON.parse(JSON.stringify(defaultAdmins)); localStorage.setItem('dbAdmins', JSON.stringify(dbAdmins)); } catch(_){} } const user = dbAdmins.find(a => a && a.login === loginVal && String(a.pwd) === String(pwdVal)); if (user) { if (errorMsg) errorMsg.classList.add('hidden'); try { if (rememberMe) { localStorage.setItem('loggedInAdminId', user.id.toString()); localStorage.setItem('savedAdminLogin', loginVal); sessionStorage.removeItem('loggedInAdminId'); } else { sessionStorage.setItem('loggedInAdminId', user.id.toString()); localStorage.removeItem('loggedInAdminId'); localStorage.removeItem('savedAdminLogin'); } localStorage.removeItem('savedAdminPwd'); } catch(_){} openAdminPanel(user); return false; } else { if (errorMsg) errorMsg.classList.remove('hidden'); if (pwdEl) { pwdEl.value=''; pwdEl.focus(); } return false; } }; window.handleLogout = function() { try { localStorage.removeItem('loggedInAdminId'); sessionStorage.removeItem('loggedInAdminId'); } catch(_){} location.reload(); }; function togglePasswordVisibility() { const pwdInput=document.getElementById('admin-pwd'); const eyeIcon=document.getElementById('pwd-eye-icon'); if(!pwdInput||!eyeIcon) return; if (pwdInput.type === 'password') { pwdInput.type = 'text'; eyeIcon.setAttribute('data-lucide', 'eye-off'); } else { pwdInput.type = 'password'; eyeIcon.setAttribute('data-lucide', 'eye'); } try { lucide.createIcons(); } catch(_){} } window.togglePasswordVisibility = togglePasswordVisibility; function updateHeaderUser(user) { const n=document.getElementById('current-user-name'); const r=document.getElementById('current-user-role'); if(n) n.innerText=user.name||''; if(r) r.innerText=user.role||''; } function initAllData() { renderAdmins(); renderMainPageData(); renderAboutPageData(); renderTable(); // Price list
+        // --- БЕЗОПАСНАЯ РАБОТА С LOCALSTORAGE ---
+        function lsGet(key){ try { return localStorage.getItem(key); } catch(_){ return null; } }
+        function lsSet(key,val){ try { localStorage.setItem(key,val); } catch(_){} }
+        function lsDel(key){ try { localStorage.removeItem(key); } catch(_){} }
+        function ssGet(key){ try { return sessionStorage.getItem(key); } catch(_){ return null; } }
+        function ssSet(key,val){ try { sessionStorage.setItem(key,val); } catch(_){} }
+        function ssDel(key){ try { sessionStorage.removeItem(key); } catch(_){} }
+
+        // Гарантируем наличие владельца admin/123456 как аварийного доступа
+        function ensureOwnerAdmin(){
+            if(!Array.isArray(dbAdmins)) dbAdmins = [];
+            const owner = JSON.parse(JSON.stringify(defaultAdmins[0]));
+            const idx = dbAdmins.findIndex(a => a && a.login && String(a.login).toLowerCase() === 'admin');
+            if(idx === -1){ dbAdmins.unshift(owner); }
+            else {
+                // Восстанавливаем критичные поля владельца
+                dbAdmins[idx].login = 'admin';
+                if(!dbAdmins[idx].pwd) dbAdmins[idx].pwd = owner.pwd;
+                dbAdmins[idx].isOwner = true;
+                if(!dbAdmins[idx].id) dbAdmins[idx].id = owner.id;
+                if(!dbAdmins[idx].name) dbAdmins[idx].name = owner.name;
+                if(!dbAdmins[idx].role) dbAdmins[idx].role = owner.role;
+            }
+            lsSet('dbAdmins', JSON.stringify(dbAdmins));
+        }
+        ensureOwnerAdmin();
+
+        // --- АВТОРИЗАЦИЯ ---
+        function updateHeaderUser(user){
+            const n=document.getElementById('current-user-name');
+            const r=document.getElementById('current-user-role');
+            if(n) n.innerText = (user && user.name) || '';
+            if(r) r.innerText = (user && user.role) || '';
+        }
+
+        function openAdminPanel(user){
+            const ls=document.getElementById('login-screen');
+            const ap=document.getElementById('admin-panel');
+            // Сначала показываем панель и скрываем экран входа
+            if(ap){ ap.classList.remove('hidden'); requestAnimationFrame(()=>ap.classList.remove('opacity-0')); }
+            if(ls){ ls.classList.add('opacity-0'); setTimeout(()=>ls.classList.add('hidden'),300); }
+            try { updateHeaderUser(user); } catch(e){ console.error('updateHeaderUser error', e); }
+            // Инициализация данных — ошибки НЕ возвращают на экран входа
+            try { initAllData(); } catch(e){ console.error('initAllData error', e); }
+            try { lucide.createIcons(); } catch(_){}
+        }
+
+        function doLogin(){
+            const loginEl=document.getElementById('admin-login');
+            const pwdEl=document.getElementById('admin-pwd');
+            const rmEl=document.getElementById('remember-me');
+            const errorMsg=document.getElementById('login-error');
+            const loginVal = (loginEl && loginEl.value || '').trim().toLowerCase();
+            const pwdVal = (pwdEl && pwdEl.value || '').trim();
+            const rememberMe = !!(rmEl && rmEl.checked);
+
+            // На всякий случай восстанавливаем владельца перед проверкой
+            ensureOwnerAdmin();
+
+            const user = dbAdmins.find(a =>
+                a && a.login &&
+                String(a.login).trim().toLowerCase() === loginVal &&
+                String(a.pwd).trim() === pwdVal
+            );
+
+            if(user){
+                if(errorMsg) errorMsg.classList.add('hidden');
+                if(rememberMe){
+                    lsSet('loggedInAdminId', String(user.id));
+                    lsSet('savedAdminLogin', String(user.login));
+                    ssDel('loggedInAdminId');
+                } else {
+                    ssSet('loggedInAdminId', String(user.id));
+                    lsDel('loggedInAdminId');
+                    lsDel('savedAdminLogin');
+                }
+                lsDel('savedAdminPwd');
+                openAdminPanel(user);
+            } else {
+                if(errorMsg) errorMsg.classList.remove('hidden');
+                // НЕ очищаем поля — пользователь видит, что ввёл
+                if(pwdEl){ pwdEl.focus(); pwdEl.select && pwdEl.select(); }
+            }
+            return false;
+        }
+
+        window.handleLogin = function(e){
+            if(e){ if(e.preventDefault) e.preventDefault(); if(e.stopPropagation) e.stopPropagation(); }
+            return doLogin();
+        };
+
+        window.handleLogout = function(){
+            lsDel('loggedInAdminId');
+            ssDel('loggedInAdminId');
+            location.reload();
+        };
+
+        function togglePasswordVisibility(){
+            const pwdInput=document.getElementById('admin-pwd');
+            const eyeIcon=document.getElementById('pwd-eye-icon');
+            if(!pwdInput||!eyeIcon) return;
+            if(pwdInput.type === 'password'){ pwdInput.type='text'; eyeIcon.setAttribute('data-lucide','eye-off'); }
+            else { pwdInput.type='password'; eyeIcon.setAttribute('data-lucide','eye'); }
+            try { lucide.createIcons(); } catch(_){}
+        }
+        window.togglePasswordVisibility = togglePasswordVisibility;
+
+        document.addEventListener('DOMContentLoaded', function(){
+            try {
+                // Дублирующий обработчик submit на всякий случай
+                const form = document.querySelector('#login-screen form');
+                if(form){
+                    form.addEventListener('submit', function(ev){
+                        ev.preventDefault();
+                        ev.stopPropagation();
+                        doLogin();
+                        return false;
+                    });
+                }
+                // Восстанавливаем сохранённый логин
+                const savedLogin = lsGet('savedAdminLogin');
+                if(savedLogin){
+                    const el=document.getElementById('admin-login');
+                    if(el) el.value = savedLogin;
+                    const rm=document.getElementById('remember-me');
+                    if(rm) rm.checked = true;
+                }
+                // Автологин по сохранённой сессии
+                const loggedInUserId = lsGet('loggedInAdminId') || ssGet('loggedInAdminId');
+                if(loggedInUserId){
+                    const currentUser = dbAdmins.find(a => a && a.id != null && String(a.id) === String(loggedInUserId));
+                    if(currentUser){ openAdminPanel(currentUser); }
+                    else { lsDel('loggedInAdminId'); ssDel('loggedInAdminId'); }
+                }
+            } catch(e){ console.error('auth init error', e); }
+        });
+
+        function initAllData() { renderAdmins(); renderMainPageData(); renderAboutPageData(); renderTable(); // Price list
             renderPriceFile();            renderCatCategories();            renderCatProcedures();            renderSpecialists();            renderFooterData();            updateDashboardStats();        }        function updateDashboardStats() {            document.getElementById('stat-specialists').innerText = dbSpecialists.length;            document.getElementById('stat-services').innerText = dbCatProcedures.length || 0;            document.getElementById('stat-promos').innerText = dbMainPage.promos ? dbMainPage.promos.length : 0;        }        // --- НАВИГАЦИЯ ---
         const titles = { 'dashboard': 'Обзор', 'mainpage': 'Редактирование Главной', 'about': 'О клинике', 'price': 'Прайс-лист', 'services': 'Каталог услуг', 'specialists': 'Специалисты', 'footer': 'Подвал', 'settings': 'Настройки' };        function toggleSidebar() {            const sidebar = document.getElementById('admin-sidebar');            const backdrop = document.getElementById('sidebar-backdrop');            if (!sidebar || !backdrop) return;            const isOpen = !sidebar.classList.contains('-translate-x-full');            if (isOpen) {                sidebar.classList.add('-translate-x-full');                backdrop.classList.add('opacity-0', 'pointer-events-none');            } else {                sidebar.classList.remove('-translate-x-full');                backdrop.classList.remove('opacity-0', 'pointer-events-none');            }        }        function switchTab(tabId) {            document.querySelector('main > div.overflow-y-auto').scrollTo(0, 0);            document.querySelectorAll('.nav-btn').forEach(btn => {                if(btn.dataset.target === tabId) {                    btn.classList.add('active', 'bg-brand-50', 'text-brand-600'); btn.classList.remove('text-gray-500');                } else {                    btn.classList.remove('active', 'bg-brand-50', 'text-brand-600'); btn.classList.add('text-gray-500');                }            });            document.getElementById('header-title').innerText = titles[tabId];            document.querySelectorAll('.admin-section').forEach(sec => sec.classList.remove('active'));            document.getElementById(`section-${tabId}`).classList.add('active');            // На мобильном закрываем сайдбар после выбора раздела            if (window.innerWidth < 1024) {                const sidebar = document.getElementById('admin-sidebar');                const backdrop = document.getElementById('sidebar-backdrop');                if (sidebar && !sidebar.classList.contains('-translate-x-full')) {                    sidebar.classList.add('-translate-x-full');                    backdrop.classList.add('opacity-0', 'pointer-events-none');                }            }        }        // --- УТИЛИТА TOAST ---
         function showToast(msg) {            const toast = document.getElementById('toast');            document.getElementById('toast-msg').innerText = msg;            toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-[-10px]');            setTimeout(() => toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-[-10px]'), 3000);        }        // --- РАЗДЕЛ: ГЛАВНАЯ СТРАНИЦА ---
