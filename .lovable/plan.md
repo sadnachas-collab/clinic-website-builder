@@ -1,38 +1,45 @@
-## Подключение раздела «Акции» к БД
+## План: подключить «Отзывы» к таблице `reviews`
 
-Сейчас акции хранятся в `dbMainPage.promos` (localStorage). Подключаем к таблице `promos` в Lovable Cloud по образцу врачей.
+### Маппинг полей (UI ↔ БД)
 
-### Что меняется в `public/clinic-admin.html`
+| UI               | БД (`reviews`)        | Примечание |
+|------------------|------------------------|------------|
+| `id`             | `id` (UUID)            | для новых — временный `tmpId` (строка/число), флаг `isNew` |
+| `name`           | `author_name`          | обязательное |
+| `text`           | `text`                 | обязательное |
+| `service`        | `text` (префикс `[service] ...`) | в БД нет отдельного поля; храним так же, как `badge` в акциях (split/join при чтении/записи) |
+| `date` (строка типа «21 апреля») | `review_date` (DATE) | в админке заменим на `<input type="date">`; при отображении на сайте форматируем по-русски |
+| —                | `rating`               | пока не редактируем, по умолчанию `5` при insert |
+| —                | `published`            | по умолчанию `true` |
+| —                | `sort_order`           | `0` для новых |
 
-1. **`loadPromos()`** — новая функция:
-   - `sb.from('promos').select('*').order('sort_order').order('created_at', { ascending: false })`
-   - Маппинг БД → UI-модель: `{ id (UUID), title, badge: description?, desc: description, img: image_url }`.
-   - Поскольку в таблице нет отдельного поля `badge`, храним «бирку» в начале `description` в формате `[badge] desc` (split/join при чтении/записи). Так не трогаем схему БД.
-   - Обновляет `window.dbMainPage.promos` и перерисовывает: `renderPromos()` + `updateDashboardStats()`.
+### Изменения в `public/clinic-admin.html`
 
-2. **`addPromo`** — временный `tmpId` (строка), флаг `isNew`. Без записи в БД до «Сохранить».
+1. **`loadReviews()`** — новая async-функция, `sb.from('reviews').select('*').order('sort_order').order('created_at', { ascending: false })`. Маппинг БД → UI: распарсить `text` на `service` (если начинается с `[...]`) и сам текст. Обновляет `window.dbMainPage.reviews`, вызывает `renderReviews()` + `updateDashboardStats()`.
 
-3. **`savePromo(id)`** — определяет, UUID или временный:
-   - новый → `sb.from('promos').insert({ title, description: joinBadgeDesc(badge,desc), image_url, sort_order: 0, published: true }).select().single()` → подменяем id в массиве.
-   - существующий → `sb.from('promos').update({...}).eq('id', id)`.
+2. **`overrideReviews()`** — апсерт `page_content` с ключом `reviews_cache` (по аналогии с promos), `persistData`.
 
-4. **`deletePromo(id)`** — `sb.from('promos').delete().eq('id', id)` для UUID; для временного — просто из массива.
+3. **Bridge-блок (≈строка 1770–1775)** — добавить `overrideReviews()` и `await loadReviews()` рядом с promos.
 
-5. **Загрузка фото**: рядом с полем «URL Обложки» — кнопка «Загрузить фото» по образцу врачей. Bucket `photos`, путь `promos/<timestamp>-<safeName>`, лимит 10 МБ, jpg/png/webp, `upsert: true`. После загрузки — public URL в `#promo-img-<id>`.
+4. **`addReview`** — оставить как есть (временный id, `isNew: true`), без записи в БД до «Сохранить».
 
-6. **Bridge**: добавить `overridePromos()` в bridge-блок и вызывать его после `loadMainTexts()` (или параллельно с `loadServices/loadSpecialists`).
+5. **`saveReview(id)`** — определить, UUID или временный:
+   - новый → `sb.from('reviews').insert({ author_name, text: '[service] ...'.trim(), review_date, rating: 5, published: true, sort_order: 0 }).select().single()`, заменить `id` в массиве на UUID;
+   - существующий → `sb.from('reviews').update({...}).eq('id', id)`.
+   После — `overrideReviews()` (без полного релоада), `renderReviews()`.
 
-7. **Идентификаторы**: все `onclick` и `id` оборачиваем через `String(id)` для совместимости UUID/временных id (как сделано для врачей).
+6. **`deleteReview(id)`** — для UUID `sb.from('reviews').delete().eq('id', id)`, для временного — просто из массива. Затем `overrideReviews()`.
+
+7. **Форма редактирования отзыва (внутри `renderReviews`)** — поле «Дата» заменить с `<input type="text">` на `<input type="date" id="rev-date-${id}">`; добавить чтение значения в `saveReview`. На карточке («view-mode») показывать дату в формате «21 апреля» (через `Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long' })`).
+
+8. **`String(id)`** в `onclick` и `id` атрибутах — для совместимости UUID и временных id.
 
 ### Проверка
 
-- Открыть «Главная → Акции»: список грузится из БД.
-- Добавить акцию, загрузить фото, сохранить → запись появляется в `promos`, фото в `photos/promos/...`.
-- Редактировать заголовок/описание/бирку → обновляется в БД.
-- Удалить → исчезает из БД.
-- Перезагрузка страницы → данные сохраняются (не из localStorage, а из БД).
+1. Открыть админ → «Главная» → «Отзывы»: список грузится из БД.
+2. Добавить отзыв → Сохранить → перезагрузить страницу → отзыв остался (из БД, не из localStorage).
+3. Редактирование, удаление, дата — корректно сохраняются/отображаются.
 
-### Затронутые файлы
+### Файл
+
 - `public/clinic-admin.html`
-
-Реализую после подтверждения.
