@@ -1766,9 +1766,11 @@
                     ready = true;
                     overrideServices();
                     overrideSpecialists();
+                    overrideMainTexts();
                     await loadServices();
                     await loadPriceFile();
                     await loadSpecialists();
+                    await loadMainTexts();
                 }
             } catch(e){
                 console.error('[admin] bootstrap error', e);
