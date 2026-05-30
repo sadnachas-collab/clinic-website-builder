@@ -35,9 +35,20 @@ function Admin() {
       if (!session) navigate({ to: "/login", replace: true });
     });
 
+    const onMessage = (e: MessageEvent) => {
+      if (e.origin !== window.location.origin) return;
+      if (e.data && (e.data as { type?: string }).type === "admin-logout") {
+        supabase.auth.signOut().finally(() => {
+          navigate({ to: "/login", replace: true });
+        });
+      }
+    };
+    window.addEventListener("message", onMessage);
+
     return () => {
       mounted = false;
       subscription.unsubscribe();
+      window.removeEventListener("message", onMessage);
     };
   }, [navigate]);
 
