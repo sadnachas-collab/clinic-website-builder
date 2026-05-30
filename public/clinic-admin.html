@@ -1108,16 +1108,16 @@
 <input type="text" class="edit-mode hidden w-full px-3 py-2 border rounded focus:border-brand-600 outline-none" value="${srv.price}" placeholder="Цена">
 </td>
 <td class="px-6 py-4 text-right whitespace-nowrap">
-<button onclick="editRow(${srv.id})" class="view-mode p-2 text-gray-400 hover:text-brand-600">
+<button onclick="editRow('${srv.id}')" class="view-mode p-2 text-gray-400 hover:text-brand-600">
 <i data-lucide="edit-3" class="w-5 h-5">
 </i>
 </button>
-<button onclick="deleteRow(${srv.id})" class="view-mode p-2 text-gray-400 hover:text-red-500">
+<button onclick="deleteRow('${srv.id}')" class="view-mode p-2 text-gray-400 hover:text-red-500">
 <i data-lucide="trash-2" class="w-5 h-5">
 </i>
 </button>
-<button onclick="saveRow(${srv.id})" class="edit-mode hidden px-4 py-2 bg-green-600 text-white rounded-lg text-xs font-bold uppercase tracking-widest">Сохранить</button>
-<button onclick="cancelEditRow(${srv.id})" class="edit-mode hidden ml-1 px-4 py-2 bg-white border border-gray-200 text-gray-600 rounded-lg text-xs font-bold uppercase tracking-widest">Отмена</button>
+<button onclick="saveRow('${srv.id}')" class="edit-mode hidden px-4 py-2 bg-green-600 text-white rounded-lg text-xs font-bold uppercase tracking-widest">Сохранить</button>
+<button onclick="cancelEditRow('${srv.id}')" class="edit-mode hidden ml-1 px-4 py-2 bg-white border border-gray-200 text-gray-600 rounded-lg text-xs font-bold uppercase tracking-widest">Отмена</button>
 </td>
 </tr>`).join(''); lucide.createIcons();        }        function addService() { if(isAddingNewService) return; isAddingNewService = true; const newId = Date.now(); dbServices.unshift({ id: newId, name: "", desc: "", price: "", isNew: true }); renderTable(); editRow(newId); }        function editRow(id) { const row = document.getElementById(`row-${id}`); row.querySelectorAll('.view-mode').forEach(el => el.classList.add('hidden')); row.querySelectorAll('.edit-mode').forEach(el => el.classList.remove('hidden')); row.classList.add('bg-brand-50/30'); }        function saveRow(id) { const row = document.getElementById(`row-${id}`); const inputs = row.querySelectorAll('.edit-mode[type="text"]'); const idx = dbServices.findIndex(s => s.id === id); if(idx !== -1) { const name = inputs[0].value.trim(); if(!name) return showToast('Введите название!'); dbServices[idx].name = name; dbServices[idx].desc = inputs[1].value; dbServices[idx].price = inputs[2].value; delete dbServices[idx].isNew; } isAddingNewService = false; persistData(); renderTable(); showToast('Услуга сохранена'); }        function cancelEditRow(id) { const idx = dbServices.findIndex(s => s.id === id); if(idx !== -1 && dbServices[idx].isNew) dbServices.splice(idx, 1); isAddingNewService = false; renderTable(); }        function deleteRow(id) { customConfirm('Удалить услугу?').then(function(ok){ if(!ok) return; dbServices = dbServices.filter(s => s.id !== id); persistData(); renderTable(); showToast('Удалено'); }); }
         function renderPriceFile() {
