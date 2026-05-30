@@ -1,0 +1,209 @@
+Helvetica;;;*;;<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com">
+</script>
+<!-- Шрифты (Montserrat & Playfair Display) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<!-- Иконки Lucide -->
+<script src="https://unpkg.com/lucide@latest">
+</script>
+<!-- Плагин для слабовидящих (BVI - ГОСТ РФ) ПРЯМАЯ ССЫЛКА НА GITHUB АВТОРА -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/veks/button-visually-impaired-javascript@master/dist/css/bvi.min.css">
+<script src="https://cdn.jsdelivr.net/gh/veks/button-visually-impaired-javascript@master/dist/js/bvi.min.js">
+</script>
+<!-- Настройки Tailwind -->
+<script>    tailwind.config = {        theme: {            extend: {                fontFamily: {                    sans: ['Montserrat', 'sans-serif'],                    serif: ['Playfair Display', 'serif'],                }            }        }    }</script>
+<!-- Глобальные стили -->
+<style>    body {        font-family: 'Montserrat', sans-serif;        color: #2A2522;        background-color: #FDFBF9;        -webkit-font-smoothing: antialiased;        -moz-osx-font-smoothing: grayscale;        margin: 0;    }    .hide-scrollbar::-webkit-scrollbar { display: none; }    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }        /* Стили для аккордеонов внутри услуги и FAQ */    .acc-content { max-height: 0; opacity: 0; overflow: hidden; transition: all 0.5s ease-in-out; }    .acc-content.active { opacity: 1; margin-top: 1rem; }</style>
+<!-- УВЕДОМЛЕНИЕ (TOAST) -->
+<div id="toast" class="fixed bottom-6 left-6 z-[200] bg-[#2A2522] text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 opacity-0 pointer-events-none transition-all duration-300 translate-y-10">
+<i data-lucide="check-circle-2" class="w-5 h-5 text-[#D0C0B1]">
+</i>
+<p id="toast-msg" class="text-sm font-medium">Сообщение</p>
+</div>
+<!-- МОДАЛЬНОЕ ОКНО ЗАПИСИ -->
+<div id="booking-modal" class="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-[#1A1817]/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300">
+<div class="absolute inset-0" onclick="closeModal('booking-modal')">
+</div>
+<div class="relative bg-[#FDFBF9] rounded-[2.5rem] shadow-2xl w-full max-w-lg p-8 lg:p-12 transform scale-95 transition-transform duration-300" id="booking-modal-content">
+<button onclick="closeModal('booking-modal')" class="absolute top-6 right-6 text-gray-400 hover:text-[#2A2522] transition-colors">
+<i data-lucide="x" class="w-6 h-6">
+</i>
+</button>
+<h3 class="font-serif text-3xl text-[#2A2522] mb-2">Запись на прием</h3>
+<p class="text-gray-500 font-light text-sm mb-8">Оставьте ваши данные, и администратор подберет удобное время.</p>
+<form onsubmit="submitBooking(event)" class="space-y-4">
+<input type="text" required placeholder="Ваше имя" class="w-full px-5 py-4 rounded-2xl border border-[#D0C0B1]/40 bg-white focus:outline-none focus:border-[#746258] focus:ring-2 focus:ring-[#746258]/20 transition-all font-medium">
+<input type="tel" required placeholder="+7 (999) 000-00-00" class="w-full px-5 py-4 rounded-2xl border border-[#D0C0B1]/40 bg-white focus:outline-none focus:border-[#746258] focus:ring-2 focus:ring-[#746258]/20 transition-all font-medium">
+<div class="pt-2">
+<p class="text-xs text-gray-400 uppercase tracking-widest font-semibold mb-2 ml-1">Интересующая услуга / Врач</p>
+<input type="text" id="booking-interest" placeholder="Например: RF-лифтинг или Консультация" class="w-full px-5 py-4 rounded-2xl border border-[#D0C0B1]/40 bg-white focus:outline-none focus:border-[#746258] focus:ring-2 focus:ring-[#746258]/20 transition-all font-medium">
+</div>
+<button type="submit" class="w-full mt-4 bg-[#746258] text-white py-4 rounded-2xl font-bold uppercase tracking-widest text-sm hover:bg-[#5A4C44] active:scale-95 transition-all duration-300 shadow-[0_10px_20px_rgb(116,98,88,0.2)]">Отправить заявку</button>
+<p class="text-[10px] text-gray-400 text-center mt-4">Нажимая кнопку, вы соглашаетесь с Политикой конфиденциальности.</p>
+</form>
+</div>
+</div>
+<!-- МОДАЛЬНОЕ ОКНО ВРАЧА -->
+<div id="doctor-modal" class="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-[#1A1817]/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300">
+<div class="absolute inset-0" onclick="closeModal('doctor-modal')">
+</div>
+<div class="relative bg-[#FDFBF9] rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col md:flex-row transform scale-95 transition-transform duration-300" id="doctor-modal-content">
+<button onclick="closeModal('doctor-modal')" class="absolute top-4 right-4 z-10 w-10 h-10 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center text-[#2A2522] hover:bg-white transition-colors">
+<i data-lucide="x" class="w-5 h-5">
+</i>
+</button>
+<div class="w-full md:w-2/5 h-64 md:h-auto relative">
+<img id="doc-img" src="" alt="Врач" class="w-full h-full object-cover">
+</div>
+<div class="w-full md:w-3/5 p-8 lg:p-10 flex flex-col">
+<p id="doc-role" class="text-[11px] text-[#746258] uppercase tracking-[0.2em] font-bold mb-2">
+</p>
+<h3 id="doc-name" class="font-serif text-3xl text-[#2A2522] mb-4">
+</h3>
+<p id="doc-bio" class="text-sm text-gray-600 font-light leading-relaxed mb-6">
+</p>
+<div class="mb-8">
+<p class="text-[10px] uppercase tracking-widest text-gray-400 font-semibold mb-2">Образование</p>
+<p id="doc-edu" class="text-[13px] text-gray-500 font-light leading-relaxed">
+</p>
+</div>
+<button id="doc-book-btn" class="mt-auto w-full bg-[#746258] text-white py-3.5 rounded-full font-bold uppercase tracking-widest text-xs hover:bg-[#5A4C44] active:scale-95 transition-all shadow-md">                Записаться к врачу            </button>
+</div>
+</div>
+</div>
+<!-- ПЛАВАЮЩИЙ КОМБО-ВИДЖЕТ (СОЦСЕТИ + ЗАПИСЬ) -->
+<div class="fixed bottom-6 right-4 sm:right-6 z-[100] flex items-end gap-3 sm:gap-4 bvi-no-styles">
+<!-- Соцсети (выезжают наверх) -->
+<div class="flex flex-col items-center relative">
+<div id="social-widget-menu" class="absolute bottom-full mb-4 flex flex-col gap-3 transition-all duration-300 opacity-0 pointer-events-none translate-y-4 origin-bottom">
+<a href="#" onclick="event.preventDefault(); showToast('Переход в ВКонтакте...')" class="w-14 h-14 bg-[#0077FF] text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-transform">
+<span class="font-bold text-lg">VK</span>
+</a>
+<a href="#" onclick="event.preventDefault(); showToast('Переход в Telegram...')" class="w-14 h-14 bg-[#229ED9] text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-transform">
+<i data-lucide="send" class="w-6 h-6 -ml-1 mt-1">
+</i>
+</a>
+<a href="#" onclick="event.preventDefault(); showToast('Переход в Max...')" class="w-14 h-14 bg-gradient-to-br from-[#1A56FF] to-[#7000FF] text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-transform">
+<span class="font-bold text-[13px] tracking-wider">MAX</span>
+</a>
+</div>
+<button onclick="toggleSocialWidget()" class="w-14 h-14 bg-white border border-[#D0C0B1]/40 text-[#2A2522] rounded-full flex items-center justify-center shadow-[0_10px_25px_rgb(0,0,0,0.1)] hover:border-[#746258] hover:text-[#746258] active:scale-95 transition-all">
+<i data-lucide="message-circle" id="social-widget-icon" class="w-6 h-6 transition-transform duration-300">
+</i>
+<i data-lucide="x" id="social-widget-close" class="w-6 h-6 absolute opacity-0 rotate-[-90deg] transition-all duration-300">
+</i>
+</button>
+</div>
+<!-- Кнопка Записаться -->
+<button onclick="openBooking('')" class="h-14 px-8 sm:px-10 bg-[#746258] text-white rounded-[2rem] flex items-center justify-center shadow-[0_10px_25px_rgb(116,98,88,0.3)] hover:bg-[#5A4C44] hover:shadow-[0_15px_35px_rgb(116,98,88,0.4)] hover:-translate-y-1 active:translate-y-0 active:scale-95 transition-all duration-300 group">
+<span class="font-bold text-xs sm:text-sm uppercase tracking-widest whitespace-nowrap">Записаться</span>
+<i data-lucide="calendar-plus" class="w-5 h-5 ml-3 opacity-90 group-hover:scale-110 transition-transform">
+</i>
+</button>
+</div>
+<!-- Скрипт для плавающего виджета -->
+<script>    function toggleSocialWidget() {        const menu = document.getElementById('social-widget-menu');        const icon = document.getElementById('social-widget-icon');        const close = document.getElementById('social-widget-close');                menu.classList.toggle('opacity-0');        menu.classList.toggle('pointer-events-none');        menu.classList.toggle('translate-y-4');                if (menu.classList.contains('opacity-0')) {            icon.classList.remove('opacity-0', 'rotate-90');            close.classList.add('opacity-0', 'rotate-[-90deg]');        } else {            icon.classList.add('opacity-0', 'rotate-90');            close.classList.remove('opacity-0', 'rotate-[-90deg]');        }    }</script>
+<!-- ШАПКА -->
+<header id="navbar" class="fixed top-0 w-full z-50 transition-all duration-500 bg-white/95 backdrop-blur-md border-b border-[#D0C0B1]/30">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex justify-between items-center py-2 lg:py-3">
+<!-- ЛОГОТИП SVG -->
+<div class="flex items-center gap-2.5 sm:gap-3 cursor-pointer shrink-0 group" onclick="goHome()">
+<svg viewBox="194 165 112 113" class="w-10 h-10 lg:w-12 lg:h-12 text-[#2A2522] group-hover:opacity-80 transition-opacity" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+<path d="M250,165.7c-30.8,0-55.8,25-55.8,55.8s25,55.8,55.8,55.8s55.8-25,55.8-55.8S280.8,165.7,250,165.7z M224.2,243.6v-45.7 c0,0,16.6,0,17.4,0c7.8,0,14.6,6.2,14.6,15.6c0,11.3-8.8,15.2-15.6,15.2c-0.8,0-16.4,0-16.4,0v14.9 M262.4,243.6l-9.1-30.6h2 l9.4,30.6H262.4z M273.7,243.6l15.1-30.6h2.2l-15.4,30.6H273.7z"/>
+<path d="M226.7,200.3v26.1h14.9c5.2,0,12.5-3.3,12.5-12.8c0-8.2-6.5-13.3-12.5-13.3H226.7z"/>
+<path d="M239.5,188.7c-8.9,0-15.3,4.9-15.3,4.9s6.6-6.4,18-6.4c11.4,0,17.2,5.2,17.2,5.2S253,188.7,239.5,188.7z"/>
+<path d="M285.3,243.6c-1.3,0-2.3-1-2.3-2.3c0-1.3,1-2.3,2.3-2.3c1.3,0,2.3,1,2.3,2.3C287.6,242.6,286.6,243.6,285.3,243.6z"/>
+</svg>
+<div class="flex flex-col border-l border-[#D0C0B1]/60 pl-2.5 sm:pl-3">
+<span class="font-serif text-[16px] sm:text-[18px] lg:text-[22px] text-[#2A2522] leading-none tracking-wide group-hover:opacity-80 transition-opacity">VORONЙNKO</span>
+<span class="text-[7px] sm:text-[8px] lg:text-[9px] uppercase tracking-[0.2em] text-[#746258] mt-0.5 sm:mt-1 font-semibold">Cosmetology Clinic</span>
+</div>
+</div>
+<div class="hidden lg:flex flex-col text-[13px] text-[#2A2522] ml-8 mr-auto">
+<span class="font-semibold tracking-wide">г. Самара, ул. Мяги, 24А</span>
+<span class="text-gray-400 mt-0.5 uppercase tracking-widest text-[10px] font-bold">пн-вс 09:00-21:00</span>
+</div>
+<!-- ИКОНКИ ДЕСКТОПНОЙ ШАПКИ -->
+<div class="hidden lg:flex items-center gap-6">
+<a href="tel:+78000000000" class="text-xl font-semibold !text-[#2A2522] hover:!text-[#746258] transition-colors whitespace-nowrap tracking-tight">                    8 (800) 000-00-00                </a>
+<div class="flex items-center gap-2 border-l border-gray-200 pl-6">
+<!-- VK -->
+<a href="#" onclick="showToast('Переход в ВКонтакте...')" class="w-10 h-10 flex items-center justify-center rounded-full bg-[#FDFBF9] border border-[#D0C0B1]/40 !text-[#2A2522] hover:!bg-[#2A2522] hover:!text-white active:scale-90 transition-all duration-300">
+<span class="font-bold text-xs">VK</span>
+</a>
+<!-- Telegram -->
+<a href="#" onclick="showToast('Переход в Telegram...')" class="w-10 h-10 flex items-center justify-center rounded-full bg-[#FDFBF9] border border-[#D0C0B1]/40 !text-[#2A2522] hover:!bg-[#2A2522] hover:!text-white active:scale-90 transition-all duration-300">
+<i data-lucide="send" class="w-5 h-5 ml-0.5">
+</i>
+</a>
+<!-- MAX -->
+<a href="#" onclick="showToast('Переход в Max...')" class="w-10 h-10 flex items-center justify-center rounded-full bg-[#FDFBF9] border border-[#D0C0B1]/40 !text-[#2A2522] hover:!bg-[#2A2522] hover:!text-white active:scale-90 transition-all duration-300">
+<span class="font-bold text-[10px] tracking-wider">MAX</span>
+</a>
+<!-- Слабовидящие (кнопка ГОСТ плагина) -->
+<a href="#" class="bvi-open w-10 h-10 flex items-center justify-center rounded-full bg-[#FDFBF9] border border-[#D0C0B1]/40 text-[#746258] hover:bg-[#746258] hover:text-white active:scale-90 transition-all duration-300" title="Версия для слабовидящих">
+<i data-lucide="eye" class="w-5 h-5">
+</i>
+</a>
+</div>
+</div>
+<div class="lg:hidden flex items-center gap-4">
+<a href="tel:+78000000000" class="text-lg font-semibold !text-[#2A2522] hover:!text-[#746258] transition-colors whitespace-nowrap">                    8 (800) 000-00-00                </a>
+<button class="p-1.5 text-[#2A2522] hover:bg-gray-50 rounded-md transition-colors active:scale-95" onclick="toggleMobileMenu()">
+<i data-lucide="menu" class="w-7 h-7" id="menu-icon">
+</i>
+</button>
+</div>
+</div>
+</div>
+<!-- Навигация Десктоп -->
+<div class="hidden lg:block bg-white/50 border-t border-[#D0C0B1]/20">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<nav class="flex justify-center space-x-8 lg:space-x-12 py-4">
+<a href="#about" class="relative text-[13px] !text-[#2A2522] uppercase tracking-widest font-semibold transition-colors hover:!text-[#746258] pb-1 hover:after:w-1/2 after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:h-[2px] after:bg-[#746258] after:transition-all after:duration-300 after:w-0" onclick="goHome(); setTimeout(() => document.getElementById('about').scrollIntoView(), 100)">О клинике</a>
+<a href="#services" class="relative text-[13px] !text-[#2A2522] uppercase tracking-widest font-semibold transition-colors hover:!text-[#746258] pb-1 hover:after:w-1/2 after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:h-[2px] after:bg-[#746258] after:transition-all after:duration-300 after:w-0" onclick="goHome(); setTimeout(() => document.getElementById('services').scrollIntoView(), 100)">Услуги</a>
+<a href="#team" class="relative text-[13px] !text-[#2A2522] uppercase tracking-widest font-semibold transition-colors hover:!text-[#746258] pb-1 hover:after:w-1/2 after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:h-[2px] after:bg-[#746258] after:transition-all after:duration-300 after:w-0" onclick="goHome(); setTimeout(() => document.getElementById('team').scrollIntoView(), 100)">Специалисты</a>
+<a href="#price" class="relative text-[13px] !text-[#2A2522] uppercase tracking-widest font-semibold transition-colors hover:!text-[#746258] pb-1 hover:after:w-1/2 after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:h-[2px] after:bg-[#746258] after:transition-all after:duration-300 after:w-0" onclick="goHome(); setTimeout(() => document.getElementById('price').scrollIntoView(), 100)">Прайс-лист</a>
+<a href="#" class="relative text-[13px] !text-[#2A2522] uppercase tracking-widest font-semibold transition-colors hover:!text-[#746258] pb-1 hover:after:w-1/2 after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:h-[2px] after:bg-[#746258] after:transition-all after:duration-300 after:w-0" onclick="event.preventDefault(); showView('view-consumer');">Уголок потребителя</a>
+</nav>
+</div>
+</div>
+<!-- Мобильное меню -->
+<div id="mobile-menu" class="hidden lg:hidden bg-white border-t border-[#D0C0B1]/20 absolute w-full shadow-2xl h-screen overflow-y-auto pb-32 transition-all duration-300 opacity-0 translate-y-[-10px]">
+<div class="px-6 py-8 space-y-3">
+<a href="#about" onclick="toggleMobileMenu(); goHome(); setTimeout(() => document.getElementById('about').scrollIntoView(), 100)" class="block w-full text-left text-2xl font-serif !text-[#2A2522] py-1">О клинике</a>
+<a href="#services" onclick="toggleMobileMenu(); goHome(); setTimeout(() => document.getElementById('services').scrollIntoView(), 100)" class="block w-full text-left text-2xl font-serif !text-[#2A2522] py-1">Услуги</a>
+<a href="#team" onclick="toggleMobileMenu(); goHome(); setTimeout(() => document.getElementById('team').scrollIntoView(), 100)" class="block w-full text-left text-2xl font-serif !text-[#2A2522] py-1">Специалисты</a>
+<a href="#price" onclick="toggleMobileMenu(); goHome(); setTimeout(() => document.getElementById('price').scrollIntoView(), 100)" class="block w-full text-left text-2xl font-serif !text-[#2A2522] py-1">Прайс-лист</a>
+<a href="#" onclick="event.preventDefault(); toggleMobileMenu(); showView('view-consumer');" class="block w-full text-left text-2xl font-serif !text-[#2A2522] py-1">Уголок потребителя</a>
+<!-- ИКОНКИ МОБИЛЬНОГО МЕНЮ -->
+<div class="pt-6 flex flex-col gap-6">
+<div class="flex items-center space-x-4">
+<!-- VK -->
+<a href="#" onclick="event.preventDefault(); showToast('Переход в ВКонтакте...')" class="flex items-center justify-center w-12 h-12 rounded-full bg-[#FDFBF9] border border-[#D0C0B1]/50 !text-[#2A2522] active:scale-95 transition-all">
+<span class="font-bold text-sm">VK</span>
+</a>
+<!-- Telegram -->
+<a href="#" onclick="event.preventDefault(); showToast('Переход в Telegram...')" class="flex items-center justify-center w-12 h-12 rounded-full bg-[#FDFBF9] border border-[#D0C0B1]/50 !text-[#2A2522] active:scale-95 transition-all">
+<i data-lucide="send" class="w-6 h-6 ml-0.5">
+</i>
+</a>
+<!-- MAX -->
+<a href="#" onclick="event.preventDefault(); showToast('Переход в Max...')" class="flex items-center justify-center w-12 h-12 rounded-full bg-[#FDFBF9] border border-[#D0C0B1]/50 !text-[#2A2522] active:scale-95 transition-all">
+<span class="font-bold text-[11px] tracking-wider">MAX</span>
+</a>
+</div>
+<!-- Слабовидящие (кнопка ГОСТ плагина) -->
+<a href="#" class="bvi-open flex items-center text-[#746258] font-medium mt-2 active:scale-95">
+<i data-lucide="eye" class="w-6 h-6 mr-3">
+</i>
+<span>Версия для слабовидящих</span>
+</a>
+</div>
+</div>
+</div>
+</header>
+<script>    document.addEventListener("DOMContentLoaded", () => {        // Умная инициализация плагина для слабовидящих по ГОСТ        const initBvi = (attempts = 0) => {            if (typeof isvek !== 'undefined' && isvek.Bvi) {                new isvek.Bvi({                    target: '.bvi-open',                    fontSize: 24,                    theme: 'white'                });            } else if (attempts < 20) {                setTimeout(() => initBvi(attempts + 1), 500);            }        };        initBvi();    });</script>
