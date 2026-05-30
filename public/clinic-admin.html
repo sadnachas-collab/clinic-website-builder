@@ -1900,6 +1900,206 @@
                 }
             };
         }
+
+        // ===== СПЕЦИАЛИСТЫ (specialists) =====
+        const SPEC_SEP = '\n\n---\n\n';
+        function splitEduBio(text){
+            const t = String(text || '');
+            const i = t.indexOf(SPEC_SEP);
+            if (i === -1) return { edu: '', bio: t };
+            return { edu: t.slice(0, i), bio: t.slice(i + SPEC_SEP.length) };
+        }
+        function joinEduBio(edu, bio){
+            const e = String(edu || ''); const b = String(bio || '');
+            if (!e && !b) return '';
+            return e + SPEC_SEP + b;
+        }
+
+        async function loadSpecialists(){
+            const { data, error } = await sb
+                .from('specialists')
+                .select('id,name,position,description,photo_url,sort_order,created_at')
+                .order('sort_order', { ascending: true })
+                .order('created_at', { ascending: true });
+            if (error) { console.error(error); notify('Ошибка загрузки врачей: '+errMsg(error)); return; }
+            window.dbSpecialists = (data || []).map(function(r){
+                const eb = splitEduBio(r.description);
+                return { id: r.id, name: r.name || '', role: r.position || '', edu: eb.edu, bio: eb.bio, img: r.photo_url || '' };
+            });
+            try { window.dbSpecialists = window.dbSpecialists; } catch(_){}
+            // обновить локальную переменную верхнего скрипта (var dbSpecialists)
+            try { dbSpecialists = window.dbSpecialists; } catch(_){}
+            try { window.renderSpecialists && window.renderSpecialists(); } catch(e){ console.error(e); }
+            try { window.updateDashboardStats && window.updateDashboardStats(); } catch(_){}
+        }
+
+        function overrideSpecialists(){
+            const UUID_RE2 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+            // Перерисовка карточек врачей: id оборачивается в кавычки (UUID), добавлена кнопка загрузки фото
+            window.renderSpecialists = function(){
+                const list = (window.dbSpecialists || dbSpecialists || []);
+                const esc = function(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+                document.getElementById('admin-specialists-list').innerHTML = list.map(function(s){
+                    const sid = String(s.id);
+                    return '<div id="spec-row-' + sid + '" class="flex flex-col sm:flex-row gap-6 p-6 border border-gray-200 rounded-[1.5rem] bg-white hover:bg-gray-50 group transition-all">'
+                    + '<img src="' + esc(s.img) + '" onerror="this.src=\'https://placehold.co/600x600/f3f4f6/a1a1aa?text=Нет+фото\'" onclick="openImagePreview(\'' + esc(s.img) + '\')" title="Просмотр фото" class="w-24 h-24 sm:w-32 sm:h-32 rounded-full object-cover shrink-0 shadow-sm bg-gray-100 border-4 border-white cursor-zoom-in hover:opacity-90 transition-opacity">'
+                    + '<div class="flex-1 view-mode">'
+                    +   '<p class="text-2xl font-serif font-bold text-brand-900">' + esc(s.name) + '</p>'
+                    +   '<p class="text-[10px] text-brand-600 mb-4 uppercase tracking-widest font-bold">' + esc(s.role) + '</p>'
+                    +   '<p class="text-sm text-gray-500 line-clamp-2 mb-2"><span class="block text-[9px] uppercase tracking-widest font-bold text-gray-400 mb-0.5">Образование</span>' + esc(s.edu) + '</p>'
+                    +   '<p class="text-sm text-gray-500 line-clamp-2"><span class="block text-[9px] uppercase tracking-widest font-bold text-gray-400 mb-0.5">О себе</span>' + esc(s.bio) + '</p>'
+                    + '</div>'
+                    + '<div class="flex-1 hidden edit-mode grid grid-cols-1 sm:grid-cols-2 gap-4 border-t sm:border-t-0 sm:border-l border-gray-200 pt-4 sm:pt-0 sm:pl-6">'
+                    +   '<div class="sm:col-span-2"><label class="text-[10px] font-bold uppercase text-gray-500">ФИО</label>'
+                    +     '<input type="text" id="spec-name-' + sid + '" value="' + esc(s.name) + '" class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:border-brand-600"></div>'
+                    +   '<div><label class="text-[10px] font-bold uppercase text-gray-500">Должность</label>'
+                    +     '<input type="text" id="spec-role-' + sid + '" value="' + esc(s.role) + '" class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:border-brand-600"></div>'
+                    +   '<div><label class="text-[10px] font-bold uppercase text-gray-500">URL фото</label>'
+                    +     '<input type="text" id="spec-img-' + sid + '" value="' + esc(s.img) + '" class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:border-brand-600">'
+                    +     '<div class="flex items-center gap-2 mt-2">'
+                    +       '<input type="file" id="spec-file-' + sid + '" accept="image/jpeg,image/png,image/webp" class="hidden" onchange="uploadSpecialistPhoto(\'' + sid + '\', this.files[0])">'
+                    +       '<button type="button" onclick="document.getElementById(\'spec-file-' + sid + '\').click()" class="px-3 py-1.5 bg-brand-50 text-brand-600 border border-brand-200 rounded-lg text-[11px] font-bold uppercase tracking-widest hover:bg-brand-100">Загрузить фото</button>'
+                    +       '<span id="spec-upload-status-' + sid + '" class="text-[11px] text-gray-500"></span>'
+                    +     '</div>'
+                    +   '</div>'
+                    +   '<div class="sm:col-span-2"><label class="text-[10px] font-bold uppercase text-gray-500">Образование</label>'
+                    +     '<textarea id="spec-edu-' + sid + '" data-rich="1" class="w-full px-3 py-2 border rounded-lg text-sm resize-y outline-none focus:border-brand-600" rows="2">' + esc(s.edu) + '</textarea></div>'
+                    +   '<div class="sm:col-span-2"><label class="text-[10px] font-bold uppercase text-gray-500">О себе</label>'
+                    +     '<textarea id="spec-bio-' + sid + '" data-rich="1" class="w-full px-3 py-2 border rounded-lg text-sm resize-y outline-none focus:border-brand-600" rows="3">' + esc(s.bio) + '</textarea></div>'
+                    + '</div>'
+                    + '<div class="flex flex-row sm:flex-col gap-2 shrink-0 border-t sm:border-t-0 sm:border-l border-gray-100 pt-4 sm:pt-0 sm:pl-4">'
+                    +   '<button onclick="editSpecialist(\'' + sid + '\')" class="view-mode flex-1 p-3 border rounded-xl hover:text-brand-600 hover:border-brand-600 transition-colors shadow-sm bg-white"><i data-lucide="edit-3" class="w-5 h-5 mx-auto"></i></button>'
+                    +   '<button onclick="deleteSpecialist(\'' + sid + '\')" class="view-mode flex-1 p-3 border rounded-xl hover:text-red-500 hover:border-red-500 transition-colors shadow-sm bg-white"><i data-lucide="trash-2" class="w-5 h-5 mx-auto"></i></button>'
+                    +   '<button onclick="saveSpecialist(\'' + sid + '\')" class="edit-mode hidden px-6 py-3 bg-green-600 text-white rounded-xl text-xs font-bold uppercase tracking-widest shadow-md">Сохранить</button>'
+                    +   '<button onclick="cancelEditSpecialist(\'' + sid + '\')" class="edit-mode hidden px-6 py-3 border border-gray-200 bg-white text-gray-600 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-gray-50 shadow-sm">Отмена</button>'
+                    + '</div>'
+                    + '</div>';
+                }).join('');
+                try { lucide.createIcons(); } catch(_){}
+            };
+
+            window.addSpecialist = function(){
+                if (window.isAddingSpecialist) return;
+                window.isAddingSpecialist = true;
+                const tmpId = 'new_' + Date.now();
+                window.dbSpecialists = window.dbSpecialists || [];
+                window.dbSpecialists.unshift({ id: tmpId, name: '', role: '', edu: '', bio: '', img: '', isNew: true });
+                try { dbSpecialists = window.dbSpecialists; } catch(_){}
+                window.renderSpecialists();
+                window.editSpecialist(tmpId);
+            };
+
+            window.editSpecialist = function(id){
+                const row = document.getElementById('spec-row-' + id);
+                if (!row) return;
+                row.querySelectorAll('.view-mode').forEach(function(el){ el.classList.add('hidden'); });
+                row.querySelectorAll('.edit-mode').forEach(function(el){ el.classList.remove('hidden'); });
+                row.classList.add('bg-brand-50/30', 'border-brand-200');
+            };
+
+            window.cancelEditSpecialist = function(id){
+                const item = (window.dbSpecialists || []).find(function(s){ return String(s.id) === String(id); });
+                if (item && item.isNew) {
+                    window.dbSpecialists = window.dbSpecialists.filter(function(s){ return String(s.id) !== String(id); });
+                    try { dbSpecialists = window.dbSpecialists; } catch(_){}
+                }
+                window.isAddingSpecialist = false;
+                window.renderSpecialists();
+            };
+
+            window.saveSpecialist = async function(id){
+                const name = (document.getElementById('spec-name-' + id) || {}).value;
+                const nameTrim = (name || '').trim();
+                if (!nameTrim) { notify('Введите ФИО!'); return; }
+                const role = (document.getElementById('spec-role-' + id) || {}).value || '';
+                const img  = (document.getElementById('spec-img-' + id)  || {}).value || '';
+                const edu  = (document.getElementById('spec-edu-' + id)  || {}).value || '';
+                const bio  = (document.getElementById('spec-bio-' + id)  || {}).value || '';
+                const description = joinEduBio(edu, bio);
+                const item = (window.dbSpecialists || []).find(function(s){ return String(s.id) === String(id); });
+                const isInsert = !item || item.isNew || !UUID_RE2.test(String(id));
+                try {
+                    if (isInsert) {
+                        const { data, error } = await sb
+                            .from('specialists')
+                            .insert({ name: nameTrim, position: role, description: description, photo_url: img })
+                            .select('id,name,position,description,photo_url')
+                            .single();
+                        if (error) throw error;
+                        window.dbSpecialists = (window.dbSpecialists || []).filter(function(s){ return String(s.id) !== String(id); });
+                        const eb = splitEduBio(data.description);
+                        window.dbSpecialists.unshift({ id: data.id, name: data.name || '', role: data.position || '', edu: eb.edu, bio: eb.bio, img: data.photo_url || '' });
+                    } else {
+                        const { error } = await sb
+                            .from('specialists')
+                            .update({ name: nameTrim, position: role, description: description, photo_url: img })
+                            .eq('id', id);
+                        if (error) throw error;
+                        item.name = nameTrim; item.role = role; item.edu = edu; item.bio = bio; item.img = img;
+                    }
+                    try { dbSpecialists = window.dbSpecialists; } catch(_){}
+                    window.isAddingSpecialist = false;
+                    window.renderSpecialists();
+                    try { window.updateDashboardStats && window.updateDashboardStats(); } catch(_){}
+                    notify('Специалист сохранён');
+                } catch(e){
+                    console.error(e);
+                    notify('Ошибка сохранения: ' + errMsg(e));
+                }
+            };
+
+            window.deleteSpecialist = function(id){
+                const doDelete = async function(){
+                    const item = (window.dbSpecialists || []).find(function(s){ return String(s.id) === String(id); });
+                    if (item && item.isNew) {
+                        window.dbSpecialists = window.dbSpecialists.filter(function(s){ return String(s.id) !== String(id); });
+                        try { dbSpecialists = window.dbSpecialists; } catch(_){}
+                        window.renderSpecialists();
+                        return;
+                    }
+                    const { error } = await sb.from('specialists').delete().eq('id', id);
+                    if (error) { notify('Ошибка удаления: '+errMsg(error)); return; }
+                    window.dbSpecialists = window.dbSpecialists.filter(function(s){ return String(s.id) !== String(id); });
+                    try { dbSpecialists = window.dbSpecialists; } catch(_){}
+                    window.renderSpecialists();
+                    try { window.updateDashboardStats && window.updateDashboardStats(); } catch(_){}
+                    notify('Удалено');
+                };
+                if (window.customConfirm) {
+                    window.customConfirm('Удалить специалиста?', { title: 'Удаление специалиста' }).then(function(ok){ if (ok) doDelete(); });
+                } else if (confirm('Удалить специалиста?')) {
+                    doDelete();
+                }
+            };
+
+            window.uploadSpecialistPhoto = async function(id, file){
+                if (!file) return;
+                if (!sb) { notify('Нет подключения к БД'); return; }
+                const MAX = 10 * 1024 * 1024;
+                if (file.size > MAX) { notify('Файл больше 10 МБ'); return; }
+                const ok = /^image\/(jpeg|png|webp)$/.test(file.type);
+                if (!ok) { notify('Только JPG, PNG или WEBP'); return; }
+                const status = document.getElementById('spec-upload-status-' + id);
+                if (status) status.textContent = 'Загрузка...';
+                try {
+                    const safe = (file.name || 'photo').replace(/[^a-zA-Z0-9._-]+/g, '_');
+                    const path = 'specialists/' + Date.now() + '-' + safe;
+                    const { error: upErr } = await sb.storage.from('photos').upload(path, file, { upsert: true, contentType: file.type });
+                    if (upErr) throw upErr;
+                    const { data: pub } = sb.storage.from('photos').getPublicUrl(path);
+                    const url = pub && pub.publicUrl;
+                    const input = document.getElementById('spec-img-' + id);
+                    if (input) input.value = url || '';
+                    if (status) status.textContent = 'Готово';
+                    notify('Фото загружено');
+                } catch(e){
+                    console.error(e);
+                    if (status) status.textContent = '';
+                    notify('Ошибка загрузки: ' + errMsg(e));
+                }
+            };
+        }
     })();
     </script>
 
