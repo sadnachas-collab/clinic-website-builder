@@ -985,8 +985,12 @@
 </div>
 </div>`).join(''); lucide.createIcons();        }                let isAddingReview = false;        function addReview() { if(isAddingReview) return; isAddingReview = true; const newId = Date.now(); dbMainPage.reviews.unshift({ id: newId, name: "", service: "", text: "", isNew: true }); renderReviews(); editReview(newId); }        function editReview(id) { const row = document.getElementById(`review-row-${id}`); row.querySelectorAll('.view-mode').forEach(el => el.classList.add('hidden')); row.querySelectorAll('.edit-mode').forEach(el => el.classList.remove('hidden')); row.classList.add('bg-brand-50/30', 'border-brand-200'); }        function saveReview(id) {             const r = dbMainPage.reviews.find(x => x.id === id);             if(r) {                 const name = document.getElementById(`rev-name-${id}`).value.trim();                if(!name) return showToast('Введите имя!');                r.name = name; r.service = document.getElementById(`rev-svc-${id}`).value; r.text = document.getElementById(`rev-text-${id}`).value;                 delete r.isNew; isAddingReview = false; persistData(); renderReviews(); showToast('Отзыв сохранен');             }         }        function cancelEditReview(id) { const idx = dbMainPage.reviews.findIndex(x => x.id === id); if(idx > -1 && dbMainPage.reviews[idx].isNew) dbMainPage.reviews.splice(idx, 1); isAddingReview = false; renderReviews(); }        function deleteReview(id) { if(confirm('Удалить?')) { dbMainPage.reviews = dbMainPage.reviews.filter(x => x.id !== id); persistData(); renderReviews(); } }        function renderInterior() {            document.getElementById('admin-interior-list').innerHTML = dbMainPage.interior.map(i => `                <div class="relative group aspect-square rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
 <img src="${i.img}" onerror="this.src='https://placehold.co/600x600/f3f4f6/a1a1aa?text=Ошибка+загрузки'" class="w-full h-full object-cover">
-<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-<button onclick="deleteInterior(${i.id})" class="bg-red-500 text-white p-2 rounded-full hover:bg-red-600">
+<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
+<button onclick="openImagePreview('${i.img}')" class="bg-white text-brand-700 p-2 rounded-full hover:bg-gray-100" title="Просмотр">
+<i data-lucide="eye" class="w-5 h-5">
+</i>
+</button>
+<button onclick="deleteInterior(${i.id})" class="bg-red-500 text-white p-2 rounded-full hover:bg-red-600" title="Удалить">
 <i data-lucide="trash-2" class="w-5 h-5">
 </i>
 </button>
