@@ -607,9 +607,14 @@
 <h2 class="text-xl font-bold text-brand-900 flex items-center gap-2">
 <i data-lucide="shield-check" class="w-6 h-6 text-brand-600"></i> Категории документов
 </h2>
+<div class="flex flex-wrap gap-2">
 <button type="button" onclick="addConsumerCategory()" class="bg-brand-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-brand-800 transition-colors shadow-sm flex items-center gap-2">
 <i data-lucide="plus" class="w-4 h-4"></i> Добавить категорию
 </button>
+<button type="button" onclick="saveConsumerDocs()" class="bg-green-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-green-700 transition-colors shadow-sm flex items-center gap-2">
+<i data-lucide="save" class="w-4 h-4"></i> Сохранить
+</button>
+</div>
 </div>
 <p class="text-sm text-gray-500 mb-6">Загруженные сюда документы автоматически появляются на сайте в разделе «Уголок потребителя». Максимальный размер файла — 4 МБ (PDF, DOC, JPG).</p>
 <div id="consumer-categories-list" class="space-y-5"></div>
