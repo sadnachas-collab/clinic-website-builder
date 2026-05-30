@@ -1175,6 +1175,132 @@
 <button onclick="saveAdmin(${a.id})" class="px-6 py-3 bg-green-600 text-white rounded-xl text-xs uppercase tracking-widest font-bold shadow-md hover:bg-green-700 transition-colors">Сохранить</button>
 </div>
 </div>
-</div>`).join(''); lucide.createIcons();        }        function addAdmin() { if(isAddingAdmin) return; isAddingAdmin = true; const newId = Date.now(); dbAdmins.push({ id: newId, name: "", role: "Менеджер", login: "", pwd: "", isOwner: false, isNew: true }); renderAdmins(); editAdmin(newId); }        function editAdmin(id) { const row = document.getElementById(`admin-row-${id}`); row.querySelectorAll('.view-mode').forEach(el => el.classList.add('hidden')); row.querySelectorAll('.edit-mode').forEach(el => el.classList.remove('hidden')); }        function saveAdmin(id) {             const n = document.getElementById(`adm-name-${id}`).value.trim(); const r = document.getElementById(`adm-role-${id}`).value.trim(); const l = document.getElementById(`adm-login-${id}`).value.trim(); const p = document.getElementById(`adm-pwd-${id}`).value.trim();             if(!n || !l || !p) return showToast('Заполните обязательные поля!');             if(p.length < 5) return showToast('Пароль минимум 5 символов!');             if(dbAdmins.find(a => a.login === l && a.id !== id)) return showToast('Логин занят!');             const idx = dbAdmins.findIndex(a => a.id === id);             if(idx > -1) { dbAdmins[idx].name = n; dbAdmins[idx].role = r; dbAdmins[idx].login = l; dbAdmins[idx].pwd = p; delete dbAdmins[idx].isNew; }             isAddingAdmin = false; persistData(); renderAdmins();             const cid = localStorage.getItem('loggedInAdminId') || sessionStorage.getItem('loggedInAdminId');             if(cid === id.toString()) updateHeaderUser(dbAdmins[idx]);             showToast('Сохранено');         }        function cancelEditAdmin(id) { const idx = dbAdmins.findIndex(a => a.id === id); if(idx > -1 && dbAdmins[idx].isNew) dbAdmins.splice(idx, 1); isAddingAdmin = false; renderAdmins(); }        function deleteAdmin(id) { const u = dbAdmins.find(a => a.id === id); if(u && u.isOwner) return showToast('Нельзя удалить владельца!'); if(confirm('Закрыть доступ?')) { dbAdmins = dbAdmins.filter(a => a.id !== id); persistData(); renderAdmins(); } }    </script>
+</div>`).join(''); lucide.createIcons();        }        function addAdmin() { if(isAddingAdmin) return; isAddingAdmin = true; const newId = Date.now(); dbAdmins.push({ id: newId, name: "", role: "Менеджер", login: "", pwd: "", isOwner: false, isNew: true }); renderAdmins(); editAdmin(newId); }        function editAdmin(id) { const row = document.getElementById(`admin-row-${id}`); row.querySelectorAll('.view-mode').forEach(el => el.classList.add('hidden')); row.querySelectorAll('.edit-mode').forEach(el => el.classList.remove('hidden')); }        function saveAdmin(id) {             const n = document.getElementById(`adm-name-${id}`).value.trim(); const r = document.getElementById(`adm-role-${id}`).value.trim(); const l = document.getElementById(`adm-login-${id}`).value.trim(); const p = document.getElementById(`adm-pwd-${id}`).value.trim();             if(!n || !l || !p) return showToast('Заполните обязательные поля!');             if(p.length < 5) return showToast('Пароль минимум 5 символов!');             if(dbAdmins.find(a => a.login === l && a.id !== id)) return showToast('Логин занят!');             const idx = dbAdmins.findIndex(a => a.id === id);             if(idx > -1) { dbAdmins[idx].name = n; dbAdmins[idx].role = r; dbAdmins[idx].login = l; dbAdmins[idx].pwd = p; delete dbAdmins[idx].isNew; }             isAddingAdmin = false; persistData(); renderAdmins();             const cid = localStorage.getItem('loggedInAdminId') || sessionStorage.getItem('loggedInAdminId');             if(cid === id.toString()) updateHeaderUser(dbAdmins[idx]);             showToast('Сохранено');         }        function cancelEditAdmin(id) { const idx = dbAdmins.findIndex(a => a.id === id); if(idx > -1 && dbAdmins[idx].isNew) dbAdmins.splice(idx, 1); isAddingAdmin = false; renderAdmins(); }        function deleteAdmin(id) { const u = dbAdmins.find(a => a.id === id); if(u && u.isOwner) return showToast('Нельзя удалить владельца!'); if(confirm('Закрыть доступ?')) { dbAdmins = dbAdmins.filter(a => a.id !== id); persistData(); renderAdmins(); } }
+
+        // --- РАЗДЕЛ: УГОЛОК ПОТРЕБИТЕЛЯ ---
+        function escapeHtml(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+        function formatBytes(b){ if(!b) return '—'; if(b < 1024) return b + ' Б'; if(b < 1024*1024) return (b/1024).toFixed(1) + ' КБ'; return (b/(1024*1024)).toFixed(2) + ' МБ'; }
+        function renderConsumer(){
+            const list = document.getElementById('consumer-categories-list');
+            if(!list) return;
+            if(!dbConsumer.categories.length){
+                list.innerHTML = '<p class="text-sm text-gray-400 italic">Категорий пока нет. Нажмите «Добавить категорию».</p>';
+            } else {
+                list.innerHTML = dbConsumer.categories.map(cat => `
+                    <div class="border border-gray-200 rounded-2xl bg-gray-50/50 overflow-hidden">
+                        <div class="p-4 md:p-5 flex flex-wrap gap-3 items-center bg-white border-b border-gray-100">
+                            <i data-lucide="${escapeHtml(cat.icon || 'folder')}" class="w-5 h-5 text-brand-600 flex-shrink-0"></i>
+                            <input type="text" value="${escapeHtml(cat.title)}" onchange="renameConsumerCategory('${cat.id}', this.value)" class="flex-1 min-w-[200px] px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:border-brand-600 focus:bg-white outline-none font-semibold text-brand-900">
+                            <button type="button" onclick="deleteConsumerCategory('${cat.id}')" class="text-red-500 hover:bg-red-50 p-2 rounded-lg" title="Удалить категорию"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        </div>
+                        <div class="p-4 md:p-5 space-y-3">
+                            ${(cat.documents && cat.documents.length) ? cat.documents.map(doc => `
+                                <div class="flex flex-wrap gap-3 items-center p-3 bg-white border border-gray-200 rounded-xl">
+                                    <i data-lucide="file-text" class="w-5 h-5 text-brand-600 flex-shrink-0"></i>
+                                    <input type="text" value="${escapeHtml(doc.name)}" placeholder="Название документа" onchange="renameConsumerDocument('${cat.id}','${doc.id}', this.value)" class="flex-1 min-w-[180px] px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:border-brand-600 focus:bg-white outline-none text-sm">
+                                    <span class="text-xs text-gray-400 truncate max-w-[160px]" title="${escapeHtml(doc.fileName || '')}">${escapeHtml(doc.fileName || 'нет файла')} · ${escapeHtml(doc.fileSize || '')}</span>
+                                    ${doc.dataUrl ? `<a href="${doc.dataUrl}" download="${escapeHtml(doc.fileName || 'document')}" class="text-brand-600 hover:bg-brand-50 p-2 rounded-lg" title="Скачать"><i data-lucide="download" class="w-4 h-4"></i></a>` : ''}
+                                    <button type="button" onclick="deleteConsumerDocument('${cat.id}','${doc.id}')" class="text-red-500 hover:bg-red-50 p-2 rounded-lg" title="Удалить"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                </div>
+                            `).join('') : '<p class="text-xs text-gray-400 italic">В этой категории пока нет документов.</p>'}
+                            <div class="flex flex-wrap gap-3 items-center pt-2">
+                                <label class="inline-flex items-center gap-2 cursor-pointer bg-brand-600 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-brand-800 transition-colors shadow-sm">
+                                    <i data-lucide="upload" class="w-4 h-4"></i> Загрузить документ
+                                    <input type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" class="hidden" onchange="addConsumerDocument('${cat.id}', this)">
+                                </label>
+                                <span class="text-xs text-gray-400">PDF / DOC / JPG · до 4 МБ</span>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            const auth = document.getElementById('consumer-authorities-list');
+            if(auth){
+                if(!dbConsumer.authorities.length){
+                    auth.innerHTML = '<p class="text-sm text-gray-400 italic">Контролирующих органов пока нет.</p>';
+                } else {
+                    auth.innerHTML = dbConsumer.authorities.map(a => `
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center p-4 border border-gray-200 rounded-2xl bg-white">
+                            <input type="text" value="${escapeHtml(a.name)}" onchange="updateAuthority('${a.id}','name', this.value)" placeholder="Название органа" class="md:col-span-4 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:border-brand-600 focus:bg-white outline-none text-sm">
+                            <input type="text" value="${escapeHtml(a.address)}" onchange="updateAuthority('${a.id}','address', this.value)" placeholder="Адрес" class="md:col-span-4 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:border-brand-600 focus:bg-white outline-none text-sm">
+                            <input type="text" value="${escapeHtml(a.phone)}" onchange="updateAuthority('${a.id}','phone', this.value)" placeholder="Телефон" class="md:col-span-3 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:border-brand-600 focus:bg-white outline-none text-sm">
+                            <button type="button" onclick="deleteAuthority('${a.id}')" class="md:col-span-1 text-red-500 hover:bg-red-50 p-2 rounded-lg justify-self-end" title="Удалить"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        </div>
+                    `).join('');
+                }
+            }
+            try { lucide.createIcons(); } catch(_){}
+        }
+        function addConsumerCategory(){
+            const title = prompt('Название новой категории:', 'Новая категория');
+            if(!title) return;
+            dbConsumer.categories.push({ id: 'cat_' + Date.now(), title: title.trim(), icon: 'folder', documents: [] });
+            persistData(); renderConsumer(); showToast('Категория добавлена');
+        }
+        function renameConsumerCategory(catId, value){
+            const c = dbConsumer.categories.find(x => x.id === catId);
+            if(!c) return; c.title = String(value || '').trim() || c.title;
+            persistData();
+        }
+        function deleteConsumerCategory(catId){
+            const c = dbConsumer.categories.find(x => x.id === catId);
+            if(!c) return;
+            if(!confirm('Удалить категорию «' + c.title + '» со всеми документами?')) return;
+            dbConsumer.categories = dbConsumer.categories.filter(x => x.id !== catId);
+            persistData(); renderConsumer(); showToast('Категория удалена');
+        }
+        function addConsumerDocument(catId, input){
+            const f = input && input.files && input.files[0];
+            if(!f) return;
+            if(f.size > 4 * 1024 * 1024){ showToast('Файл больше 4 МБ. Сожмите или разделите.'); input.value=''; return; }
+            const reader = new FileReader();
+            reader.onload = function(ev){
+                const cat = dbConsumer.categories.find(x => x.id === catId);
+                if(!cat) return;
+                cat.documents = cat.documents || [];
+                cat.documents.push({ id: 'doc_' + Date.now(), name: f.name.replace(/\.[^.]+$/, ''), fileName: f.name, fileSize: formatBytes(f.size), dataUrl: ev.target.result });
+                try { persistData(); renderConsumer(); showToast('Документ загружен'); }
+                catch(e){ showToast('Не удалось сохранить (превышен размер хранилища)'); cat.documents.pop(); }
+                input.value = '';
+            };
+            reader.onerror = function(){ showToast('Ошибка чтения файла'); input.value = ''; };
+            reader.readAsDataURL(f);
+        }
+        function renameConsumerDocument(catId, docId, value){
+            const cat = dbConsumer.categories.find(x => x.id === catId); if(!cat) return;
+            const d = (cat.documents || []).find(x => x.id === docId); if(!d) return;
+            d.name = String(value || '').trim() || d.name;
+            persistData();
+        }
+        function deleteConsumerDocument(catId, docId){
+            const cat = dbConsumer.categories.find(x => x.id === catId); if(!cat) return;
+            if(!confirm('Удалить документ?')) return;
+            cat.documents = (cat.documents || []).filter(x => x.id !== docId);
+            persistData(); renderConsumer(); showToast('Документ удалён');
+        }
+        function addAuthority(){
+            dbConsumer.authorities.push({ id: 'auth_' + Date.now(), name: '', address: '', phone: '' });
+            persistData(); renderConsumer();
+        }
+        function updateAuthority(id, field, value){
+            const a = dbConsumer.authorities.find(x => x.id === id); if(!a) return;
+            a[field] = String(value || '').trim();
+            persistData();
+        }
+        function deleteAuthority(id){
+            if(!confirm('Удалить орган?')) return;
+            dbConsumer.authorities = dbConsumer.authorities.filter(x => x.id !== id);
+            persistData(); renderConsumer(); showToast('Удалено');
+        }
+        window.addConsumerCategory = addConsumerCategory;
+        window.renameConsumerCategory = renameConsumerCategory;
+        window.deleteConsumerCategory = deleteConsumerCategory;
+        window.addConsumerDocument = addConsumerDocument;
+        window.renameConsumerDocument = renameConsumerDocument;
+        window.deleteConsumerDocument = deleteConsumerDocument;
+        window.addAuthority = addAuthority;
+        window.updateAuthority = updateAuthority;
+        window.deleteAuthority = deleteAuthority;
+    </script>
 </body>
 </html>
