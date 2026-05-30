@@ -1411,7 +1411,17 @@
             host.innerHTML = catsHtml + authHtml;
             updateIcons();
         }
-        document.addEventListener("DOMContentLoaded", () => {            updateIcons();            initHomeCategories();            initHeroSlider(); initCookieBanner(); renderConsumerView();
+        function initReviewLinks() {
+            let links = {};
+            try { links = JSON.parse(localStorage.getItem('reviewLinks') || '{}') || {}; } catch(_) {}
+            const map = { yandex: 'rev-link-yandex', gis: 'rev-link-gis', prodoctorov: 'rev-link-prodoctorov' };
+            Object.keys(map).forEach(function(k){
+                const el = document.getElementById(map[k]);
+                const url = (links[k] || '').trim();
+                if (el && url) { el.href = url; el.hidden = false; }
+            });
+        }
+        document.addEventListener("DOMContentLoaded", () => {            updateIcons();            initHomeCategories();            initHeroSlider(); initCookieBanner(); renderConsumerView(); initReviewLinks();
         });
     </script>
 </body>
