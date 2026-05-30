@@ -253,19 +253,25 @@ export type Database = {
       procedure_categories: {
         Row: {
           created_at: string
+          description: string | null
           id: string
+          image_url: string | null
           name: string
           sort_order: number | null
         }
         Insert: {
           created_at?: string
+          description?: string | null
           id?: string
+          image_url?: string | null
           name: string
           sort_order?: number | null
         }
         Update: {
           created_at?: string
+          description?: string | null
           id?: string
+          image_url?: string | null
           name?: string
           sort_order?: number | null
         }
@@ -274,27 +280,33 @@ export type Database = {
       procedures: {
         Row: {
           category_id: string | null
+          content: Json
           created_at: string
           description: string | null
           id: string
+          image_url: string | null
           name: string
           price: string | null
           sort_order: number | null
         }
         Insert: {
           category_id?: string | null
+          content?: Json
           created_at?: string
           description?: string | null
           id?: string
+          image_url?: string | null
           name: string
           price?: string | null
           sort_order?: number | null
         }
         Update: {
           category_id?: string | null
+          content?: Json
           created_at?: string
           description?: string | null
           id?: string
+          image_url?: string | null
           name?: string
           price?: string | null
           sort_order?: number | null

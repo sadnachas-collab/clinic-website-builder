@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/admin")({
@@ -15,6 +15,7 @@ export const Route = createFileRoute("/admin")({
 function Admin() {
   const navigate = useNavigate();
   const [status, setStatus] = useState<"checking" | "ok">("checking");
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -33,14 +34,46 @@ function Admin() {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!mounted) return;
       if (!session) navigate({ to: "/login", replace: true });
+      // При обновлении токена пересылаем новую сессию в iframe
+      if (session && iframeRef.current?.contentWindow) {
+        iframeRef.current.contentWindow.postMessage(
+          {
+            type: "admin-supabase-init",
+            url: import.meta.env.VITE_SUPABASE_URL,
+            key: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            access_token: session.access_token,
+            refresh_token: session.refresh_token,
+          },
+          window.location.origin,
+        );
+      }
     });
 
-    const onMessage = (e: MessageEvent) => {
+    const onMessage = async (e: MessageEvent) => {
       if (e.origin !== window.location.origin) return;
-      if (e.data && (e.data as { type?: string }).type === "admin-logout") {
+      const data = e.data as { type?: string } | null;
+      if (!data || typeof data !== "object") return;
+
+      if (data.type === "admin-logout") {
         supabase.auth.signOut().finally(() => {
           navigate({ to: "/login", replace: true });
         });
+        return;
+      }
+
+      if (data.type === "admin-iframe-ready" && iframeRef.current?.contentWindow) {
+        const { data: s } = await supabase.auth.getSession();
+        if (!s.session) return;
+        iframeRef.current.contentWindow.postMessage(
+          {
+            type: "admin-supabase-init",
+            url: import.meta.env.VITE_SUPABASE_URL,
+            key: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            access_token: s.session.access_token,
+            refresh_token: s.session.refresh_token,
+          },
+          window.location.origin,
+        );
       }
     };
     window.addEventListener("message", onMessage);
@@ -73,6 +106,7 @@ function Admin() {
 
   return (
     <iframe
+      ref={iframeRef}
       src="/clinic-admin.html"
       title="Админ-панель клиники"
       style={{
