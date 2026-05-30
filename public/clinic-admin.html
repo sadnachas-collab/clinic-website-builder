@@ -1671,5 +1671,151 @@
         })();
     </script>
 
+    <!-- ===== Lovable Cloud (Supabase) bridge: миграция данных с localStorage ===== -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <script>
+    (function(){
+        let sb = null;
+        let ready = false;
+
+        function notify(msg){ try { window.showToast && window.showToast(msg); } catch(_){ console.log(msg); } }
+        function errMsg(e){ return (e && (e.message || e.error_description || e.hint)) || String(e); }
+
+        async function bootstrap(payload){
+            try {
+                if (!window.supabase || !window.supabase.createClient) {
+                    console.error('[admin] supabase-js не загрузился');
+                    return;
+                }
+                sb = window.supabase.createClient(payload.url, payload.key, {
+                    auth: { persistSession: false, autoRefreshToken: false }
+                });
+                window.sb = sb;
+                const { error: setErr } = await sb.auth.setSession({
+                    access_token: payload.access_token,
+                    refresh_token: payload.refresh_token,
+                });
+                if (setErr) { console.error('[admin] setSession error', setErr); notify('Не удалось установить сессию: '+errMsg(setErr)); return; }
+                if (!ready) {
+                    ready = true;
+                    overrideServices();
+                    await loadServices();
+                }
+            } catch(e){
+                console.error('[admin] bootstrap error', e);
+                notify('Ошибка подключения к БД: '+errMsg(e));
+            }
+        }
+
+        window.addEventListener('message', function(e){
+            if (e.origin !== window.location.origin) return;
+            const m = e.data;
+            if (!m || typeof m !== 'object') return;
+            if (m.type === 'admin-supabase-init') bootstrap(m);
+        });
+
+        // Сообщаем родителю, что готовы принять сессию
+        try { window.parent && window.parent.postMessage({ type: 'admin-iframe-ready' }, window.location.origin); } catch(_){}
+
+        // ===== УСЛУГИ (services) =====
+        async function loadServices(){
+            const { data, error } = await sb
+                .from('services')
+                .select('id,name,description,price,sort_order,created_at')
+                .order('sort_order', { ascending: true })
+                .order('created_at', { ascending: true });
+            if (error) { console.error(error); notify('Ошибка загрузки услуг: '+errMsg(error)); return; }
+            window.dbServices = (data || []).map(function(r){
+                return { id: r.id, name: r.name || '', desc: r.description || '', price: r.price || '' };
+            });
+            try { window.renderTable && window.renderTable(); } catch(e){ console.error(e); }
+            try { window.updateDashboardStats && window.updateDashboardStats(); } catch(_){}
+        }
+
+        function overrideServices(){
+            // Добавить новую строку (с временным id)
+            window.addService = function(){
+                if (window.isAddingNewService) return;
+                window.isAddingNewService = true;
+                const tmpId = 'new_' + Date.now();
+                window.dbServices = window.dbServices || [];
+                window.dbServices.unshift({ id: tmpId, name: '', desc: '', price: '', isNew: true });
+                window.renderTable();
+                window.editRow(tmpId);
+            };
+
+            // Сохранить (insert если новая, update если существующая)
+            window.saveRow = async function(id){
+                const row = document.getElementById('row-' + id);
+                if (!row) return;
+                const inputs = row.querySelectorAll('.edit-mode[type="text"]');
+                const name = (inputs[0] && inputs[0].value || '').trim();
+                if (!name) { notify('Введите название!'); return; }
+                const description = inputs[1] ? inputs[1].value : '';
+                const price = inputs[2] ? inputs[2].value : '';
+                const item = (window.dbServices || []).find(function(s){ return s.id === id; });
+                try {
+                    if (item && item.isNew) {
+                        const { data, error } = await sb
+                            .from('services')
+                            .insert({ name: name, description: description, price: price })
+                            .select('id,name,description,price')
+                            .single();
+                        if (error) throw error;
+                        window.dbServices = window.dbServices.filter(function(s){ return s.id !== id; });
+                        window.dbServices.unshift({ id: data.id, name: data.name || '', desc: data.description || '', price: data.price || '' });
+                    } else {
+                        const { error } = await sb
+                            .from('services')
+                            .update({ name: name, description: description, price: price })
+                            .eq('id', id);
+                        if (error) throw error;
+                        if (item) { item.name = name; item.desc = description; item.price = price; }
+                    }
+                    window.isAddingNewService = false;
+                    window.renderTable();
+                    try { window.updateDashboardStats && window.updateDashboardStats(); } catch(_){}
+                    notify('Услуга сохранена');
+                } catch(e){
+                    console.error(e);
+                    notify('Ошибка сохранения: ' + errMsg(e));
+                }
+            };
+
+            window.cancelEditRow = function(id){
+                const item = (window.dbServices || []).find(function(s){ return s.id === id; });
+                if (item && item.isNew) {
+                    window.dbServices = window.dbServices.filter(function(s){ return s.id !== id; });
+                }
+                window.isAddingNewService = false;
+                window.renderTable();
+            };
+
+            window.deleteRow = function(id){
+                const doDelete = async function(){
+                    const item = (window.dbServices || []).find(function(s){ return s.id === id; });
+                    if (item && item.isNew) {
+                        window.dbServices = window.dbServices.filter(function(s){ return s.id !== id; });
+                        window.renderTable();
+                        return;
+                    }
+                    const { error } = await sb.from('services').delete().eq('id', id);
+                    if (error) { notify('Ошибка удаления: '+errMsg(error)); return; }
+                    window.dbServices = window.dbServices.filter(function(s){ return s.id !== id; });
+                    window.renderTable();
+                    try { window.updateDashboardStats && window.updateDashboardStats(); } catch(_){}
+                    notify('Удалено');
+                };
+                if (window.customConfirm) {
+                    window.customConfirm('Удалить услугу?').then(function(ok){ if (ok) doDelete(); });
+                } else if (confirm('Удалить услугу?')) {
+                    doDelete();
+                }
+            };
+        }
+    })();
+    </script>
+
 </body>
+
 </html>
