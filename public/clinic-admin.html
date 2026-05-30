@@ -1767,10 +1767,12 @@
                     overrideServices();
                     overrideSpecialists();
                     overrideMainTexts();
+                    overridePromos();
                     await loadServices();
                     await loadPriceFile();
                     await loadSpecialists();
                     await loadMainTexts();
+                    await loadPromos();
                 }
             } catch(e){
                 console.error('[admin] bootstrap error', e);
