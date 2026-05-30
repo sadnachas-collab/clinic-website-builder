@@ -1392,9 +1392,11 @@
         function deleteConsumerCategory(catId){
             const c = dbConsumer.categories.find(x => x.id === catId);
             if(!c) return;
-            if(!confirm('Удалить категорию «' + c.title + '» со всеми документами?')) return;
-            dbConsumer.categories = dbConsumer.categories.filter(x => x.id !== catId);
-            persistData(); renderConsumer(); showToast('Категория удалена');
+            customConfirm('Удалить категорию «' + c.title + '» со всеми документами?', { title: 'Удаление категории' }).then(function(ok){
+                if(!ok) return;
+                dbConsumer.categories = dbConsumer.categories.filter(x => x.id !== catId);
+                persistData(); renderConsumer(); showToast('Категория удалена');
+            });
         }
         function addConsumerDocument(catId, input){
             const f = input && input.files && input.files[0];
