@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Админ-панель | VORONÉNKO</title>
+<script src="https://cdn.tailwindcss.com">
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest">
+</script>
+<script>        tailwind.config = {            theme: {                extend: {                    fontFamily: {                        sans: ['Montserrat', 'sans-serif'],                    },                    colors: {                        brand: {                            50: '#FDFBF9',                            200: '#D0C0B1',                            600: '#746258',                            800: '#5A4C44',                            900: '#2A2522'                        }                    }                }            }        }    </script>
+<style>        body { background-color: #f3f4f6; }        .hide-scrollbar::-webkit-scrollbar { display: none; }        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }                .admin-section { display: none; opacity: 0; transition: opacity 0.3s ease; }        .admin-section.active { display: block; opacity: 1; animation: fadeIn 0.4s ease forwards; }                @keyframes fadeIn {            from { opacity: 0; transform: translateY(10px); }            to { opacity: 1; transform: translateY(0); }        }    </style>
+</head>
+<body class="text-brand-900 font-sans">
+<!-- УВЕДОМЛЕНИЕ (TOAST) -->
+<div id="toast" class="fixed top-6 right-6 z-[200] bg-green-600 text-white px-6 py-4 rounded-xl shadow-lg flex items-center gap-3 opacity-0 pointer-events-none transition-all duration-300 translate-y-[-10px]">
+<i data-lucide="check-circle" class="w-5 h-5">
+</i>
+<p id="toast-msg" class="text-sm font-medium">Сохранено</p>
+</div>
+<!-- ЭКРАН АВТОРИЗАЦИИ -->
+<div id="login-screen" class="flex h-screen items-center justify-center bg-[#FDFBF9] absolute inset-0 z-[100] transition-opacity duration-500">
+<form onsubmit="handleLogin(event)" class="bg-white p-10 rounded-[2rem] shadow-[0_20px_40px_rgb(0,0,0,0.05)] border border-brand-200/30 w-full max-w-sm flex flex-col items-center">
+<div class="w-16 h-16 bg-brand-50 rounded-full flex items-center justify-center text-brand-600 mb-6">
+<i data-lucide="lock" class="w-8 h-8">
+</i>
+</div>
+<h2 class="text-2xl font-bold text-brand-900 mb-2 text-center">Вход в систему</h2>
+<p class="text-sm text-gray-500 mb-8 text-center">Введите свои учетные данные</p>
+<div class="w-full mb-3">
+<input type="text" id="admin-login" placeholder="Логин (по умолч.: admin)" class="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:border-brand-600 focus:bg-white transition-all text-center tracking-widest font-medium" required>
+</div>
+<div class="w-full mb-4 relative">
+<input type="password" id="admin-pwd" placeholder="Пароль (по умолч.: 123456)" class="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:border-brand-600 focus:bg-white transition-all text-center tracking-widest font-medium pr-12" required>
+<button type="button" onclick="togglePasswordVisibility()" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-brand-600 transition-colors focus:outline-none p-2" title="Показать/скрыть пароль">
+<i data-lucide="eye" id="pwd-eye-icon" class="w-5 h-5">
+</i>
+</button>
+</div>
+<div class="w-full mb-6 flex items-center justify-between px-2">
+<label class="flex items-center gap-2 cursor-pointer group">
+<input type="checkbox" id="remember-me" class="w-4 h-4 text-[#746258] bg-gray-50 border-gray-300 rounded focus:ring-[#746258] cursor-pointer accent-[#746258]">
+<span class="text-xs text-gray-500 font-medium group-hover:text-brand-900 transition-colors">Запомнить меня</span>
+</label>
+</div>
+<p id="login-error" class="text-red-500 text-xs mb-6 hidden text-center font-medium">Неверный логин или пароль.</p>
+<button type="submit" class="w-full bg-brand-600 text-white py-4 rounded-2xl font-bold uppercase tracking-widest text-xs hover:bg-brand-800 active:scale-95 transition-all shadow-md">                Войти в панель            </button>
+</form>
+</div>
+<!-- АДМИН-ПАНЕЛЬ -->
+<div id="admin-panel" class="hidden h-screen flex overflow-hidden opacity-0 transition-opacity duration-500">
+<!-- БОКОВОЕ МЕНЮ (SIDEBAR) -->
+<aside class="w-64 bg-white border-r border-gray-200 flex flex-col flex-shrink-0 transition-all duration-300 z-20 shadow-[4px_0_24px_rgb(0,0,0,0.02)]">
+<div class="h-20 flex items-center px-6 border-b border-gray-100">
+<div class="flex flex-col">
+<span class="font-bold text-xl tracking-wider leading-none text-brand-900">VORONÉNKO</span>
+<span class="text-[9px] text-brand-600 uppercase tracking-[0.2em] font-semibold mt-1">Admin Panel</span>
+</div>
+</div>
+<nav class="flex-1 p-4 space-y-2 overflow-y-auto" id="sidebar-nav">
+<button type="button" onclick="switchTab('dashboard')" class="nav-btn active flex items-center w-full gap-3 px-4 py-3 text-gray-500 hover:bg-brand-50 hover:text-brand-600 rounded-xl font-medium transition-colors" data-target="dashboard">
+<i data-lucide="layout-dashboard" class="w-5 h-5">
+</i>
+<span>Дашборд</span>
+</button>
+<button type="button" onclick="switchTab('mainpage')" class="nav-btn flex items-center w-full gap-3 px-4 py-3 text-gray-500 hover:bg-brand-50 hover:text-brand-600 rounded-xl font-medium transition-colors" data-target="mainpage">
+<i data-lucide="layout-template" class="w-5 h-5">
+</i>
+<span>Главная страница</span>
+</button>
+<button type="button" onclick="switchTab('about')" class="nav-btn flex items-center w-full gap-3 px-4 py-3 text-gray-500 hover:bg-brand-50 hover:text-brand-600 rounded-xl font-medium transition-colors" data-target="about">
+<i data-lucide="info" class="w-5 h-5">
+</i>
+<span>О клинике</span>
+</button>
+<button type="button" onclick="switchTab('price')" class="nav-btn flex items-center w-full gap-3 px-4 py-3 text-gray-500 hover:bg-brand-50 hover:text-brand-600 rounded-xl font-medium transition-colors" data-target="price">
+<i data-lucide="list" class="w-5 h-5">
+</i>
+<span>Прайс-лист</span>
+</button>
+<button type="button" onclick="switchTab('services')" class="nav-btn flex items-center w-full gap-3 px-4 py-3 text-gray-500 hover:bg-brand-50 hover:text-brand-600 rounded-xl font-medium transition-colors" data-target="services">
+<i data-lucide="layers" class="w-5 h-5">
+</i>
+<span>Услуги (Каталог)</span>
+</button>
+<button type="button" onclick="switchTab('specialists')" class="nav-btn flex items-center w-full gap-3 px-4 py-3 text-gray-500 hover:bg-brand-50 hover:text-brand-600 rounded-xl font-medium transition-colors" data-target="specialists">
+<i data-lucide="users" class="w-5 h-5">
+</i>
+<span>Специалисты</span>
+</button>
+<button type="button" onclick="switchTab('footer')" class="nav-btn flex items-center w-full gap-3 px-4 py-3 text-gray-500 hover:bg-brand-50 hover:text-brand-600 rounded-xl font-medium transition-colors" data-target="footer">
+<i data-lucide="panel-bottom" class="w-5 h-5">
+</i>
+<span>Подвал</span>
+</button>
+</nav>
+<div class="p-4 border-t border-gray-100 flex flex-col gap-2">
+<button type="button" onclick="switchTab('settings')" class="nav-btn flex items-center w-full gap-3 px-4 py-3 text-gray-500 hover:bg-brand-50 hover:text-brand-600 rounded-xl font-medium transition-colors" data-target="settings">
+<i data-lucide="shield" class="w-5 h-5">
+</i>
+<span>Настройки</span>
+</button>
+<button type="button" onclick="handleLogout()" class="flex items-center w-full gap-3 px-4 py-3 text-red-500 hover:bg-red-50 rounded-xl font-medium transition-colors cursor-pointer">
+<i data-lucide="log-out" class="w-5 h-5">
+</i>
+<span>Выйти</span>
+</button>
+</div>
+</aside>
+<!-- ОСНОВНАЯ ОБЛАСТЬ -->
+<main class="flex-1 flex flex-col overflow-hidden bg-[#FDFBF9]">
+<!-- ВЕРХНЯЯ ПАНЕЛЬ (HEADER) -->
+<header class="h-20 bg-white border-b border-gray-100 flex items-center justify-between px-8 flex-shrink-0 z-10 relative">
+<h1 id="header-title" class="text-2xl font-semibold text-brand-900">Обзор</h1>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-3">
+<div class="text-right hidden sm:block">
+<p id="current-user-name" class="text-sm font-semibold text-brand-900">Елена В.</p>
+<p id="current-user-role" class="text-[10px] text-gray-400 uppercase tracking-wider font-bold">Главный врач</p>
+</div>
+<div class="w-11 h-11 rounded-full bg-brand-200 border border-gray-200 overflow-hidden shadow-sm flex items-center justify-center text-white">
+<i data-lucide="user" class="w-5 h-5">
+</i>
+</div>
+</div>
+</div>
+</header>
+<!-- КОНТЕНТНАЯ ЧАСТЬ СО СКРОЛЛОМ -->
+<div class="flex-1 overflow-y-auto p-8 relative">
+<!-- ================== 1. СЕКЦИЯ ДАШБОРД ================== -->
+<div id="section-dashboard" class="admin-section active">
+<div class="max-w-5xl mx-auto">
+<div class="mb-8">
+<h2 class="text-2xl lg:text-3xl font-bold text-brand-900 mb-2">Добро пожаловать в систему!</h2>
+<p class="text-gray-500">Вот краткая сводка по контенту вашего сайта на сегодня. Нажмите на карточку, чтобы перейти к редактированию.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+<button onclick="switchTab('services')" class="text-left bg-white p-6 rounded-[1.5rem] shadow-sm border border-gray-100 flex items-center justify-between group hover:shadow-lg hover:-translate-y-1 transition-all duration-300 w-full focus:outline-none">
+<div>
+<p class="text-xs text-gray-400 uppercase tracking-widest font-semibold mb-2 group-hover:text-brand-600 transition-colors">Всего процедур</p>
+<h3 id="stat-services" class="text-3xl lg:text-4xl font-bold text-brand-900">0</h3>
+</div>
+<div class="w-14 h-14 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 group-hover:bg-blue-500 group-hover:text-white transition-colors">
+<i data-lucide="layers" class="w-6 h-6">
+</i>
+</div>
+</button>
+<button onclick="switchTab('specialists')" class="text-left bg-white p-6 rounded-[1.5rem] shadow-sm border border-gray-100 flex items-center justify-between group hover:shadow-lg hover:-translate-y-1 transition-all duration-300 w-full focus:outline-none">
+<div>
+<p class="text-xs text-gray-400 uppercase tracking-widest font-semibold mb-2 group-hover:text-brand-600 transition-colors">Специалисты</p>
+<h3 id="stat-specialists" class="text-3xl lg:text-4xl font-bold text-brand-900">0</h3>
+</div>
+<div class="w-14 h-14 rounded-full bg-green-50 flex items-center justify-center text-green-500 group-hover:bg-green-500 group-hover:text-white transition-colors">
+<i data-lucide="users" class="w-6 h-6">
+</i>
+</div>
+</button>
+<button onclick="switchTab('mainpage')" class="text-left bg-white p-6 rounded-[1.5rem] shadow-sm border border-gray-100 flex items-center justify-between group hover:shadow-lg hover:-translate-y-1 transition-all duration-300 w-full focus:outline-none">
+<div>
+<p class="text-xs text-gray-400 uppercase tracking-widest font-semibold mb-2 group-hover:text-brand-600 transition-colors">Активные акции</p>
+<h3 id="stat-promos" class="text-3xl lg:text-4xl font-bold text-brand-900">0</h3>
+</div>
+<div class="w-14 h-14 rounded-full bg-purple-50 flex items-center justify-center text-purple-500 group-hover:bg-purple-500 group-hover:text-white transition-colors">
+<i data-lucide="tag" class="w-6 h-6">
+</i>
+</div>
+</button>
+</div>
+<h3 class="text-xl font-bold text-brand-900 mb-6">Быстрые действия</h3>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+<button onclick="switchTab('services')" class="flex flex-col items-center justify-center p-6 bg-white border border-gray-100 rounded-2xl shadow-sm hover:border-brand-200 hover:shadow-md transition-all group focus:outline-none">
+<div class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-500 mb-3 group-hover:text-brand-600 group-hover:bg-brand-50 transition-colors">
+<i data-lucide="plus-circle" class="w-5 h-5">
+</i>
+</div>
+<span class="text-sm font-semibold text-brand-900">Добавить процедуру</span>
+</button>
+<button onclick="switchTab('mainpage')" class="flex flex-col items-center justify-center p-6 bg-white border border-gray-100 rounded-2xl shadow-sm hover:border-brand-200 hover:shadow-md transition-all group focus:outline-none">
+<div class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-500 mb-3 group-hover:text-brand-600 group-hover:bg-brand-50 transition-colors">
+<i data-lucide="phone-call" class="w-5 h-5">
+</i>
+</div>
+<span class="text-sm font-semibold text-brand-900">Изменить контакты</span>
+</button>
+<button onclick="switchTab('settings')" class="flex flex-col items-center justify-center p-6 bg-white border border-gray-100 rounded-2xl shadow-sm hover:border-brand-200 hover:shadow-md transition-all group focus:outline-none">
+<div class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-500 mb-3 group-hover:text-brand-600 group-hover:bg-brand-50 transition-colors">
+<i data-lucide="shield" class="w-5 h-5">
+</i>
+</div>
+<span class="text-sm font-semibold text-brand-900">Доступы админов</span>
+</button>
+<button onclick="switchTab('specialists')" class="flex flex-col items-center justify-center p-6 bg-white border border-gray-100 rounded-2xl shadow-sm hover:border-brand-200 hover:shadow-md transition-all group focus:outline-none">
+<div class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-500 mb-3 group-hover:text-brand-600 group-hover:bg-brand-50 transition-colors">
+<i data-lucide="user-plus" class="w-5 h-5">
+</i>
+</div>
+<span class="text-sm font-semibold text-brand-900">Добавить врача</span>
+</button>
+</div>
+</div>
+</div>
+<!-- ================== 2. СЕКЦИЯ ГЛАВНАЯ СТРАНИЦА ================== -->
+<div id="section-mainpage" class="admin-section">
+<div class="max-w-5xl mx-auto space-y-8 pb-10">
+<!-- Блок 1: Основные тексты и Контакты -->
+<div class="bg-white rounded-[1.5rem] shadow-sm border border-gray-100 p-8">
+<div class="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
+<h2 class="text-xl font-bold text-brand-900 flex items-center gap-2">
+<i data-lucide="panel-top" class="w-6 h-6 text-brand-600">
+</i> Базовые настройки и Контакты                                </h2>
+<button type="button" onclick="saveBasicSettings()" class="bg-brand-600 text-white px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-brand-800 transition-colors shadow-sm">                                    Сохранить базу                                </button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<div class="space-y-4">
+<h3 class="font-bold text-brand-900 text-sm uppercase tracking-wider mb-2">Связь и адрес</h3>
+<div>
+<label class="block text-xs font-semibold text-gray-500 mb-1">Телефон клиники</label>
+<input type="text" id="mp-phone" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:border-brand-600 outline-none text-sm">
+</div>
+<div>
+<label class="block text-xs font-semibold text-gray-500 mb-1">График работы</label>
+<input type="text" id="mp-schedule" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:border-brand-600 outline-none text-sm">
+</div>
+<div>
+<label class="block text-xs font-semibold text-gray-500 mb-1">Адрес</label>
+<input type="text" id="mp-address" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:border-brand-600 outline-none text-sm">
+</div>
+<div class="grid grid-cols-3 gap-2">
+<div>
+<label class="block text-[10px] font-semibold text-gray-500 mb-1">VK (ссылка)</label>
+<input type="text" id="mp-vk" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs">
+</div>
+<div>
+<label class="block text-[10px] font-semibold text-gray-500 mb-1">Telegram</label>
+<input type="text" id="mp-tg" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs">
+</div>
+<div>
+<label class="block text-[10px] font-semibold text-gray-500 mb-1">WhatsApp</label>
+<input type="text" id="mp-wa" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs">
+</div>
+</div>
+</div>
+<div class="space-y-4">
+<h3 class="font-bold text-brand-900 text-sm uppercase tracking-wider mb-2">Тексты на сайте</h3>
+<div>
+<label class="block text-xs font-semibold text-gray-500 mb-1">Главный заголовок (Герой-блок)</label>
+<textarea id="mp-hero-title" rows="2" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:border-brand-600 outline-none text-sm resize-none">
+</textarea>
+</div>
+<div>
+<label class="block text-xs font-semibold text-gray-500 mb-1">Текст "Философия" (О клинике)</label>
+<textarea id="mp-about-title" rows="2" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:border-brand-600 outline-none text-sm resize-none">
+</textarea>
+</div>
+<div>
+<label class="block text-xs font-semibold text-gray-500 mb-1">Основное описание (О клинике)</label>
+<textarea id="mp-about-text" rows="3" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:border-brand-600 outline-none text-sm resize-y">
+</textarea>
+</div>
+</div>
+</div>
+</div>
+<!-- Блок 1.5: Галерея Интерьера -->
+<div class="bg-white rounded-[1.5rem] shadow-sm border border-gray-100 p-8">
+<div class="flex justify-between items-center mb-6">
+<h2 class="text-xl font-bold text-brand-900 flex items-center gap-2">
+<i data-lucide="image" class="w-6 h-6 text-brand-600">
+</i> Фотографии интерьера (Главный слайдер)                                </h2>
+<button type="button" onclick="addInteriorImg()" class="bg-brand-50 text-brand-600 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-brand-200 transition-colors flex items-center gap-1 border border-brand-200/50">
+<i data-lucide="plus" class="w-4 h-4">
+</i> Добавить фото                                </button>
+</div>
+<p class="text-sm text-gray-500 mb-6">Эти фотографии будут плавно сменяться на самом первом экране сайта (в главном слайдере).</p>
+<div id="admin-interior-list" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+</div>
+</div>
+<!-- Блок 2: Акции -->
+<div class="bg-white rounded-[1.5rem] shadow-sm border border-gray-100 p-8">
+<div class="flex justify-between items-center mb-6">
+<h2 class="text-xl font-bold text-brand-900 flex items-center gap-2">
+<i data-lucide="tag" class="w-6 h-6 text-brand-600">
+</i> Специальные предложения (Акции)                                </h2>
+<button type="button" onclick="addPromo()" class="bg-brand-50 text-brand-600 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-brand-200 transition-colors flex items-center gap-1 border border-brand-200/50">
+<i data-lucide="plus" class="w-4 h-4">
+</i> Добавить акцию                                </button>
+</div>
+<div id="admin-promos-list" class="space-y-4">
+</div>
+</div>
+<!-- Блок 3: Отзывы -->
+<div class="bg-white rounded-[1.5rem] shadow-sm border border-gray-100 p-8">
+<div class="flex justify-between items-center mb-6">
+<h2 class="text-xl font-bold text-brand-900 flex items-center gap-2">
+<i data-lucide="message-square" class="w-6 h-6 text-brand-600">
+</i> Отзывы пациентов                                </h2>
+<button type="button" onclick="addReview()" class="bg-brand-50 text-brand-600 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-brand-200 transition-colors flex items-center gap-1 border border-brand-200/50">
+<i data-lucide="plus" class="w-4 h-4">
+</i> Добавить отзыв                                </button>
+</div>
+<p class="text-sm text-gray-500 mb-6">Отзывы выводятся широкой сеткой на всю страницу. Рекомендуем держать кратное количество отзывов (например, 3 или 6).</p>
+<div id="admin-reviews-list" class="space-y-4">
+</div>
+</div>
+</div>
+</div>
+<!-- ================== 2.1 СЕКЦИЯ О КЛИНИКЕ ================== -->
+<div id="section-about" class="admin-section">
+<div class="max-w-5xl mx-auto space-y-8 pb-10">
+<!-- Документы и лицензии -->
+<div class="bg-white rounded-[1.5rem] shadow-sm border border-gray-100 p-8">
+<div class="flex justify-between items-center mb-6">
+<h2 class="text-xl font-bold text-brand-900 flex items-center gap-2">
+<i data-lucide="file-badge" class="w-6 h-6 text-brand-600">
+</i> Документы и лицензии                                </h2>
+<button type="button" onclick="addDocImg()" class="bg-brand-50 text-brand-600 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-brand-200 transition-colors flex items-center gap-1 border border-brand-200/50">
+<i data-lucide="plus" class="w-4 h-4">
+</i> Добавить документ                                </button>
+</div>
+<p class="text-sm text-gray-500 mb-6">Сюда загружаются сканы лицензий, дипломов и сертификатов клиники.</p>
+<div id="admin-docs-list" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+</div>
+</div>
+<!-- FAQ -->
+<div class="bg-white rounded-[1.5rem] shadow-sm border border-gray-100 p-8">
+<div class="flex justify-between items-center mb-6">
+<h2 class="text-xl font-bold text-brand-900 flex items-center gap-2">
+<i data-lucide="help-circle" class="w-6 h-6 text-brand-600">
+</i> Частые вопросы (FAQ)                                </h2>
+<button type="button" onclick="addFaq()" class="bg-brand-50 text-brand-600 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-brand-200 transition-colors flex items-center gap-1 border border-brand-200/50">
+<i data-lucide="plus" class="w-4 h-4">
+</i> Добавить вопрос                                </button>
+</div>
+<p class="text-sm text-gray-500 mb-6">Управление блоком вопросов и ответов.</p>
+<div id="admin-faq-list" class="space-y-4">
+</div>
+</div>
+</div>
+</div>
+<!-- ================== 3. СЕКЦИЯ ПРАЙС-ЛИСТ ================== -->
+<div id="section-price" class="admin-section">
+<div class="max-w-5xl mx-auto space-y-8 pb-10">
+<!-- Загрузка PDF -->
+<div class="bg-white rounded-[1.5rem] shadow-sm border border-gray-100 p-8">
+<h2 class="text-xl font-bold text-brand-900 mb-2 flex items-center gap-2">
+<i data-lucide="file-text" class="w-6 h-6 text-brand-600">
+</i> Полный прайс-лист (Документ)                            </h2>
+<p class="text-sm text-gray-500 mb-6">Загрузите файл с полным перечнем услуг (PDF, DOCX). Он будет доступен для скачивания на главной.</p>
+<div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 border border-dashed border-brand-200 rounded-2xl bg-brand-50/30">
+<div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-brand-600 shadow-sm shrink-0 border border-gray-100">
+<i data-lucide="file-down" class="w-6 h-6">
+</i>
+</div>
+<div class="flex-1 min-w-0">
+<p id="price-file-name" class="text-sm font-bold text-brand-900 truncate">price.pdf</p>
+<p id="price-file-size" class="text-xs text-gray-500">2.4 MB</p>
+</div>
+<div class="flex gap-2 shrink-0 mt-2 sm:mt-0">
+<input type="file" id="price-file-upload" class="hidden" onchange="handleFileUpload(event)">
+<button type="button" onclick="document.getElementById('price-file-upload').click()" class="bg-white border border-gray-200 text-brand-900 px-4 py-2 rounded-xl text-xs font-bold hover:bg-gray-50 transition-colors shadow-sm">Загрузить новый</button>
+<button type="button" onclick="deletePriceFile()" class="bg-white border border-red-200 text-red-500 px-4 py-2 rounded-xl text-xs font-bold hover:bg-red-50 transition-colors shadow-sm">Удалить</button>
+</div>
+</div>
+</div>
+<!-- Популярные услуги -->
+<div class="bg-white rounded-[1.5rem] shadow-sm border border-gray-100 overflow-hidden flex flex-col">
+<div class="p-6 border-b border-gray-100 flex justify-between items-center bg-white">
+<div>
+<h2 class="text-lg font-bold text-brand-900">Популярные услуги (Витрина)</h2>
+<p class="text-xs text-gray-500 mt-1">Выводятся списком на главной странице.</p>
+</div>
+<button type="button" onclick="addService()" class="bg-brand-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-brand-800 transition-colors flex items-center gap-2 shadow-sm">
+<i data-lucide="plus" class="w-4 h-4">
+</i> Добавить                                </button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse min-w-[800px]">
+<thead>
+<tr class="bg-gray-50/50 text-gray-400 text-xs uppercase tracking-widest border-b border-gray-100">
+<th class="px-6 py-4 font-semibold w-1/4">Название услуги</th>
+<th class="px-6 py-4 font-semibold w-2/5">Описание / Препарат</th>
+<th class="px-6 py-4 font-semibold w-1/6">Цена (₽)</th>
+<th class="px-6 py-4 font-semibold text-right w-1/6">Действия</th>
+</tr>
+</thead>
+<tbody id="services-table-body" class="text-sm text-gray-700 divide-y divide-gray-100">
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<!-- ================== 4. СЕКЦИЯ УСЛУГИ (КАТАЛОГ) ================== -->
+<div id="section-services" class="admin-section">
+<div class="max-w-5xl mx-auto space-y-8 pb-10">
+<!-- Направления -->
+<div class="bg-white rounded-[1.5rem] shadow-sm border border-gray-100 p-8">
+<div class="flex justify-between items-center mb-6">
+<h2 class="text-xl font-bold text-brand-900 flex items-center gap-2">
+<i data-lucide="layers" class="w-6 h-6 text-brand-600">
+</i> Основные направления                                </h2>
+</div>
+<p class="text-sm text-gray-500 mb-6">Категории, выводящиеся на главной странице.</p>
+<div id="admin-cat-list" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+</div>
+</div>
+<!-- Процедуры -->
+<div class="bg-white rounded-[1.5rem] shadow-sm border border-gray-100 overflow-hidden flex flex-col">
+<div class="p-6 border-b border-gray-100 flex justify-between items-center bg-white">
+<div>
+<h2 class="text-lg font-bold text-brand-900">Каталог процедур (Детальные страницы)</h2>
+</div>
+<button type="button" onclick="openProcEditorModal()" class="bg-brand-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-brand-800 transition-colors flex items-center gap-2 shadow-sm">
+<i data-lucide="plus" class="w-4 h-4">
+</i> Добавить процедуру                                </button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-gray-50/50 text-gray-400 text-xs uppercase tracking-widest border-b border-gray-100">
+<th class="px-6 py-4 font-semibold w-1/3">Название</th>
+<th class="px-6 py-4 font-semibold w-1/4">Категория</th>
+<th class="px-6 py-4 font-semibold w-1/6">Цена (от)</th>
+<th class="px-6 py-4 font-semibold text-right w-1/4">Действия</th>
+</tr>
+</thead>
+<tbody id="admin-proc-list" class="text-sm text-gray-700 divide-y divide-gray-100">
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<!-- ================== 5. СЕКЦИЯ СПЕЦИАЛИСТЫ ================== -->
+<div id="section-specialists" class="admin-section">
+<div class="max-w-5xl mx-auto space-y-8 pb-10">
+<div class="bg-white rounded-[1.5rem] shadow-sm border border-gray-100 p-8">
+<div class="flex justify-between items-center mb-6">
+<h2 class="text-xl font-bold text-brand-900 flex items-center gap-2">
+<i data-lucide="users" class="w-6 h-6 text-brand-600">
+</i> Команда врачей                                </h2>
+<button type="button" onclick="addSpecialist()" class="bg-brand-50 text-brand-600 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-brand-200 transition-colors flex items-center gap-1 border border-brand-200/50">
+<i data-lucide="plus" class="w-4 h-4">
+</i> Добавить специалиста                                </button>
+</div>
+<div id="admin-specialists-list" class="space-y-4">
+</div>
+</div>
+</div>
+</div>
+<!-- ================== 6. СЕКЦИЯ ПОДВАЛ ================== -->
+<div id="section-footer" class="admin-section">
+<div class="max-w-5xl mx-auto space-y-8 pb-10">
+<div class="bg-white rounded-[1.5rem] shadow-sm border border-gray-100 p-8">
+<div class="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
+<h2 class="text-xl font-bold text-brand-900 flex items-center gap-2">
+<i data-lucide="building" class="w-6 h-6 text-brand-600">
+</i> Реквизиты и базовая информация                                </h2>
+<button type="button" onclick="saveFooterData()" class="bg-brand-600 text-white px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-brand-800 transition-colors shadow-sm">                                    Сохранить                                </button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="md:col-span-2">
+<label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Короткое описание</label>
+<textarea id="ft-desc" rows="2" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-brand-600 focus:bg-white outline-none resize-none">
+</textarea>
+</div>
+<div>
+<label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Название юр. лица</label>
+<input type="text" id="ft-company" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-brand-600 focus:bg-white outline-none">
+</div>
+<div>
+<label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">ОГРН / ИНН</label>
+<input type="text" id="ft-ogrn" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-brand-600 focus:bg-white outline-none">
+</div>
+<div class="md:col-span-2">
+<label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Данные лицензии</label>
+<input type="text" id="ft-license" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-brand-600 focus:bg-white outline-none">
+</div>
+<div>
+<label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Текст копирайта (©)</label>
+<input type="text" id="ft-copyright" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-brand-600 focus:bg-white outline-none">
+</div>
+<div>
+<label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Медицинское предупреждение</label>
+<input type="text" id="ft-warning" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-brand-600 focus:bg-white outline-none">
+</div>
+</div>
+</div>
+<!-- Юридические документы -->
+<div class="bg-white rounded-[1.5rem] shadow-sm border border-gray-100 p-8">
+<div class="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
+<h2 class="text-xl font-bold text-brand-900 flex items-center gap-2">
+<i data-lucide="file-text" class="w-6 h-6 text-brand-600">
+</i> Тексты правовых документов                                </h2>
+</div>
+<p class="text-sm text-gray-500 mb-6">Эти тексты открываются в модальных окнах подвала. <b>Форматирование (абзацы) сохраняется.</b>
+</p>
+<div class="space-y-8">
+<div>
+<label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Политика конфиденциальности</label>
+<textarea id="ft-policy" rows="12" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-brand-600 focus:bg-white outline-none resize-y text-sm leading-relaxed whitespace-pre-wrap">
+</textarea>
+</div>
+<div>
+<label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Пользовательское соглашение</label>
+<textarea id="ft-terms" rows="12" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-brand-600 focus:bg-white outline-none resize-y text-sm leading-relaxed whitespace-pre-wrap">
+</textarea>
+</div>
+<div class="flex justify-end pt-4 border-t border-gray-100">
+<button type="button" onclick="saveFooterData()" class="bg-brand-600 text-white px-8 py-3.5 rounded-xl text-sm font-bold uppercase tracking-widest hover:bg-brand-800 transition-colors shadow-md flex items-center gap-2 active:scale-95">
+<i data-lucide="save" class="w-4 h-4">
+</i> Сохранить тексты                                    </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- ================== 7. СЕКЦИЯ НАСТРОЙКИ (Доступ) ================== -->
+<div id="section-settings" class="admin-section">
+<div class="max-w-4xl mx-auto space-y-8 pb-10">
+<div class="bg-white rounded-[1.5rem] shadow-sm border border-gray-100 p-8">
+<div class="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
+<h2 class="text-xl font-bold text-brand-900 flex items-center gap-2">
+<i data-lucide="shield" class="w-6 h-6 text-brand-600">
+</i> Управление доступом                                </h2>
+<button type="button" onclick="addAdmin()" class="bg-brand-50 text-brand-600 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-brand-200 transition-colors flex items-center gap-1 border border-brand-200/50 shadow-sm">
+<i data-lucide="user-plus" class="w-4 h-4">
+</i> Добавить                                </button>
+</div>
+<p class="text-sm text-gray-500 mb-6">Создавайте учетные записи для сотрудников, настраивайте их должности и пароли для входа в панель.</p>
+<div id="admin-users-list" class="space-y-4">
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- МОДАЛЬНОЕ ОКНО: РЕДАКТОР ПРОЦЕДУРЫ -->
+<div id="proc-editor-modal" class="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-[#1A1817]/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300">
+<div class="absolute inset-0" onclick="closeProcEditorModal()">
+</div>
+<div class="relative bg-[#FDFBF9] rounded-[2rem] shadow-2xl w-full max-w-4xl h-[90vh] flex flex-col transform scale-95 transition-transform duration-300" id="proc-editor-modal-content">
+<div class="p-6 border-b border-[#D0C0B1]/30 flex justify-between items-center bg-white rounded-t-[2rem] shrink-0">
+<div>
+<h3 class="font-bold text-xl text-brand-900" id="pe-modal-title">Редактирование процедуры</h3>
+</div>
+<button onclick="closeProcEditorModal()" class="text-gray-400 hover:text-brand-900 transition-colors p-2 bg-gray-50 rounded-full">
+<i data-lucide="x" class="w-5 h-5">
+</i>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto p-6 sm:p-8 space-y-8 hide-scrollbar">
+<!-- Блок 1 -->
+<div class="space-y-4">
+<h4 class="text-sm font-bold text-brand-900 uppercase tracking-wider border-b border-gray-200 pb-2">1. Основная информация</h4>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div>
+<label class="block text-xs text-gray-500 mb-1">Название процедуры</label>
+<input type="text" id="pe-title" class="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:border-brand-600 outline-none">
+</div>
+<div>
+<label class="block text-xs text-gray-500 mb-1">Категория</label>
+<select id="pe-category" class="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:border-brand-600 outline-none text-sm">
+<option value="aesthetic">Эстетическая косметология</option>
+<option value="hardware">Аппаратная косметология</option>
+<option value="injection">Инъекционная косметология</option>
+<option value="botulinum">Ботулинотерапия</option>
+</select>
+</div>
+<div>
+<label class="block text-xs text-gray-500 mb-1">Цена (плашка 'от')</label>
+<input type="text" id="pe-priceText" class="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:border-brand-600 outline-none">
+</div>
+<div>
+<label class="block text-xs text-gray-500 mb-1">URL Обложки</label>
+<input type="text" id="pe-img" class="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:border-brand-600 outline-none">
+</div>
+<div class="md:col-span-2">
+<label class="block text-xs text-gray-500 mb-1">Главное описание</label>
+<textarea id="pe-desc" rows="3" class="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:border-brand-600 outline-none resize-none">
+</textarea>
+</div>
+</div>
+</div>
+<!-- Блок 2 -->
+<div class="space-y-4">
+<div class="flex justify-between items-center border-b border-gray-200 pb-2">
+<h4 class="text-sm font-bold text-brand-900 uppercase tracking-wider">2. Этапы (Как проходит)</h4>
+<button type="button" onclick="peAddStep()" class="text-brand-600 text-xs font-bold uppercase flex items-center">
+<i data-lucide="plus" class="w-3 h-3 mr-1">
+</i> Добавить</button>
+</div>
+<div id="pe-steps-container" class="space-y-3">
+</div>
+</div>
+<!-- Блок 3 -->
+<div class="space-y-4">
+<div class="flex justify-between items-center border-b border-gray-200 pb-2">
+<h4 class="text-sm font-bold text-brand-900 uppercase tracking-wider">3. Какие проблемы решает</h4>
+<button type="button" onclick="peAddProblem()" class="text-brand-600 text-xs font-bold uppercase flex items-center">
+<i data-lucide="plus" class="w-3 h-3 mr-1">
+</i> Добавить</button>
+</div>
+<div id="pe-problems-container" class="space-y-3">
+</div>
+</div>
+<!-- Блок 4 -->
+<div class="space-y-4">
+<div class="flex justify-between items-center border-b border-gray-200 pb-2">
+<h4 class="text-sm font-bold text-brand-900 uppercase tracking-wider">4. Варианты цен</h4>
+<button type="button" onclick="peAddPrice()" class="text-brand-600 text-xs font-bold uppercase flex items-center">
+<i data-lucide="plus" class="w-3 h-3 mr-1">
+</i> Добавить</button>
+</div>
+<div id="pe-prices-container" class="space-y-3">
+</div>
+</div>
+</div>
+<!-- Подвал -->
+<div class="p-6 border-t border-[#D0C0B1]/30 bg-gray-50 flex justify-end gap-3 rounded-b-[2rem] shrink-0">
+<button type="button" onclick="closeProcEditorModal()" class="px-6 py-3 rounded-xl font-bold uppercase tracking-widest text-xs text-gray-500 hover:bg-gray-200 transition-colors">Отмена</button>
+<button type="button" onclick="saveProcEditorModal()" class="bg-brand-600 text-white px-6 py-3 rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-brand-800 transition-colors shadow-md">Сохранить</button>
+</div>
+</div>
+</div>
+<!-- ======================================================================= -->
+<!-- ЕДИНЫЙ БЛОК СКРИПТОВ -->
+<!-- ======================================================================= -->
+<script>        lucide.createIcons();        // --- УТИЛИТА ДЛЯ ССЫЛОК GOOGLE DRIVE ---        function formatImageUrl(url) {            if (!url) return '';            url = url.trim();            if (url.includes('drive.google.com')) {                const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);                if (match && match[1]) {                    return `https://drive.google.com/uc?export=view&id=${match[1]}`;                }            }            return url;        }        // --- ДЕФОЛТНЫЕ ДАННЫЕ И ИНИЦИАЛИЗАЦИЯ ---        const defaultAdmins = [            { id: 1, name: "Елена Вороненко", role: "Главный врач (Владелец)", login: "admin", pwd: "123456", isOwner: true },            { id: 2, name: "Анна Смирнова", role: "Менеджер", login: "anna", pwd: "123456", isOwner: false }        ];        const defaultMainPage = {            contacts: { phone: "8 (800) 000-00-00", schedule: "пн-вс 09:00-21:00", address: "г. Самара, ул. Мяги, 24А", vk: "https://vk.com/", tg: "https://t.me/", wa: "https://wa.me/" },            hero: { title: "Клиника\nкосметологии\nДоктора Вороненко", subtitle: "Лицензия № ЛО-XX-XX-XXXXXX" },            about: { title: "Мы не меняем черты лица, мы подчеркиваем вашу индивидуальность", text: "Продление молодости кожи и профессиональная забота о Вашем здоровье..." },            promos: [                { id: 1, title: "Скинбустер", badge: "Подарок", desc: "В подарок к процедуре RF-лифтинга", img: "https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&q=80&w=400" }            ],            reviews: [                { id: 1, name: "Мария С.", service: "Контурная пластика", date: "21 апреля", text: "Делала губы у Алины Игоревны. Очень переживала, что будет неестественно, но получилось идеально!" }            ],            interior: [                { id: 1, img: "https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&q=80&w=400" }            ],            docs: [                { id: 1, img: "https://images.unsplash.com/photo-1568228146922-3be9f3900223?auto=format&fit=crop&q=80&w=400" }            ],            faq: [                { id: 1, q: "Лечите ли вы акне?", a: "Да, мы специализируемся на комплексном лечении акне любой степени тяжести." }            ]        };        const defaultServices = [{ id: 1, name: "Контурная пластика губ", desc: "Novacutan F-Bio, 1 мл", price: "16 000" }];                const defaultSpecialists = [{            id: 1, name: "Вороненко Елена", role: "Главный врач",             edu: "СамГМУ (2008).", bio: "Основатель клиники, эксперт международного уровня.",             img: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=600"        }];        const defaultFooter = {            shortDesc: "Продление молодости кожи и профессиональная забота о Вашем здоровье по мировым стандартам.",            companyName: 'ООО "Эстетика"', ogrn: "ОГРН 1234567890123", license: "Лицензия № ЛО-XX-XX-XXXXXX от 01.01.2023",            copyright: "© 2026 Клиника Dr. VORONENKO. Все права защищены.", warning: "Имеются противопоказания. Необходима консультация специалиста.",            policyText: "Настоящая Политика конфиденциальности...\n\n(Текст)", termsText: "Настоящее Пользовательское соглашение...\n\n(Текст)"        };        const defaultCatCategories = [            { id: 'aesthetic', title: 'Эстетическая косметология', desc: 'Чистки, химические пилинги, уходовые программы', img: 'https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?auto=format&fit=crop&q=80&w=600' },            { id: 'hardware', title: 'Аппаратная косметология', desc: 'SMAS-лифтинг, микроигольчатый RF, BBL', img: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&q=80&w=600' },            { id: 'injection', title: 'Инъекционная косметология', desc: 'Контурная пластика, биоревитализация, мезотерапия', img: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=600' },            { id: 'botulinum', title: 'Ботулинотерапия', desc: 'Коррекция мимических морщин, гипергидроз', img: 'https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?auto=format&fit=crop&q=80&w=600' }        ];        const defaultCatProcedures = [            { id: 'proc_1', categoryId: 'injection', title: 'Контурная пластика губ', priceText: 'от 12 000 ₽', img: 'https://images.unsplash.com/photo-1588636402450-4ff6d877e8ea?auto=format&fit=crop&q=80&w=800', desc: 'Искусство контурной пластики.', howItWorks: [{q: 'Консультация', a: 'Осмотр'}], problems: [{q: 'Нехватка объема', a: 'Филлер'}], prices: [{name: 'Novacutan', vol: '1.0 мл', time: '60 минут', cost: '16 000 ₽'}] },            { id: 'proc_2', categoryId: 'hardware', title: 'SMAS-лифтинг', priceText: 'от 25 000 ₽', img: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&q=80&w=800', desc: 'Безоперационная подтяжка лица.', howItWorks: [{q: 'Разметка', a: 'Нанесение сетки на лицо'}], problems: [{q: 'Птоз (опущение) тканей', a: 'Лифтинг на уровне SMAS'}], prices: [{name: 'Лицо полностью', vol: '500 линий', time: '90 минут', cost: '45 000 ₽'}] }        ];        // Загрузка        let dbAdmins = JSON.parse(localStorage.getItem('dbAdmins')) || defaultAdmins;                let dbMainPage = JSON.parse(localStorage.getItem('dbMainPage'));        if (!dbMainPage) {            dbMainPage = defaultMainPage;        } else {            // ПАТЧ: Восстановление недостающих полей для старых кэшей (исправляет ошибку в Safari)            dbMainPage.contacts = dbMainPage.contacts || defaultMainPage.contacts;            dbMainPage.hero = dbMainPage.hero || defaultMainPage.hero;            dbMainPage.about = dbMainPage.about || defaultMainPage.about;            dbMainPage.promos = dbMainPage.promos || defaultMainPage.promos;            dbMainPage.reviews = dbMainPage.reviews || defaultMainPage.reviews;            dbMainPage.interior = dbMainPage.interior || defaultMainPage.interior;            dbMainPage.docs = dbMainPage.docs || defaultMainPage.docs;            dbMainPage.faq = dbMainPage.faq || defaultMainPage.faq;        }        let dbServices = JSON.parse(localStorage.getItem('dbServices')) || defaultServices;        let dbSpecialists = JSON.parse(localStorage.getItem('dbSpecialists')) || defaultSpecialists;        let dbFooter = JSON.parse(localStorage.getItem('dbFooter')) || defaultFooter;        let dbCatCategories = JSON.parse(localStorage.getItem('dbCatCategories')) || defaultCatCategories;        let dbCatProcedures = JSON.parse(localStorage.getItem('dbCatProcedures')) || defaultCatProcedures;        let dbPriceFile = JSON.parse(localStorage.getItem('dbPriceFile')) || { name: "price.pdf", size: "2.4 MB", exists: true };        function persistData() {            localStorage.setItem('dbAdmins', JSON.stringify(dbAdmins));            localStorage.setItem('dbMainPage', JSON.stringify(dbMainPage));            localStorage.setItem('dbServices', JSON.stringify(dbServices));            localStorage.setItem('dbSpecialists', JSON.stringify(dbSpecialists));            localStorage.setItem('dbFooter', JSON.stringify(dbFooter));            localStorage.setItem('dbCatCategories', JSON.stringify(dbCatCategories));            localStorage.setItem('dbCatProcedures', JSON.stringify(dbCatProcedures));            updateDashboardStats();         }        // --- АВТОРИЗАЦИЯ ---        document.addEventListener("DOMContentLoaded", () => {            const savedLogin = localStorage.getItem('savedAdminLogin');            const savedPwd = localStorage.getItem('savedAdminPwd');            if (savedLogin && savedPwd) {                document.getElementById('admin-login').value = savedLogin;                document.getElementById('admin-pwd').value = savedPwd;                document.getElementById('remember-me').checked = true;            }            const loggedInUserId = localStorage.getItem('loggedInAdminId') || sessionStorage.getItem('loggedInAdminId');            if (loggedInUserId) {                const currentUser = dbAdmins.find(a => a.id.toString() === loggedInUserId);                if(currentUser) {                    updateHeaderUser(currentUser);                    document.getElementById('login-screen').classList.add('hidden', 'opacity-0');                    const adminPanel = document.getElementById('admin-panel');                    adminPanel.classList.remove('hidden', 'opacity-0');                    initAllData();                } else handleLogout();            }        });        function handleLogin(e) {            e.preventDefault();            const loginVal = document.getElementById('admin-login').value.trim();            const pwdVal = document.getElementById('admin-pwd').value;            const rememberMe = document.getElementById('remember-me').checked;            const errorMsg = document.getElementById('login-error');                        const user = dbAdmins.find(a => a.login === loginVal && a.pwd === pwdVal);                        if(user) {                errorMsg.classList.add('hidden');                if (rememberMe) {                    localStorage.setItem('loggedInAdminId', user.id.toString());                    localStorage.setItem('savedAdminLogin', loginVal);                    localStorage.setItem('savedAdminPwd', pwdVal);                } else {                    sessionStorage.setItem('loggedInAdminId', user.id.toString());                    localStorage.removeItem('savedAdminLogin');                    localStorage.removeItem('savedAdminPwd');                }                                updateHeaderUser(user);                document.getElementById('login-screen').classList.add('opacity-0');                setTimeout(() => {                    document.getElementById('login-screen').classList.add('hidden');                    const adminPanel = document.getElementById('admin-panel');                    adminPanel.classList.remove('hidden');                    setTimeout(() => adminPanel.classList.remove('opacity-0'), 50);                    initAllData();                }, 500);            } else {                errorMsg.classList.remove('hidden');            }        }        function handleLogout() {            localStorage.removeItem('loggedInAdminId');            sessionStorage.removeItem('loggedInAdminId');            location.reload();        }        function togglePasswordVisibility() {            const pwdInput = document.getElementById('admin-pwd');            const eyeIcon = document.getElementById('pwd-eye-icon');            if (pwdInput.type === 'password') {                pwdInput.type = 'text';                eyeIcon.setAttribute('data-lucide', 'eye-off');            } else {                pwdInput.type = 'password';                eyeIcon.setAttribute('data-lucide', 'eye');            }            lucide.createIcons();        }        function updateHeaderUser(user) {            document.getElementById('current-user-name').innerText = user.name;            document.getElementById('current-user-role').innerText = user.role;        }        function initAllData() {            renderAdmins();            renderMainPageData();            renderAboutPageData();            renderTable(); // Price list            renderPriceFile();            renderCatCategories();            renderCatProcedures();            renderSpecialists();            renderFooterData();            updateDashboardStats();        }        function updateDashboardStats() {            document.getElementById('stat-specialists').innerText = dbSpecialists.length;            document.getElementById('stat-services').innerText = dbCatProcedures.length || 0;            document.getElementById('stat-promos').innerText = dbMainPage.promos ? dbMainPage.promos.length : 0;        }        // --- НАВИГАЦИЯ ---        const titles = { 'dashboard': 'Обзор', 'mainpage': 'Редактирование Главной', 'about': 'О клинике', 'price': 'Прайс-лист', 'services': 'Каталог услуг', 'specialists': 'Специалисты', 'footer': 'Подвал', 'settings': 'Настройки' };        function switchTab(tabId) {            document.querySelector('main > div.overflow-y-auto').scrollTo(0, 0);            document.querySelectorAll('.nav-btn').forEach(btn => {                if(btn.dataset.target === tabId) {                    btn.classList.add('active', 'bg-brand-50', 'text-brand-600'); btn.classList.remove('text-gray-500');                } else {                    btn.classList.remove('active', 'bg-brand-50', 'text-brand-600'); btn.classList.add('text-gray-500');                }            });            document.getElementById('header-title').innerText = titles[tabId];            document.querySelectorAll('.admin-section').forEach(sec => sec.classList.remove('active'));            document.getElementById(`section-${tabId}`).classList.add('active');        }        // --- УТИЛИТА TOAST ---        function showToast(msg) {            const toast = document.getElementById('toast');            document.getElementById('toast-msg').innerText = msg;            toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-[-10px]');            setTimeout(() => toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-[-10px]'), 3000);        }        // --- РАЗДЕЛ: ГЛАВНАЯ СТРАНИЦА ---        function renderMainPageData() {            document.getElementById('mp-phone').value = dbMainPage.contacts.phone; document.getElementById('mp-schedule').value = dbMainPage.contacts.schedule; document.getElementById('mp-address').value = dbMainPage.contacts.address;            document.getElementById('mp-vk').value = dbMainPage.contacts.vk; document.getElementById('mp-tg').value = dbMainPage.contacts.tg; document.getElementById('mp-wa').value = dbMainPage.contacts.wa;            document.getElementById('mp-hero-title').value = dbMainPage.hero.title; document.getElementById('mp-about-title').value = dbMainPage.about.title; document.getElementById('mp-about-text').value = dbMainPage.about.text;            renderInterior(); // Перенесено из О клинике            renderPromos();             renderReviews();        }        function saveBasicSettings() {            dbMainPage.contacts = { phone: document.getElementById('mp-phone').value, schedule: document.getElementById('mp-schedule').value, address: document.getElementById('mp-address').value, vk: document.getElementById('mp-vk').value, tg: document.getElementById('mp-tg').value, wa: document.getElementById('mp-wa').value };            dbMainPage.hero.title = document.getElementById('mp-hero-title').value; dbMainPage.about.title = document.getElementById('mp-about-title').value; dbMainPage.about.text = document.getElementById('mp-about-text').value;            persistData(); showToast('Настройки сохранены');        }        function renderPromos() {            document.getElementById('admin-promos-list').innerHTML = dbMainPage.promos.map(p => `                <div id="promo-row-${p.id}" class="flex items-center gap-4 p-4 border border-gray-200 rounded-2xl bg-white hover:bg-gray-50 group">
+<img src="${p.img}" onerror="this.src='https://placehold.co/400x400/f3f4f6/a1a1aa?text=Ошибка+загрузки'" class="w-16 h-16 rounded-xl object-cover shrink-0 bg-gray-100">
+<div class="flex-1 min-w-0 view-mode">
+<p class="font-bold text-brand-900 truncate">${p.title}</p>
+<p class="text-xs text-gray-500 truncate">${p.desc}</p>
+</div>
+<div class="flex-1 hidden edit-mode grid grid-cols-1 sm:grid-cols-2 gap-4">
+<div>
+<label class="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Заголовок</label>
+<input type="text" id="promo-title-${p.id}" value="${p.title}" class="w-full px-3 py-2 text-sm border rounded outline-none focus:border-brand-600">
+</div>
+<div>
+<label class="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Бирка (напр. 'Подарок')</label>
+<input type="text" id="promo-badge-${p.id}" value="${p.badge}" class="w-full px-3 py-2 text-sm border rounded outline-none focus:border-brand-600">
+</div>
+<div class="sm:col-span-2">
+<label class="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Описание</label>
+<input type="text" id="promo-desc-${p.id}" value="${p.desc}" class="w-full px-3 py-2 text-sm border rounded outline-none focus:border-brand-600">
+</div>
+<div class="sm:col-span-2">
+<label class="text-[10px] uppercase text-gray-500 font-bold mb-1 block">URL Обложки</label>
+<input type="text" id="promo-img-${p.id}" value="${p.img}" class="w-full px-3 py-2 text-sm border rounded outline-none focus:border-brand-600">
+</div>
+</div>
+<div class="flex flex-col gap-2 shrink-0">
+<button onclick="editPromo(${p.id})" class="view-mode p-2 border rounded hover:text-brand-600">
+<i data-lucide="edit-3" class="w-5 h-5">
+</i>
+</button>
+<button onclick="deletePromo(${p.id})" class="view-mode p-2 border rounded hover:text-red-500">
+<i data-lucide="trash-2" class="w-5 h-5">
+</i>
+</button>
+<button onclick="savePromo(${p.id})" class="edit-mode hidden px-4 py-2 bg-green-600 text-white rounded text-xs font-bold uppercase">Сохранить</button>
+<button onclick="cancelEditPromo(${p.id})" class="edit-mode hidden px-4 py-2 border rounded text-xs font-bold uppercase text-gray-600">Отмена</button>
+</div>
+</div>`).join(''); lucide.createIcons();        }                let isAddingPromo = false;        function addPromo() { if(isAddingPromo) return; isAddingPromo = true; const newId = Date.now(); dbMainPage.promos.unshift({ id: newId, title: "", badge: "", desc: "", img: "", isNew: true }); renderPromos(); editPromo(newId); }        function editPromo(id) { const row = document.getElementById(`promo-row-${id}`); row.querySelectorAll('.view-mode').forEach(el => el.classList.add('hidden')); row.querySelectorAll('.edit-mode').forEach(el => el.classList.remove('hidden')); row.classList.add('bg-brand-50/30', 'border-brand-200'); }        function savePromo(id) {             const p = dbMainPage.promos.find(x => x.id === id);             if(p) {                 const title = document.getElementById(`promo-title-${id}`).value.trim();                if(!title) return showToast('Введите заголовок!');                p.title = title; p.badge = document.getElementById(`promo-badge-${id}`).value; p.desc = document.getElementById(`promo-desc-${id}`).value; p.img = formatImageUrl(document.getElementById(`promo-img-${id}`).value);                 delete p.isNew; isAddingPromo = false; persistData(); renderPromos(); showToast('Акция сохранена');             }         }        function cancelEditPromo(id) { const idx = dbMainPage.promos.findIndex(x => x.id === id); if(idx > -1 && dbMainPage.promos[idx].isNew) dbMainPage.promos.splice(idx, 1); isAddingPromo = false; renderPromos(); }        function deletePromo(id) { if(confirm('Удалить?')) { dbMainPage.promos = dbMainPage.promos.filter(x => x.id !== id); persistData(); renderPromos(); } }        function renderReviews() {            document.getElementById('admin-reviews-list').innerHTML = dbMainPage.reviews.map(r => `                <div id="review-row-${r.id}" class="flex flex-col gap-2 p-4 border border-gray-200 rounded-2xl bg-white hover:bg-gray-50 group">
+<div class="flex justify-between items-center view-mode">
+<p class="font-bold text-brand-900">${r.name}</p>
+<div class="flex gap-2">
+<button onclick="editReview(${r.id})" class="text-gray-400 hover:text-brand-600">
+<i data-lucide="edit-3" class="w-4 h-4">
+</i>
+</button>
+<button onclick="deleteReview(${r.id})" class="text-gray-400 hover:text-red-500">
+<i data-lucide="trash-2" class="w-4 h-4">
+</i>
+</button>
+</div>
+</div>
+<p class="text-sm text-gray-600 view-mode line-clamp-2">"${r.text}"</p>
+<div class="hidden edit-mode grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2 border-t pt-4">
+<div>
+<label class="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Имя</label>
+<input type="text" id="rev-name-${r.id}" value="${r.name}" class="w-full px-3 py-2 text-sm border rounded outline-none focus:border-brand-600">
+</div>
+<div>
+<label class="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Услуга</label>
+<input type="text" id="rev-svc-${r.id}" value="${r.service}" class="w-full px-3 py-2 text-sm border rounded outline-none focus:border-brand-600">
+</div>
+<div class="sm:col-span-2">
+<label class="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Текст отзыва</label>
+<textarea id="rev-text-${r.id}" class="w-full px-3 py-2 text-sm border rounded outline-none focus:border-brand-600" rows="3">${r.text}</textarea>
+</div>
+<div class="sm:col-span-2 flex justify-end gap-2">
+<button onclick="cancelEditReview(${r.id})" class="px-4 py-2 border rounded text-xs font-bold uppercase text-gray-600">Отмена</button>
+<button onclick="saveReview(${r.id})" class="bg-green-600 text-white px-4 py-2 rounded text-xs font-bold uppercase">Сохранить</button>
+</div>
+</div>
+</div>`).join(''); lucide.createIcons();        }                let isAddingReview = false;        function addReview() { if(isAddingReview) return; isAddingReview = true; const newId = Date.now(); dbMainPage.reviews.unshift({ id: newId, name: "", service: "", text: "", isNew: true }); renderReviews(); editReview(newId); }        function editReview(id) { const row = document.getElementById(`review-row-${id}`); row.querySelectorAll('.view-mode').forEach(el => el.classList.add('hidden')); row.querySelectorAll('.edit-mode').forEach(el => el.classList.remove('hidden')); row.classList.add('bg-brand-50/30', 'border-brand-200'); }        function saveReview(id) {             const r = dbMainPage.reviews.find(x => x.id === id);             if(r) {                 const name = document.getElementById(`rev-name-${id}`).value.trim();                if(!name) return showToast('Введите имя!');                r.name = name; r.service = document.getElementById(`rev-svc-${id}`).value; r.text = document.getElementById(`rev-text-${id}`).value;                 delete r.isNew; isAddingReview = false; persistData(); renderReviews(); showToast('Отзыв сохранен');             }         }        function cancelEditReview(id) { const idx = dbMainPage.reviews.findIndex(x => x.id === id); if(idx > -1 && dbMainPage.reviews[idx].isNew) dbMainPage.reviews.splice(idx, 1); isAddingReview = false; renderReviews(); }        function deleteReview(id) { if(confirm('Удалить?')) { dbMainPage.reviews = dbMainPage.reviews.filter(x => x.id !== id); persistData(); renderReviews(); } }        function renderInterior() {            document.getElementById('admin-interior-list').innerHTML = dbMainPage.interior.map(i => `                <div class="relative group aspect-square rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
+<img src="${i.img}" onerror="this.src='https://placehold.co/600x600/f3f4f6/a1a1aa?text=Ошибка+загрузки'" class="w-full h-full object-cover">
+<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+<button onclick="deleteInterior(${i.id})" class="bg-red-500 text-white p-2 rounded-full hover:bg-red-600">
+<i data-lucide="trash-2" class="w-5 h-5">
+</i>
+</button>
+</div>
+</div>`).join(''); lucide.createIcons();        }        function addInteriorImg() {             const url = prompt('Вставьте прямую ссылку на фото (URL).\nПоддерживаются ссылки из ВКонтакте, фотохостингов и Google Диска:');             if(url) {                 dbMainPage.interior.push({ id: Date.now(), img: formatImageUrl(url) });                 persistData(); renderInterior(); showToast('Добавлено');             }         }        function deleteInterior(id) { if(confirm('Удалить?')) { dbMainPage.interior = dbMainPage.interior.filter(x => x.id !== id); persistData(); renderInterior(); } }        // --- РАЗДЕЛ: О КЛИНИКЕ ---        function renderAboutPageData() { renderDocs(); renderFaq(); }        function renderDocs() {            document.getElementById('admin-docs-list').innerHTML = dbMainPage.docs.map(d => `                <div class="relative group aspect-[1/1.3] rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
+<img src="${d.img}" onerror="this.src='https://placehold.co/400x520/f3f4f6/a1a1aa?text=Ошибка+загрузки'" class="w-full h-full object-cover">
+<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+<button onclick="deleteDoc(${d.id})" class="bg-red-500 text-white p-2 rounded-full hover:bg-red-600">
+<i data-lucide="trash-2" class="w-5 h-5">
+</i>
+</button>
+</div>
+</div>`).join(''); lucide.createIcons();        }        function addDocImg() {             const url = prompt('Вставьте прямую ссылку на документ (URL).\nПоддерживаются ссылки из ВКонтакте, фотохостингов и Google Диска:');             if(url) {                 dbMainPage.docs.push({ id: Date.now(), img: formatImageUrl(url) });                 persistData(); renderDocs(); showToast('Добавлено');             }         }        function deleteDoc(id) { if(confirm('Удалить?')) { dbMainPage.docs = dbMainPage.docs.filter(x => x.id !== id); persistData(); renderDocs(); } }        let isAddingFaq = false;        function renderFaq() {            document.getElementById('admin-faq-list').innerHTML = dbMainPage.faq.map(f => `                <div id="faq-row-${f.id}" class="flex flex-col gap-2 p-4 border border-gray-200 rounded-2xl bg-white hover:bg-gray-50 transition-colors group">
+<div class="flex justify-between items-center view-mode">
+<p class="font-bold text-brand-900 pr-4">${f.q}</p>
+<div class="flex gap-2 shrink-0">
+<button type="button" onclick="editFaq(${f.id})" class="text-gray-400 hover:text-brand-600 bg-white p-2 rounded-lg border border-gray-200 shadow-sm transition-colors" title="Настроить">
+<i data-lucide="edit-3" class="w-4 h-4">
+</i>
+</button>
+<button type="button" onclick="deleteFaq(${f.id})" class="text-gray-400 hover:text-red-500 bg-white p-2 rounded-lg border border-gray-200 shadow-sm transition-colors" title="Удалить">
+<i data-lucide="trash-2" class="w-4 h-4">
+</i>
+</button>
+</div>
+</div>
+<p class="text-sm text-gray-600 view-mode leading-relaxed">${f.a}</p>
+<div class="hidden edit-mode flex flex-col gap-3 mt-2">
+<div>
+<label class="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Вопрос</label>
+<input type="text" id="faq-q-${f.id}" value="${f.q}" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:border-brand-600 outline-none" placeholder="Вопрос">
+</div>
+<div>
+<label class="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Ответ</label>
+<textarea id="faq-a-${f.id}" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:border-brand-600 outline-none resize-y" rows="3" placeholder="Подробный ответ...">${f.a}</textarea>
+</div>
+<div class="flex justify-end gap-3 mt-2 border-t border-gray-100 pt-4">
+<button type="button" onclick="cancelEditFaq(${f.id})" class="px-5 py-2.5 border border-gray-200 text-gray-600 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-gray-50 transition-colors">Отмена</button>
+<button type="button" onclick="saveFaq(${f.id})" class="px-5 py-2.5 bg-green-600 text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-green-700 transition-colors shadow-sm">Сохранить</button>
+</div>
+</div>
+</div>`).join('');             lucide.createIcons();        }        function addFaq() { if(isAddingFaq) return; isAddingFaq = true; const newId = Date.now(); dbMainPage.faq.unshift({ id: newId, q: "", a: "", isNew: true }); renderFaq(); editFaq(newId); }        function editFaq(id) { const row = document.getElementById(`faq-row-${id}`); row.querySelectorAll('.view-mode').forEach(el => el.classList.add('hidden')); row.querySelectorAll('.edit-mode').forEach(el => el.classList.remove('hidden')); row.classList.remove('hover:bg-gray-50'); row.classList.add('bg-brand-50/30', 'border-brand-200'); const firstInput = row.querySelector('.edit-mode input[type="text"]'); if (firstInput) firstInput.focus(); }        function saveFaq(id) { const idx = dbMainPage.faq.findIndex(x => x.id === id); if(idx > -1) { const qVal = document.getElementById(`faq-q-${id}`).value.trim(); const aVal = document.getElementById(`faq-a-${id}`).value.trim(); if (!qVal || !aVal) { showToast('Пожалуйста, заполните вопрос и ответ!'); return; } dbMainPage.faq[idx].q = qVal; dbMainPage.faq[idx].a = aVal; delete dbMainPage.faq[idx].isNew; isAddingFaq = false; persistData(); renderFaq(); showToast('Вопрос успешно сохранен'); } }        function cancelEditFaq(id) { const idx = dbMainPage.faq.findIndex(x => x.id === id); if (idx !== -1 && dbMainPage.faq[idx].isNew) { dbMainPage.faq.splice(idx, 1); } isAddingFaq = false; renderFaq(); }        function deleteFaq(id) { if(confirm('Удалить?')) { dbMainPage.faq = dbMainPage.faq.filter(x => x.id !== id); persistData(); renderFaq(); } }        // --- РАЗДЕЛ: ПРАЙС-ЛИСТ (ВИТРИНА) ---        let isAddingNewService = false;        function renderTable() {            document.getElementById('services-table-body').innerHTML = dbServices.map(srv => `                <tr id="row-${srv.id}" class="hover:bg-brand-50/50 group">
+<td class="px-6 py-4">
+<span class="view-mode font-medium">${srv.name}</span>
+<input type="text" class="edit-mode hidden w-full px-3 py-2 border rounded focus:border-brand-600 outline-none" value="${srv.name}" placeholder="Название">
+</td>
+<td class="px-6 py-4">
+<span class="view-mode">${srv.desc}</span>
+<input type="text" class="edit-mode hidden w-full px-3 py-2 border rounded focus:border-brand-600 outline-none" value="${srv.desc}" placeholder="Описание">
+</td>
+<td class="px-6 py-4">
+<span class="view-mode">${srv.price}</span>
+<input type="text" class="edit-mode hidden w-full px-3 py-2 border rounded focus:border-brand-600 outline-none" value="${srv.price}" placeholder="Цена">
+</td>
+<td class="px-6 py-4 text-right whitespace-nowrap">
+<button onclick="editRow(${srv.id})" class="view-mode p-2 text-gray-400 hover:text-brand-600">
+<i data-lucide="edit-3" class="w-5 h-5">
+</i>
+</button>
+<button onclick="deleteRow(${srv.id})" class="view-mode p-2 text-gray-400 hover:text-red-500">
+<i data-lucide="trash-2" class="w-5 h-5">
+</i>
+</button>
+<button onclick="saveRow(${srv.id})" class="edit-mode hidden px-4 py-2 bg-green-600 text-white rounded-lg text-xs font-bold uppercase tracking-widest">Сохранить</button>
+<button onclick="cancelEditRow(${srv.id})" class="edit-mode hidden ml-1 px-4 py-2 bg-white border border-gray-200 text-gray-600 rounded-lg text-xs font-bold uppercase tracking-widest">Отмена</button>
+</td>
+</tr>`).join(''); lucide.createIcons();        }        function addService() { if(isAddingNewService) return; isAddingNewService = true; const newId = Date.now(); dbServices.unshift({ id: newId, name: "", desc: "", price: "", isNew: true }); renderTable(); editRow(newId); }        function editRow(id) { const row = document.getElementById(`row-${id}`); row.querySelectorAll('.view-mode').forEach(el => el.classList.add('hidden')); row.querySelectorAll('.edit-mode').forEach(el => el.classList.remove('hidden')); row.classList.add('bg-brand-50/30'); }        function saveRow(id) { const row = document.getElementById(`row-${id}`); const inputs = row.querySelectorAll('.edit-mode[type="text"]'); const idx = dbServices.findIndex(s => s.id === id); if(idx !== -1) { const name = inputs[0].value.trim(); if(!name) return showToast('Введите название!'); dbServices[idx].name = name; dbServices[idx].desc = inputs[1].value; dbServices[idx].price = inputs[2].value; delete dbServices[idx].isNew; } isAddingNewService = false; persistData(); renderTable(); showToast('Услуга сохранена'); }        function cancelEditRow(id) { const idx = dbServices.findIndex(s => s.id === id); if(idx !== -1 && dbServices[idx].isNew) dbServices.splice(idx, 1); isAddingNewService = false; renderTable(); }        function deleteRow(id) { if(confirm('Удалить?')) { dbServices = dbServices.filter(s => s.id !== id); persistData(); renderTable(); } }        function renderPriceFile() { const n = document.getElementById('price-file-name'); const s = document.getElementById('price-file-size'); if(dbPriceFile.exists) { n.innerText = dbPriceFile.name; s.innerText = dbPriceFile.size; n.classList.remove('text-gray-400'); } else { n.innerText = "Нет файла"; s.innerText = "—"; n.classList.add('text-gray-400'); } }        function handleFileUpload(e) { const f = e.target.files[0]; if(!f) return; dbPriceFile = { name: f.name, size: (f.size/(1024*1024)).toFixed(2)+" MB", exists: true }; localStorage.setItem('dbPriceFile', JSON.stringify(dbPriceFile)); renderPriceFile(); showToast('Загружено'); }        function deletePriceFile() { if(!dbPriceFile.exists) return; if(confirm('Удалить?')) { dbPriceFile = { name: "", size: "", exists: false }; localStorage.setItem('dbPriceFile', JSON.stringify(dbPriceFile)); renderPriceFile(); showToast('Удалено'); document.getElementById('price-file-upload').value = ''; } }        // --- РАЗДЕЛ: УСЛУГИ (КАТАЛОГ И ДЕТАЛЬНЫЕ) ---        function renderCatCategories() {            document.getElementById('admin-cat-list').innerHTML = dbCatCategories.map(c => `                <div id="cat-row-${c.id}" class="flex gap-4 p-4 border border-gray-200 rounded-2xl bg-white hover:bg-gray-50 group">
+<img src="${c.img}" onerror="this.src='https://placehold.co/400x400/f3f4f6/a1a1aa?text=Ошибка+загрузки'" class="w-20 h-20 rounded-xl object-cover bg-gray-100 border border-gray-200">
+<div class="flex-1 view-mode">
+<p class="font-bold text-brand-900">${c.title}</p>
+<p class="text-xs text-gray-500 mt-1 leading-relaxed">${c.desc}</p>
+</div>
+<div class="flex-1 hidden edit-mode flex-col gap-2">
+<input type="text" id="cat-title-${c.id}" value="${c.title}" class="w-full px-3 py-1.5 text-sm border rounded outline-none focus:border-brand-600" placeholder="Заголовок">
+<input type="text" id="cat-desc-${c.id}" value="${c.desc}" class="w-full px-3 py-1.5 text-sm border rounded outline-none focus:border-brand-600" placeholder="Описание">
+<input type="text" id="cat-img-${c.id}" value="${c.img}" class="w-full px-3 py-1.5 text-sm border rounded outline-none focus:border-brand-600" placeholder="URL обложки">
+</div>
+<div class="flex flex-col gap-2 shrink-0 border-l border-gray-100 pl-4">
+<button onclick="editCat('${c.id}')" class="view-mode p-2 bg-white rounded-lg border border-gray-200 shadow-sm hover:text-brand-600 transition-colors">
+<i data-lucide="edit-3" class="w-4 h-4">
+</i>
+</button>
+<button onclick="saveCat('${c.id}')" class="edit-mode hidden p-2 bg-white rounded-lg border border-green-200 shadow-sm text-green-600 hover:bg-green-50 transition-colors">
+<i data-lucide="save" class="w-4 h-4">
+</i>
+</button>
+<button onclick="cancelCat('${c.id}')" class="edit-mode hidden p-2 bg-white rounded-lg border border-gray-200 shadow-sm text-gray-400 hover:bg-gray-50 transition-colors">
+<i data-lucide="x" class="w-4 h-4">
+</i>
+</button>
+</div>
+</div>`).join(''); lucide.createIcons();        }        function editCat(id) { const row = document.getElementById(`cat-row-${id}`); row.querySelectorAll('.view-mode').forEach(el => el.classList.add('hidden')); row.querySelectorAll('.edit-mode').forEach(el => el.classList.remove('hidden')); row.classList.add('bg-brand-50/30', 'border-brand-200'); }        function cancelCat(id) { renderCatCategories(); }        function saveCat(id) { const c = dbCatCategories.find(x => x.id === id); if(c) { c.title = document.getElementById(`cat-title-${id}`).value; c.desc = document.getElementById(`cat-desc-${id}`).value; c.img = formatImageUrl(document.getElementById(`cat-img-${id}`).value); persistData(); renderCatCategories(); showToast('Категория сохранена'); } }        function renderCatProcedures() {            const catMap = {}; dbCatCategories.forEach(c => catMap[c.id] = c.title);            document.getElementById('admin-proc-list').innerHTML = dbCatProcedures.map(p => `                <tr class="hover:bg-brand-50/50 group transition-colors border-b border-gray-100">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<img src="${p.img}" onerror="this.src='https://placehold.co/100x100/f3f4f6/a1a1aa?text=Err'" class="w-10 h-10 rounded-lg object-cover bg-gray-100 border border-gray-200">
+<span class="font-medium text-brand-900">${p.title}</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="px-3 py-1 rounded-full bg-gray-100 text-[10px] font-bold uppercase tracking-wider text-gray-600">${catMap[p.categoryId] || 'Без категории'}</span>
+</td>
+<td class="px-6 py-4 font-serif text-brand-900">${p.priceText}</td>
+<td class="px-6 py-4 text-right whitespace-nowrap">
+<button onclick="openProcEditorModal('${p.id}')" class="text-brand-600 mr-4 text-sm font-medium hover:text-brand-800 transition-colors">
+<i data-lucide="edit" class="w-4 h-4 inline mr-1">
+</i> Настроить</button>
+<button onclick="deleteCatProcedure('${p.id}')" class="text-gray-400 hover:text-red-500 transition-colors">
+<i data-lucide="trash-2" class="w-4 h-4 inline">
+</i>
+</button>
+</td>
+</tr>`).join(''); lucide.createIcons();        }        function deleteCatProcedure(id) { if(confirm('Удалить эту процедуру навсегда?')) { dbCatProcedures = dbCatProcedures.filter(p => p.id !== id); persistData(); renderCatProcedures(); } }        let tempEditProc = null;        function openProcEditorModal(procId = null) {            if(procId) { tempEditProc = JSON.parse(JSON.stringify(dbCatProcedures.find(x => x.id === procId))); document.getElementById('pe-modal-title').innerText = 'Редактирование: ' + tempEditProc.title; }            else { tempEditProc = { id: 'proc_' + Date.now(), categoryId: 'aesthetic', title: '', priceText: '', img: '', desc: '', howItWorks: [], problems: [], prices: [] }; document.getElementById('pe-modal-title').innerText = 'Новая процедура'; }            document.getElementById('pe-title').value = tempEditProc.title; document.getElementById('pe-category').value = tempEditProc.categoryId; document.getElementById('pe-priceText').value = tempEditProc.priceText; document.getElementById('pe-img').value = tempEditProc.img; document.getElementById('pe-desc').value = tempEditProc.desc;            peRenderSteps(); peRenderProblems(); peRenderPrices();            const modal = document.getElementById('proc-editor-modal'); const content = document.getElementById('proc-editor-modal-content'); modal.classList.remove('opacity-0', 'pointer-events-none'); setTimeout(() => content.classList.remove('scale-95'), 10);        }        function closeProcEditorModal() { const modal = document.getElementById('proc-editor-modal'); const content = document.getElementById('proc-editor-modal-content'); content.classList.add('scale-95'); setTimeout(() => modal.classList.add('opacity-0', 'pointer-events-none'), 200); tempEditProc = null; }        function saveProcEditorModal() {            tempEditProc.title = document.getElementById('pe-title').value.trim(); tempEditProc.categoryId = document.getElementById('pe-category').value; tempEditProc.priceText = document.getElementById('pe-priceText').value; tempEditProc.img = formatImageUrl(document.getElementById('pe-img').value); tempEditProc.desc = document.getElementById('pe-desc').value;            if(!tempEditProc.title) return alert('Название обязательно!');            const idx = dbCatProcedures.findIndex(x => x.id === tempEditProc.id); if(idx > -1) dbCatProcedures[idx] = tempEditProc; else dbCatProcedures.unshift(tempEditProc);            persistData(); renderCatProcedures(); closeProcEditorModal(); showToast('Сохранено!');        }        function peRenderSteps() { document.getElementById('pe-steps-container').innerHTML = tempEditProc.howItWorks.map((item, i) => `<div class="flex gap-3 items-start bg-gray-50 p-4 rounded-xl border border-gray-100">
+<div class="flex-1 space-y-2">
+<input type="text" value="${item.q}" onkeyup="tempEditProc.howItWorks[${i}].q = this.value" class="w-full px-3 py-2 border rounded-lg outline-none focus:border-brand-600 text-sm" placeholder="Шаг (н-р: Консультация)">
+<textarea rows="2" onkeyup="tempEditProc.howItWorks[${i}].a = this.value" class="w-full px-3 py-2 border rounded-lg outline-none focus:border-brand-600 text-sm resize-none" placeholder="Описание этапа...">${item.a}</textarea>
+</div>
+<button onclick="peRemoveStep(${i})" class="text-gray-400 hover:text-red-500 bg-white border border-gray-200 p-2 rounded-lg mt-1">
+<i data-lucide="trash" class="w-4 h-4">
+</i>
+</button>
+</div>`).join(''); lucide.createIcons(); }        function peAddStep() { tempEditProc.howItWorks.push({ q: '', a: '' }); peRenderSteps(); } function peRemoveStep(i) { tempEditProc.howItWorks.splice(i, 1); peRenderSteps(); }                function peRenderProblems() { document.getElementById('pe-problems-container').innerHTML = tempEditProc.problems.map((item, i) => `<div class="flex gap-3 items-start bg-gray-50 p-4 rounded-xl border border-gray-100">
+<div class="flex-1 space-y-2">
+<input type="text" value="${item.q}" onkeyup="tempEditProc.problems[${i}].q = this.value" class="w-full px-3 py-2 border rounded-lg outline-none focus:border-brand-600 text-sm" placeholder="Проблема (н-р: Птоз тканей)">
+<textarea rows="2" onkeyup="tempEditProc.problems[${i}].a = this.value" class="w-full px-3 py-2 border rounded-lg outline-none focus:border-brand-600 text-sm resize-none" placeholder="Решение...">${item.a}</textarea>
+</div>
+<button onclick="peRemoveProblem(${i})" class="text-gray-400 hover:text-red-500 bg-white border border-gray-200 p-2 rounded-lg mt-1">
+<i data-lucide="trash" class="w-4 h-4">
+</i>
+</button>
+</div>`).join(''); lucide.createIcons(); }        function peAddProblem() { tempEditProc.problems.push({ q: '', a: '' }); peRenderProblems(); } function peRemoveProblem(i) { tempEditProc.problems.splice(i, 1); peRenderProblems(); }                function peRenderPrices() { document.getElementById('pe-prices-container').innerHTML = tempEditProc.prices.map((item, i) => `<div class="flex gap-3 items-start bg-gray-50 p-4 rounded-xl border border-gray-100">
+<div class="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+<input type="text" value="${item.name}" onkeyup="tempEditProc.prices[${i}].name = this.value" class="w-full px-3 py-2 border rounded-lg outline-none focus:border-brand-600 text-sm" placeholder="Название (Препарат)">
+<input type="text" value="${item.vol}" onkeyup="tempEditProc.prices[${i}].vol = this.value" class="w-full px-3 py-2 border rounded-lg outline-none focus:border-brand-600 text-sm" placeholder="Объем (1 мл)">
+<input type="text" value="${item.time}" onkeyup="tempEditProc.prices[${i}].time = this.value" class="w-full px-3 py-2 border rounded-lg outline-none focus:border-brand-600 text-sm" placeholder="Время (60 мин)">
+<input type="text" value="${item.cost}" onkeyup="tempEditProc.prices[${i}].cost = this.value" class="w-full px-3 py-2 border rounded-lg outline-none focus:border-brand-600 text-sm font-bold font-serif text-brand-600" placeholder="Цена (10 000 ₽)">
+</div>
+<button onclick="peRemovePrice(${i})" class="text-gray-400 hover:text-red-500 bg-white border border-gray-200 p-2 rounded-lg">
+<i data-lucide="trash" class="w-4 h-4">
+</i>
+</button>
+</div>`).join(''); lucide.createIcons(); }        function peAddPrice() { tempEditProc.prices.push({ name: '', vol: '', time: '', cost: '' }); peRenderPrices(); } function peRemovePrice(i) { tempEditProc.prices.splice(i, 1); peRenderPrices(); }        // --- РАЗДЕЛ: СПЕЦИАЛИСТЫ ---        let isAddingSpecialist = false;        function renderSpecialists() {            document.getElementById('admin-specialists-list').innerHTML = dbSpecialists.map(s => `                <div id="spec-row-${s.id}" class="flex flex-col sm:flex-row gap-6 p-6 border border-gray-200 rounded-[1.5rem] bg-white hover:bg-gray-50 group transition-all">
+<img src="${s.img}" onerror="this.src='https://placehold.co/600x600/f3f4f6/a1a1aa?text=Ошибка+загрузки'" class="w-24 h-24 sm:w-32 sm:h-32 rounded-full object-cover shrink-0 shadow-sm bg-gray-100 border-4 border-white">
+<div class="flex-1 view-mode">
+<p class="text-2xl font-serif font-bold text-brand-900">${s.name}</p>
+<p class="text-[10px] text-brand-600 mb-4 uppercase tracking-widest font-bold">${s.role}</p>
+<p class="text-sm text-gray-500 line-clamp-2 mb-2">
+<span class="block text-[9px] uppercase tracking-widest font-bold text-gray-400 mb-0.5">Образование</span>${s.edu}</p>
+<p class="text-sm text-gray-500 line-clamp-2">
+<span class="block text-[9px] uppercase tracking-widest font-bold text-gray-400 mb-0.5">О себе</span>${s.bio}</p>
+</div>
+<div class="flex-1 hidden edit-mode grid grid-cols-1 sm:grid-cols-2 gap-4 border-t sm:border-t-0 sm:border-l border-gray-200 pt-4 sm:pt-0 sm:pl-6">
+<div class="sm:col-span-2">
+<label class="text-[10px] font-bold uppercase text-gray-500">ФИО</label>
+<input type="text" id="spec-name-${s.id}" value="${s.name}" class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:border-brand-600">
+</div>
+<div>
+<label class="text-[10px] font-bold uppercase text-gray-500">Должность</label>
+<input type="text" id="spec-role-${s.id}" value="${s.role}" class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:border-brand-600">
+</div>
+<div>
+<label class="text-[10px] font-bold uppercase text-gray-500">URL фото</label>
+<input type="text" id="spec-img-${s.id}" value="${s.img}" class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:border-brand-600">
+</div>
+<div class="sm:col-span-2">
+<label class="text-[10px] font-bold uppercase text-gray-500">Образование</label>
+<textarea id="spec-edu-${s.id}" class="w-full px-3 py-2 border rounded-lg text-sm resize-y outline-none focus:border-brand-600" rows="2">${s.edu}</textarea>
+</div>
+<div class="sm:col-span-2">
+<label class="text-[10px] font-bold uppercase text-gray-500">О себе</label>
+<textarea id="spec-bio-${s.id}" class="w-full px-3 py-2 border rounded-lg text-sm resize-y outline-none focus:border-brand-600" rows="3">${s.bio}</textarea>
+</div>
+</div>
+<div class="flex flex-row sm:flex-col gap-2 shrink-0 border-t sm:border-t-0 sm:border-l border-gray-100 pt-4 sm:pt-0 sm:pl-4">
+<button onclick="editSpecialist(${s.id})" class="view-mode flex-1 p-3 border rounded-xl hover:text-brand-600 hover:border-brand-600 transition-colors shadow-sm bg-white">
+<i data-lucide="edit-3" class="w-5 h-5 mx-auto">
+</i>
+</button>
+<button onclick="deleteSpecialist(${s.id})" class="view-mode flex-1 p-3 border rounded-xl hover:text-red-500 hover:border-red-500 transition-colors shadow-sm bg-white">
+<i data-lucide="trash-2" class="w-5 h-5 mx-auto">
+</i>
+</button>
+<button onclick="saveSpecialist(${s.id})" class="edit-mode hidden px-6 py-3 bg-green-600 text-white rounded-xl text-xs font-bold uppercase tracking-widest shadow-md">Сохранить</button>
+<button onclick="cancelEditSpecialist(${s.id})" class="edit-mode hidden px-6 py-3 border border-gray-200 bg-white text-gray-600 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-gray-50 shadow-sm">Отмена</button>
+</div>
+</div>`).join(''); lucide.createIcons();        }        function addSpecialist() { if(isAddingSpecialist) return; isAddingSpecialist = true; const newId = Date.now(); dbSpecialists.unshift({ id: newId, name: "", role: "", edu: "", bio: "", img: "", isNew: true }); renderSpecialists(); editSpecialist(newId); }        function editSpecialist(id) { const row = document.getElementById(`spec-row-${id}`); row.querySelectorAll('.view-mode').forEach(el => el.classList.add('hidden')); row.querySelectorAll('.edit-mode').forEach(el => el.classList.remove('hidden')); row.classList.add('bg-brand-50/30', 'border-brand-200'); }        function saveSpecialist(id) {             const idx = dbSpecialists.findIndex(s => s.id === id);             if (idx !== -1) {                 const name = document.getElementById(`spec-name-${id}`).value.trim();                 if (!name) return showToast('Введите ФИО!');                 dbSpecialists[idx].name = name;                 dbSpecialists[idx].role = document.getElementById(`spec-role-${id}`).value;                 dbSpecialists[idx].img = formatImageUrl(document.getElementById(`spec-img-${id}`).value);                 dbSpecialists[idx].edu = document.getElementById(`spec-edu-${id}`).value;                 dbSpecialists[idx].bio = document.getElementById(`spec-bio-${id}`).value;                 delete dbSpecialists[idx].isNew;             }             isAddingSpecialist = false; persistData(); renderSpecialists(); showToast('Специалист сохранен');         }        function cancelEditSpecialist(id) { const idx = dbSpecialists.findIndex(s => s.id === id); if (idx !== -1 && dbSpecialists[idx].isNew) dbSpecialists.splice(idx, 1); isAddingSpecialist = false; renderSpecialists(); }        function deleteSpecialist(id) { if (confirm('Удалить специалиста?')) { dbSpecialists = dbSpecialists.filter(s => s.id !== id); persistData(); renderSpecialists(); } }        // --- РАЗДЕЛ: ПОДВАЛ ---        function renderFooterData() {            document.getElementById('ft-desc').value = dbFooter.shortDesc; document.getElementById('ft-company').value = dbFooter.companyName; document.getElementById('ft-ogrn').value = dbFooter.ogrn; document.getElementById('ft-license').value = dbFooter.license; document.getElementById('ft-copyright').value = dbFooter.copyright; document.getElementById('ft-warning').value = dbFooter.warning;            document.getElementById('ft-policy').value = dbFooter.policyText; document.getElementById('ft-terms').value = dbFooter.termsText;        }        function saveFooterData() {            dbFooter.shortDesc = document.getElementById('ft-desc').value; dbFooter.companyName = document.getElementById('ft-company').value; dbFooter.ogrn = document.getElementById('ft-ogrn').value; dbFooter.license = document.getElementById('ft-license').value; dbFooter.copyright = document.getElementById('ft-copyright').value; dbFooter.warning = document.getElementById('ft-warning').value;            dbFooter.policyText = document.getElementById('ft-policy').value; dbFooter.termsText = document.getElementById('ft-terms').value; persistData(); showToast('Подвал сохранен');        }        // --- РАЗДЕЛ: НАСТРОЙКИ (ДОСТУПЫ) ---        let isAddingAdmin = false;        function renderAdmins() {            document.getElementById('admin-users-list').innerHTML = dbAdmins.map(a => `                <div id="admin-row-${a.id}" class="flex flex-col gap-4 p-5 border rounded-2xl ${a.isOwner ? 'bg-brand-50/30 border-brand-200' : 'bg-white hover:bg-gray-50'} shadow-sm transition-all group">
+<div class="flex justify-between items-center view-mode">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full ${a.isOwner ? 'bg-brand-600 text-white shadow-md' : 'bg-gray-100 text-gray-500 border border-gray-200'} flex items-center justify-center shrink-0">                                ${a.isOwner ? '<i data-lucide="crown" class="w-6 h-6">
+</i>' : '<i data-lucide="user" class="w-6 h-6">
+</i>'}                            </div>
+<div>
+<p class="font-bold text-brand-900 text-lg">${a.name} ${a.isOwner ? '<span class="ml-2 text-[9px] font-bold text-[#746258] uppercase tracking-widest border border-[#746258] px-2 py-0.5 rounded-full bg-white align-middle">Владелец</span>' : ''}</p>
+<p class="text-sm text-gray-500">${a.role}</p>
+</div>
+</div>
+<div class="flex gap-2">
+<button onclick="editAdmin(${a.id})" class="text-gray-400 hover:text-brand-600 p-2.5 border rounded-xl bg-white shadow-sm transition-colors">
+<i data-lucide="edit-3" class="w-5 h-5">
+</i>
+</button>                            ${!a.isOwner ? `<button onclick="deleteAdmin(${a.id})" class="text-gray-400 hover:text-red-500 p-2.5 border rounded-xl bg-white shadow-sm transition-colors">
+<i data-lucide="trash-2" class="w-5 h-5">
+</i>
+</button>` : ''}                        </div>
+</div>
+<div class="hidden edit-mode grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2 border-t border-gray-100 pt-5">
+<div>
+<label class="block text-[10px] font-bold uppercase text-gray-500 mb-1">ФИО</label>
+<input type="text" id="adm-name-${a.id}" value="${a.name}" class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:border-brand-600">
+</div>
+<div>
+<label class="block text-[10px] font-bold uppercase text-gray-500 mb-1">Должность</label>
+<input type="text" id="adm-role-${a.id}" value="${a.role}" class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:border-brand-600">
+</div>
+<div>
+<label class="block text-[10px] font-bold uppercase text-brand-600 mb-1">Логин</label>
+<input type="text" id="adm-login-${a.id}" value="${a.login}" class="w-full px-3 py-2 border border-brand-200 bg-brand-50/50 rounded-lg text-sm outline-none focus:border-brand-600">
+</div>
+<div>
+<label class="block text-[10px] font-bold uppercase text-brand-600 mb-1">Пароль</label>
+<input type="text" id="adm-pwd-${a.id}" value="${a.pwd}" class="w-full px-3 py-2 border border-brand-200 bg-brand-50/50 rounded-lg text-sm outline-none focus:border-brand-600">
+</div>
+<div class="sm:col-span-2 flex justify-end gap-3 mt-2">
+<button onclick="cancelEditAdmin(${a.id})" class="px-6 py-3 border rounded-xl text-xs uppercase tracking-widest font-bold text-gray-600 hover:bg-gray-50 transition-colors">Отмена</button>
+<button onclick="saveAdmin(${a.id})" class="px-6 py-3 bg-green-600 text-white rounded-xl text-xs uppercase tracking-widest font-bold shadow-md hover:bg-green-700 transition-colors">Сохранить</button>
+</div>
+</div>
+</div>`).join(''); lucide.createIcons();        }        function addAdmin() { if(isAddingAdmin) return; isAddingAdmin = true; const newId = Date.now(); dbAdmins.push({ id: newId, name: "", role: "Менеджер", login: "", pwd: "", isOwner: false, isNew: true }); renderAdmins(); editAdmin(newId); }        function editAdmin(id) { const row = document.getElementById(`admin-row-${id}`); row.querySelectorAll('.view-mode').forEach(el => el.classList.add('hidden')); row.querySelectorAll('.edit-mode').forEach(el => el.classList.remove('hidden')); }        function saveAdmin(id) {             const n = document.getElementById(`adm-name-${id}`).value.trim(); const r = document.getElementById(`adm-role-${id}`).value.trim(); const l = document.getElementById(`adm-login-${id}`).value.trim(); const p = document.getElementById(`adm-pwd-${id}`).value.trim();             if(!n || !l || !p) return showToast('Заполните обязательные поля!');             if(p.length < 5) return showToast('Пароль минимум 5 символов!');             if(dbAdmins.find(a => a.login === l && a.id !== id)) return showToast('Логин занят!');             const idx = dbAdmins.findIndex(a => a.id === id);             if(idx > -1) { dbAdmins[idx].name = n; dbAdmins[idx].role = r; dbAdmins[idx].login = l; dbAdmins[idx].pwd = p; delete dbAdmins[idx].isNew; }             isAddingAdmin = false; persistData(); renderAdmins();             const cid = localStorage.getItem('loggedInAdminId') || sessionStorage.getItem('loggedInAdminId');             if(cid === id.toString()) updateHeaderUser(dbAdmins[idx]);             showToast('Сохранено');         }        function cancelEditAdmin(id) { const idx = dbAdmins.findIndex(a => a.id === id); if(idx > -1 && dbAdmins[idx].isNew) dbAdmins.splice(idx, 1); isAddingAdmin = false; renderAdmins(); }        function deleteAdmin(id) { const u = dbAdmins.find(a => a.id === id); if(u && u.isOwner) return showToast('Нельзя удалить владельца!'); if(confirm('Закрыть доступ?')) { dbAdmins = dbAdmins.filter(a => a.id !== id); persistData(); renderAdmins(); } }    </script>
+</body>
+</html>

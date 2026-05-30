@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Клиника косметологии Доктора Вороненко | VORONÉNKO</title>
+</head>
+<body>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com">
+</script>
+<!-- Шрифты (Montserrat & Playfair Display) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<!-- Иконки Lucide -->
+<script src="https://unpkg.com/lucide@latest">
+</script>
+<!-- Плагин для слабовидящих (BVI - ГОСТ РФ) ПРЯМАЯ ССЫЛКА НА GITHUB АВТОРА -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/veks/button-visually-impaired-javascript@master/dist/css/bvi.min.css">
+<script src="https://cdn.jsdelivr.net/gh/veks/button-visually-impaired-javascript@master/dist/js/bvi.min.js">
+</script>
+<!-- Настройки Tailwind -->
+<script>    tailwind.config = {        theme: {            extend: {                fontFamily: {                    sans: ['Montserrat', 'sans-serif'],                    serif: ['Playfair Display', 'serif'],                }            }        }    }</script>
+<!-- Глобальные стили -->
+<style>    body {        font-family: 'Montserrat', sans-serif;        color: #2A2522;        background-color: #FDFBF9;        -webkit-font-smoothing: antialiased;        -moz-osx-font-smoothing: grayscale;        margin: 0;    }    .hide-scrollbar::-webkit-scrollbar { display: none; }    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }        /* Стили для аккордеонов внутри услуги и FAQ */    .acc-content { max-height: 0; opacity: 0; overflow: hidden; transition: all 0.5s ease-in-out; }    .acc-content.active { opacity: 1; margin-top: 1rem; }</style>
+<!-- УВЕДОМЛЕНИЕ (TOAST) -->
+<div id="toast" class="fixed bottom-6 left-6 z-[200] bg-[#2A2522] text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 opacity-0 pointer-events-none transition-all duration-300 translate-y-10">
+<i data-lucide="check-circle-2" class="w-5 h-5 text-[#D0C0B1]">
+</i>
+<p id="toast-msg" class="text-sm font-medium">Сообщение</p>
+</div>
+<!-- МОДАЛЬНОЕ ОКНО ЗАПИСИ -->
+<div id="booking-modal" class="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-[#1A1817]/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300">
+<div class="absolute inset-0" onclick="closeModal('booking-modal')">
+</div>
+<div class="relative bg-[#FDFBF9] rounded-[2.5rem] shadow-2xl w-full max-w-lg p-8 lg:p-12 transform scale-95 transition-transform duration-300" id="booking-modal-content">
+<button onclick="closeModal('booking-modal')" class="absolute top-6 right-6 text-gray-400 hover:text-[#2A2522] transition-colors">
+<i data-lucide="x" class="w-6 h-6">
+</i>
+</button>
+<h3 class="font-serif text-3xl text-[#2A2522] mb-2">Запись на прием</h3>
+<p class="text-gray-500 font-light text-sm mb-8">Оставьте ваши данные, и администратор подберет удобное время.</p>
+<form onsubmit="submitBooking(event)" class="space-y-4">
+<input type="text" required placeholder="Ваше имя" class="w-full px-5 py-4 rounded-2xl border border-[#D0C0B1]/40 bg-white focus:outline-none focus:border-[#746258] focus:ring-2 focus:ring-[#746258]/20 transition-all font-medium">
+<input type="tel" required placeholder="+7 (999) 000-00-00" class="w-full px-5 py-4 rounded-2xl border border-[#D0C0B1]/40 bg-white focus:outline-none focus:border-[#746258] focus:ring-2 focus:ring-[#746258]/20 transition-all font-medium">
+<div class="pt-2">
+<p class="text-xs text-gray-400 uppercase tracking-widest font-semibold mb-2 ml-1">Интересующая услуга / Врач</p>
+<input type="text" id="booking-interest" placeholder="Например: RF-лифтинг или Консультация" class="w-full px-5 py-4 rounded-2xl border border-[#D0C0B1]/40 bg-white focus:outline-none focus:border-[#746258] focus:ring-2 focus:ring-[#746258]/20 transition-all font-medium">
+</div>
+<button type="submit" class="w-full mt-4 bg-[#746258] text-white py-4 rounded-2xl font-bold uppercase tracking-widest text-sm hover:bg-[#5A4C44] active:scale-95 transition-all duration-300 shadow-[0_10px_20px_rgb(116,98,88,0.2)]">Отправить заявку</button>
+<p class="text-[10px] text-gray-400 text-center mt-4">Нажимая кнопку, вы соглашаетесь с Политикой конфиденциальности.</p>
+</form>
+</div>
+</div>
+<!-- МОДАЛЬНОЕ ОКНО ВРАЧА -->
+<div id="doctor-modal" class="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-[#1A1817]/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300">
+<div class="absolute inset-0" onclick="closeModal('doctor-modal')">
+</div>
+<div class="relative bg-[#FDFBF9] rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col md:flex-row transform scale-95 transition-transform duration-300" id="doctor-modal-content">
+<button onclick="closeModal('doctor-modal')" class="absolute top-4 right-4 z-10 w-10 h-10 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center text-[#2A2522] hover:bg-white transition-colors">
+<i data-lucide="x" class="w-5 h-5">
+</i>
+</button>
+<div class="w-full md:w-2/5 h-64 md:h-auto relative">
+<img id="doc-img" src="" alt="Врач" class="w-full h-full object-cover">
+</div>
+<div class="w-full md:w-3/5 p-8 lg:p-10 flex flex-col">
+<p id="doc-role" class="text-[11px] text-[#746258] uppercase tracking-[0.2em] font-bold mb-2">
+</p>
+<h3 id="doc-name" class="font-serif text-3xl text-[#2A2522] mb-4">
+</h3>
+<p id="doc-bio" class="text-sm text-gray-600 font-light leading-relaxed mb-6">
+</p>
+<div class="mb-8">
+<p class="text-[10px] uppercase tracking-widest text-gray-400 font-semibold mb-2">Образование</p>
+<p id="doc-edu" class="text-[13px] text-gray-500 font-light leading-relaxed">
+</p>
+</div>
+<button id="doc-book-btn" class="mt-auto w-full bg-[#746258] text-white py-3.5 rounded-full font-bold uppercase tracking-widest text-xs hover:bg-[#5A4C44] active:scale-95 transition-all shadow-md">                Записаться к врачу            </button>
+</div>
+</div>
+</div>
+<!-- ПЛАВАЮЩИЙ КОМБО-ВИДЖЕТ (СОЦСЕТИ + ЗАПИСЬ) -->
+<div class="fixed bottom-6 right-4 sm:right-6 z-[100] flex items-end gap-3 sm:gap-4 bvi-no-styles">
+<!-- Соцсети (выезжают наверх) -->
+<div class="flex flex-col items-center relative">
+<div id="social-widget-menu" class="absolute bottom-full mb-4 flex flex-col gap-3 transition-all duration-300 opacity-0 pointer-events-none translate-y-4 origin-bottom">
+<a href="#" onclick="event.preventDefault(); showToast('Переход в ВКонтакте...')" class="w-14 h-14 bg-[#0077FF] text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-transform">
+<span class="font-bold text-lg">VK</span>
+</a>
+<a href="#" onclick="event.preventDefault(); showToast('Переход в Telegram...')" class="w-14 h-14 bg-[#229ED9] text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-transform">
+<i data-lucide="send" class="w-6 h-6 -ml-1 mt-1">
+</i>
+</a>
+<a href="#" onclick="event.preventDefault(); showToast('Переход в Max...')" class="w-14 h-14 bg-gradient-to-br from-[#1A56FF] to-[#7000FF] text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-transform">
+<span class="font-bold text-[13px] tracking-wider">MAX</span>
+</a>
+</div>
+<button onclick="toggleSocialWidget()" class="w-14 h-14 bg-white border border-[#D0C0B1]/40 text-[#2A2522] rounded-full flex items-center justify-center shadow-[0_10px_25px_rgb(0,0,0,0.1)] hover:border-[#746258] hover:text-[#746258] active:scale-95 transition-all">
+<i data-lucide="message-circle" id="social-widget-icon" class="w-6 h-6 transition-transform duration-300">
+</i>
+<i data-lucide="x" id="social-widget-close" class="w-6 h-6 absolute opacity-0 rotate-[-90deg] transition-all duration-300">
+</i>
+</button>
+</div>
+<!-- Кнопка Записаться -->
+<button onclick="openBooking('')" class="h-14 px-8 sm:px-10 bg-[#746258] text-white rounded-[2rem] flex items-center justify-center shadow-[0_10px_25px_rgb(116,98,88,0.3)] hover:bg-[#5A4C44] hover:shadow-[0_15px_35px_rgb(116,98,88,0.4)] hover:-translate-y-1 active:translate-y-0 active:scale-95 transition-all duration-300 group">
+<span class="font-bold text-xs sm:text-sm uppercase tracking-widest whitespace-nowrap">Записаться</span>
+<i data-lucide="calendar-plus" class="w-5 h-5 ml-3 opacity-90 group-hover:scale-110 transition-transform">
+</i>
+</button>
+</div>
+<!-- Скрипт для плавающего виджета -->
+<script>    function toggleSocialWidget() {        const menu = document.getElementById('social-widget-menu');        const icon = document.getElementById('social-widget-icon');        const close = document.getElementById('social-widget-close');                menu.classList.toggle('opacity-0');        menu.classList.toggle('pointer-events-none');        menu.classList.toggle('translate-y-4');                if (menu.classList.contains('opacity-0')) {            icon.classList.remove('opacity-0', 'rotate-90');            close.classList.add('opacity-0', 'rotate-[-90deg]');        } else {            icon.classList.add('opacity-0', 'rotate-90');            close.classList.remove('opacity-0', 'rotate-[-90deg]');        }    }</script>
+<!-- ШАПКА -->
+<header id="navbar" class="fixed top-0 w-full z-50 transition-all duration-500 bg-white/95 backdrop-blur-md border-b border-[#D0C0B1]/30">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex justify-between items-center py-2 lg:py-3">
+<!-- ЛОГОТИП SVG -->
+<div class="flex items-center gap-2.5 sm:gap-3 cursor-pointer shrink-0 group" onclick="goHome()">
+<svg viewBox="194 165 112 113" class="w-10 h-10 lg:w-12 lg:h-12 text-[#2A2522] group-hover:opacity-80 transition-opacity" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+<path d="M250,165.7c-30.8,0-55.8,25-55.8,55.8s25,55.8,55.8,55.8s55.8-25,55.8-55.8S280.8,165.7,250,165.7z M224.2,243.6v-45.7 c0,0,16.6,0,17.4,0c7.8,0,14.6,6.2,14.6,15.6c0,11.3-8.8,15.2-15.6,15.2c-0.8,0-16.4,0-16.4,0v14.9 M262.4,243.6l-9.1-30.6h2 l9.4,30.6H262.4z M273.7,243.6l15.1-30.6h2.2l-15.4,30.6H273.7z"/>
+<path d="M226.7,200.3v26.1h14.9c5.2,0,12.5-3.3,12.5-12.8c0-8.2-6.5-13.3-12.5-13.3H226.7z"/>
+<path d="M239.5,188.7c-8.9,0-15.3,4.9-15.3,4.9s6.6-6.4,18-6.4c11.4,0,17.2,5.2,17.2,5.2S253,188.7,239.5,188.7z"/>
+<path d="M285.3,243.6c-1.3,0-2.3-1-2.3-2.3c0-1.3,1-2.3,2.3-2.3c1.3,0,2.3,1,2.3,2.3C287.6,242.6,286.6,243.6,285.3,243.6z"/>
+</svg>
+<div class="flex flex-col border-l border-[#D0C0B1]/60 pl-2.5 sm:pl-3">
+<span class="font-serif text-[16px] sm:text-[18px] lg:text-[22px] text-[#2A2522] leading-none tracking-wide group-hover:opacity-80 transition-opacity">VORONÉNKO</span>
+<span class="text-[7px] sm:text-[8px] lg:text-[9px] uppercase tracking-[0.2em] text-[#746258] mt-0.5 sm:mt-1 font-semibold">Cosmetology Clinic</span>
+</div>
+</div>
+<div class="hidden lg:flex flex-col text-[13px] text-[#2A2522] ml-8 mr-auto">
+<span class="font-semibold tracking-wide">г. Самара, ул. Мяги, 24А</span>
+<span class="text-gray-400 mt-0.5 uppercase tracking-widest text-[10px] font-bold">пн-вс 09:00-21:00</span>
+</div>
+<!-- ИКОНКИ ДЕСКТОПНОЙ ШАПКИ -->
+<div class="hidden lg:flex items-center gap-6">
+<a href="tel:+78000000000" class="text-xl font-semibold !text-[#2A2522] hover:!text-[#746258] transition-colors whitespace-nowrap tracking-tight">                    8 (800) 000-00-00                </a>
+<div class="flex items-center gap-2 border-l border-gray-200 pl-6">
+<!-- VK -->
+<a href="#" onclick="showToast('Переход в ВКонтакте...')" class="w-10 h-10 flex items-center justify-center rounded-full bg-[#FDFBF9] border border-[#D0C0B1]/40 !text-[#2A2522] hover:!bg-[#2A2522] hover:!text-white active:scale-90 transition-all duration-300">
+<span class="font-bold text-xs">VK</span>
+</a>
+<!-- Telegram -->
+<a href="#" onclick="showToast('Переход в Telegram...')" class="w-10 h-10 flex items-center justify-center rounded-full bg-[#FDFBF9] border border-[#D0C0B1]/40 !text-[#2A2522] hover:!bg-[#2A2522] hover:!text-white active:scale-90 transition-all duration-300">
+<i data-lucide="send" class="w-5 h-5 ml-0.5">
+</i>
+</a>
+<!-- MAX -->
+<a href="#" onclick="showToast('Переход в Max...')" class="w-10 h-10 flex items-center justify-center rounded-full bg-[#FDFBF9] border border-[#D0C0B1]/40 !text-[#2A2522] hover:!bg-[#2A2522] hover:!text-white active:scale-90 transition-all duration-300">
+<span class="font-bold text-[10px] tracking-wider">MAX</span>
+</a>
+<!-- Слабовидящие (кнопка ГОСТ плагина) -->
+<a href="#" class="bvi-open w-10 h-10 flex items-center justify-center rounded-full bg-[#FDFBF9] border border-[#D0C0B1]/40 text-[#746258] hover:bg-[#746258] hover:text-white active:scale-90 transition-all duration-300" title="Версия для слабовидящих">
+<i data-lucide="eye" class="w-5 h-5">
+</i>
+</a>
+</div>
+</div>
+<div class="lg:hidden flex items-center gap-4">
+<a href="tel:+78000000000" class="text-lg font-semibold !text-[#2A2522] hover:!text-[#746258] transition-colors whitespace-nowrap">                    8 (800) 000-00-00                </a>
+<button class="p-1.5 text-[#2A2522] hover:bg-gray-50 rounded-md transition-colors active:scale-95" onclick="toggleMobileMenu()">
+<i data-lucide="menu" class="w-7 h-7" id="menu-icon">
+</i>
+</button>
+</div>
+</div>
+</div>
+<!-- Навигация Десктоп -->
+<div class="hidden lg:block bg-white/50 border-t border-[#D0C0B1]/20">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<nav class="flex justify-center space-x-8 lg:space-x-12 py-4">
+<a href="#about" class="relative text-[13px] !text-[#2A2522] uppercase tracking-widest font-semibold transition-colors hover:!text-[#746258] pb-1 hover:after:w-1/2 after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:h-[2px] after:bg-[#746258] after:transition-all after:duration-300 after:w-0" onclick="goHome(); setTimeout(() => document.getElementById('about').scrollIntoView(), 100)">О клинике</a>
+<a href="#services" class="relative text-[13px] !text-[#2A2522] uppercase tracking-widest font-semibold transition-colors hover:!text-[#746258] pb-1 hover:after:w-1/2 after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:h-[2px] after:bg-[#746258] after:transition-all after:duration-300 after:w-0" onclick="goHome(); setTimeout(() => document.getElementById('services').scrollIntoView(), 100)">Услуги</a>
+<a href="#team" class="relative text-[13px] !text-[#2A2522] uppercase tracking-widest font-semibold transition-colors hover:!text-[#746258] pb-1 hover:after:w-1/2 after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:h-[2px] after:bg-[#746258] after:transition-all after:duration-300 after:w-0" onclick="goHome(); setTimeout(() => document.getElementById('team').scrollIntoView(), 100)">Специалисты</a>
+<a href="#price" class="relative text-[13px] !text-[#2A2522] uppercase tracking-widest font-semibold transition-colors hover:!text-[#746258] pb-1 hover:after:w-1/2 after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:h-[2px] after:bg-[#746258] after:transition-all after:duration-300 after:w-0" onclick="goHome(); setTimeout(() => document.getElementById('price').scrollIntoView(), 100)">Прайс-лист</a>
+<a href="#" class="relative text-[13px] !text-[#2A2522] uppercase tracking-widest font-semibold transition-colors hover:!text-[#746258] pb-1 hover:after:w-1/2 after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:h-[2px] after:bg-[#746258] after:transition-all after:duration-300 after:w-0" onclick="event.preventDefault(); showView('view-consumer');">Уголок потребителя</a>
+</nav>
+</div>
+</div>
+<!-- Мобильное меню -->
+<div id="mobile-menu" class="hidden lg:hidden bg-white border-t border-[#D0C0B1]/20 absolute w-full shadow-2xl h-screen overflow-y-auto pb-32 transition-all duration-300 opacity-0 translate-y-[-10px]">
+<div class="px-6 py-8 space-y-3">
+<a href="#about" onclick="toggleMobileMenu(); goHome(); setTimeout(() => document.getElementById('about').scrollIntoView(), 100)" class="block w-full text-left text-2xl font-serif !text-[#2A2522] py-1">О клинике</a>
+<a href="#services" onclick="toggleMobileMenu(); goHome(); setTimeout(() => document.getElementById('services').scrollIntoView(), 100)" class="block w-full text-left text-2xl font-serif !text-[#2A2522] py-1">Услуги</a>
+<a href="#team" onclick="toggleMobileMenu(); goHome(); setTimeout(() => document.getElementById('team').scrollIntoView(), 100)" class="block w-full text-left text-2xl font-serif !text-[#2A2522] py-1">Специалисты</a>
+<a href="#price" onclick="toggleMobileMenu(); goHome(); setTimeout(() => document.getElementById('price').scrollIntoView(), 100)" class="block w-full text-left text-2xl font-serif !text-[#2A2522] py-1">Прайс-лист</a>
+<a href="#" onclick="event.preventDefault(); toggleMobileMenu(); showView('view-consumer');" class="block w-full text-left text-2xl font-serif !text-[#2A2522] py-1">Уголок потребителя</a>
+<!-- ИКОНКИ МОБИЛЬНОГО МЕНЮ -->
+<div class="pt-6 flex flex-col gap-6">
+<div class="flex items-center space-x-4">
+<!-- VK -->
+<a href="#" onclick="event.preventDefault(); showToast('Переход в ВКонтакте...')" class="flex items-center justify-center w-12 h-12 rounded-full bg-[#FDFBF9] border border-[#D0C0B1]/50 !text-[#2A2522] active:scale-95 transition-all">
+<span class="font-bold text-sm">VK</span>
+</a>
+<!-- Telegram -->
+<a href="#" onclick="event.preventDefault(); showToast('Переход в Telegram...')" class="flex items-center justify-center w-12 h-12 rounded-full bg-[#FDFBF9] border border-[#D0C0B1]/50 !text-[#2A2522] active:scale-95 transition-all">
+<i data-lucide="send" class="w-6 h-6 ml-0.5">
+</i>
+</a>
+<!-- MAX -->
+<a href="#" onclick="event.preventDefault(); showToast('Переход в Max...')" class="flex items-center justify-center w-12 h-12 rounded-full bg-[#FDFBF9] border border-[#D0C0B1]/50 !text-[#2A2522] active:scale-95 transition-all">
+<span class="font-bold text-[11px] tracking-wider">MAX</span>
+</a>
+</div>
+<!-- Слабовидящие (кнопка ГОСТ плагина) -->
+<a href="#" class="bvi-open flex items-center text-[#746258] font-medium mt-2 active:scale-95">
+<i data-lucide="eye" class="w-6 h-6 mr-3">
+</i>
+<span>Версия для слабовидящих</span>
+</a>
+</div>
+</div>
+</div>
+</header>
+<script>    document.addEventListener("DOMContentLoaded", () => {        // Умная инициализация плагина для слабовидящих по ГОСТ        const initBvi = (attempts = 0) => {            if (typeof isvek !== 'undefined' && isvek.Bvi) {                new isvek.Bvi({                    target: '.bvi-open',                    fontSize: 24,                    theme: 'white'                });            } else if (attempts < 20) {                setTimeout(() => initBvi(attempts + 1), 500);            }        };        initBvi();    });</script>
+<!-- ========================================================================= -->
+<!-- ================= УРОВЕНЬ 1: ГЛАВНАЯ СТРАНИЦА ============================ -->
+<!-- ========================================================================= -->
+<div id="view-home" class="view-section transition-opacity duration-500 opacity-100">
+<!-- Главный экран (Журнальный стиль с каруселью) -->
+<section class="relative pt-24 pb-10 lg:pt-40 lg:pb-16 overflow-hidden bg-[#FDFBF9]">
+<div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex flex-col lg:grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
+<!-- Текстовая часть -->
+<div class="order-1 lg:order-none z-10 flex flex-col justify-center">
+<div class="w-max inline-flex items-center px-4 py-1.5 bg-white text-[#746258] border border-[#D0C0B1]/40 text-[11px] font-semibold uppercase tracking-[0.2em] rounded-full mb-6 lg:mb-8 shadow-[0_4px_20px_rgb(0,0,0,0.03)] cursor-pointer hover:bg-gray-50 transition-colors" onclick="document.getElementById('about').scrollIntoView()">
+<i data-lucide="shield-check" class="w-3.5 h-3.5 mr-2 opacity-70">
+</i>                        Лицензия № ЛО-XX-XX-XXXXXX                    </div>
+<h1 class="font-serif text-[2.75rem] leading-[1.05] sm:text-6xl lg:text-[5rem] lg:leading-[1.05] text-[#2A2522] tracking-tight mb-2 lg:mb-12">                        Клиника<br>
+<span class="text-[#746258] italic font-light tracking-normal">косметологии</span>
+<br>                        Доктора Вороненко                    </h1>
+<div class="hidden lg:flex flex-row gap-5 mt-4">
+<button onclick="openBooking('')" class="bg-[#746258] text-white px-9 py-4 rounded-full text-sm font-medium hover:bg-[#5A4C44] active:scale-95 transition-all duration-300 shadow-[0_8px_30px_rgb(116,98,88,0.25)] flex items-center justify-center group">                            Записаться онлайн                            <i data-lucide="arrow-right" class="ml-2.5 w-4 h-4 group-hover:translate-x-1.5 transition-transform duration-300">
+</i>
+</button>
+<button onclick="document.getElementById('services').scrollIntoView()" class="bg-transparent border border-[#746258]/30 text-[#746258] px-9 py-4 rounded-full text-sm font-medium hover:bg-[#746258]/5 hover:border-[#746258] active:scale-95 transition-all duration-300 flex items-center justify-center">                            Смотреть услуги                        </button>
+</div>
+</div>
+<!-- Карусель Интерьера (вместо статичной картинки) -->
+<div class="order-2 lg:order-none relative w-full aspect-[4/3] sm:aspect-[16/9] lg:aspect-[4/5] rounded-[2.5rem] overflow-hidden shadow-2xl group" id="hero-slider-container">
+<!-- Слайды (Сюда JS будет вставлять картинки интерьера) -->
+<!-- Пока скрипт не загрузился, показываем первую картинку как заглушку -->
+<div id="hero-interior-slides" class="relative w-full h-full bg-[#E5E3DF]">
+<img src="https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&q=80&w=1200" alt="Интерьер клиники" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 opacity-100 z-10">
+</div>
+<!-- Мягкое затемнение снизу для лучшей видимости точек -->
+<div class="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[#1A1817]/40 to-transparent z-20 pointer-events-none">
+</div>
+<!-- Элементы управления (Стрелки) -->
+<button onclick="prevHeroSlide()" class="absolute left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 lg:w-12 lg:h-12 bg-white/20 backdrop-blur-md border border-white/40 rounded-full flex items-center justify-center text-white hover:bg-white hover:text-[#746258] active:scale-90 transition-all duration-300 opacity-0 group-hover:opacity-100 shadow-lg">
+<i data-lucide="chevron-left" class="w-5 h-5 lg:w-6 lg:h-6 -ml-0.5">
+</i>
+</button>
+<button onclick="nextHeroSlide()" class="absolute right-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 lg:w-12 lg:h-12 bg-white/20 backdrop-blur-md border border-white/40 rounded-full flex items-center justify-center text-white hover:bg-white hover:text-[#746258] active:scale-90 transition-all duration-300 opacity-0 group-hover:opacity-100 shadow-lg">
+<i data-lucide="chevron-right" class="w-5 h-5 lg:w-6 lg:h-6 ml-0.5">
+</i>
+</button>
+<!-- Индикаторы (Точки) -->
+<div id="hero-interior-dots" class="absolute bottom-6 left-0 right-0 flex justify-center gap-2.5 z-30">
+<div class="w-2 h-2 rounded-full bg-white transition-all w-6">
+</div>
+<div class="w-2 h-2 rounded-full bg-white/50 transition-all hover:bg-white/80 cursor-pointer">
+</div>
+<div class="w-2 h-2 rounded-full bg-white/50 transition-all hover:bg-white/80 cursor-pointer">
+</div>
+</div>
+</div>
+<!-- Мобильные кнопки -->
+<div class="order-3 lg:hidden flex flex-col sm:flex-row gap-4 w-full mt-2">
+<button onclick="openBooking('')" class="w-full bg-[#746258] text-white px-9 py-4 rounded-full text-sm font-medium hover:bg-[#5A4C44] active:scale-95 transition-all duration-300 shadow-[0_8px_30px_rgb(116,98,88,0.25)] flex items-center justify-center group">                        Записаться онлайн                        <i data-lucide="arrow-right" class="ml-2.5 w-4 h-4 group-hover:translate-x-1.5 transition-transform duration-300">
+</i>
+</button>
+<button onclick="document.getElementById('services').scrollIntoView()" class="w-full bg-transparent border border-[#746258]/30 text-[#746258] px-9 py-4 rounded-full text-sm font-medium hover:bg-[#746258]/5 hover:border-[#746258] active:scale-95 transition-all duration-300 flex items-center justify-center">                        Смотреть услуги                    </button>
+</div>
+</div>
+</div>
+</section>
+<!-- Специальные предложения (Акции) -->
+<section id="promotions" class="py-10 lg:py-16 bg-white overflow-hidden border-b border-[#D0C0B1]/20">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex flex-col sm:flex-row justify-between items-end mb-8 gap-6">
+<div class="max-w-2xl">
+<h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl text-[#2A2522] mb-4 tracking-tight">Специальные предложения</h2>
+<p class="text-gray-500 font-light text-lg">Актуальные акции нашей клиники в этом месяце</p>
+</div>
+</div>
+</div>
+<div class="w-full overflow-x-auto hide-scrollbar pb-12 pt-4">
+<div class="flex gap-4 sm:gap-6 lg:gap-8 snap-x snap-mandatory w-max px-4 sm:px-6 lg:px-8 mx-auto max-w-7xl" id="home-promos-container">
+<!-- Карточки акций 1 -->
+<div onclick="openBooking('Акция: Игольчатый RF + Скинбустер')" class="relative flex-shrink-0 w-[85vw] sm:w-[350px] lg:w-[380px] xl:w-[400px] aspect-[4/5] sm:aspect-[4/3] lg:aspect-[4/3] rounded-[2rem] overflow-hidden group snap-center cursor-pointer shadow-sm hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] active:scale-[0.98] transition-all duration-500">
+<img src="https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&q=80&w=800" alt="Скинбустер в подарок" class="w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-105">
+<div class="absolute inset-0 bg-gradient-to-t from-[#1A1817]/95 via-[#1A1817]/40 to-transparent flex flex-col justify-end p-6 lg:p-8">
+<span class="inline-block px-4 py-1.5 bg-[#746258] text-white text-[10px] font-bold uppercase tracking-[0.2em] rounded-full mb-4 w-max shadow-md">Подарок</span>
+<h3 class="text-white font-serif text-2xl lg:text-3xl mb-2 tracking-tight">Скинбустер</h3>
+<p class="text-white/90 text-sm lg:text-base font-light leading-relaxed mb-6">В подарок к процедуре игольчатого RF-лифтинга.</p>
+<button class="w-max bg-white/20 backdrop-blur-md text-white border border-white/40 px-6 py-2.5 rounded-full text-xs uppercase tracking-widest font-semibold hover:bg-white hover:text-[#746258] transition-all duration-300">Записаться</button>
+</div>
+</div>
+<!-- Карточки акций 2 -->
+<div onclick="openBooking('Акция: Курс биоревитализации')" class="relative flex-shrink-0 w-[85vw] sm:w-[350px] lg:w-[380px] xl:w-[400px] aspect-[4/5] sm:aspect-[4/3] lg:aspect-[4/3] rounded-[2rem] overflow-hidden group snap-center cursor-pointer shadow-sm hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] active:scale-[0.98] transition-all duration-500">
+<img src="https://images.unsplash.com/photo-1554284126-aa88f22d8b74?auto=format&fit=crop&q=80&w=800" alt="Скидка 15%" class="w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-105">
+<div class="absolute inset-0 bg-gradient-to-t from-[#1A1817]/95 via-[#1A1817]/40 to-transparent flex flex-col justify-end p-6 lg:p-8">
+<span class="inline-block px-4 py-1.5 bg-[#D0C0B1] text-[#2A2522] text-[10px] font-bold uppercase tracking-[0.2em] rounded-full mb-4 w-max shadow-md">Выгода -15%</span>
+<h3 class="text-white font-serif text-2xl lg:text-3xl mb-2 tracking-tight">Биоревитализация</h3>
+<p class="text-white/90 text-sm lg:text-base font-light leading-relaxed mb-6">Специальная цена при оплате курса от 3-х процедур.</p>
+<button class="w-max bg-white/20 backdrop-blur-md text-white border border-white/40 px-6 py-2.5 rounded-full text-xs uppercase tracking-widest font-semibold hover:bg-white hover:text-[#746258] transition-all duration-300">Записаться</button>
+</div>
+</div>
+<!-- Карточки акций 3 -->
+<div onclick="openBooking('Акция: SMAS-лифтинг')" class="relative flex-shrink-0 w-[85vw] sm:w-[350px] lg:w-[380px] xl:w-[400px] aspect-[4/5] sm:aspect-[4/3] lg:aspect-[4/3] rounded-[2rem] overflow-hidden group snap-center cursor-pointer shadow-sm hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] active:scale-[0.98] transition-all duration-500">
+<img src="https://images.unsplash.com/photo-1500522144261-ea64433eb38d?auto=format&fit=crop&q=80&w=800" alt="Выгода 5000" class="w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-105">
+<div class="absolute inset-0 bg-gradient-to-t from-[#1A1817]/95 via-[#1A1817]/40 to-transparent flex flex-col justify-end p-6 lg:p-8">
+<span class="inline-block px-4 py-1.5 bg-white text-[#746258] text-[10px] font-bold uppercase tracking-[0.2em] rounded-full mb-4 w-max shadow-md">до 5 000 ₽</span>
+<h3 class="text-white font-serif text-2xl lg:text-3xl mb-2 tracking-tight">SMAS-лифтинг</h3>
+<p class="text-white/90 text-sm lg:text-base font-light leading-relaxed mb-6">Безоперационная подтяжка лица на аппарате Ultraformer III.</p>
+<button class="w-max bg-white/20 backdrop-blur-md text-white border border-white/40 px-6 py-2.5 rounded-full text-xs uppercase tracking-widest font-semibold hover:bg-white hover:text-[#746258] transition-all duration-300">Записаться</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Философия / Видео -->
+<section id="about" class="py-10 lg:py-16 bg-white border-y border-[#D0C0B1]/10">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex flex-col lg:flex-row items-center gap-10 lg:gap-24">
+<div class="w-full lg:w-1/2 flex flex-col justify-center">
+<i data-lucide="quote" class="w-10 h-10 text-[#D0C0B1] mb-6 opacity-40">
+</i>
+<h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl text-[#2A2522] mb-6 leading-[1.2] tracking-tight">Мы не меняем черты лица,<br>мы подчеркиваем вашу <span class="text-[#746258] italic font-light">индивидуальность</span>
+</h2>
+<p class="text-gray-500 text-lg leading-relaxed mb-8 font-light">                        Продление молодости кожи и профессиональная забота о Вашем здоровье согласно современным стандартам качества. В нашей клинике мы объединяем передовые аппаратные технологии, лучшие мировые препараты и опыт врачей для достижения идеального результата.                    </p>
+<div class="flex items-center gap-5 border-t border-[#D0C0B1]/20 pt-8 cursor-pointer group" onclick="document.getElementById('team').scrollIntoView()">
+<div class="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden shadow-md border border-[#D0C0B1]/30 group-hover:border-[#746258] transition-colors flex-shrink-0">
+<img src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=200" alt="Вороненко" class="w-full h-full object-cover">
+</div>
+<div>
+<p class="font-serif text-xl text-[#746258] mb-0.5 group-hover:opacity-80 transition-opacity">Вороненко Елена</p>
+<p class="text-[11px] text-gray-400 uppercase tracking-widest font-medium">Главный врач, основатель</p>
+</div>
+</div>
+</div>
+<div class="w-full lg:w-1/2 relative group cursor-pointer mt-8 lg:mt-0" onclick="showToast('Открытие видеоплеера...')">
+<div class="aspect-[4/5] sm:aspect-square lg:aspect-[4/5] rounded-[2.5rem] overflow-hidden relative shadow-[0_20px_60px_rgb(0,0,0,0.08)]">
+<img src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=800" alt="Елена Вороненко" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[1.5s] ease-out">
+<div class="absolute inset-0 bg-gradient-to-t from-[#2A2522]/40 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-500">
+</div>
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="w-20 h-20 lg:w-24 lg:h-24 bg-white/20 backdrop-blur-md border border-white/30 rounded-full flex items-center justify-center text-white group-hover:bg-white group-hover:text-[#746258] transition-all duration-500 transform group-hover:scale-110 shadow-2xl">
+<i data-lucide="play" class="w-8 h-8 lg:w-10 lg:h-10 ml-1.5 fill-current">
+</i>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- НАПРАВЛЕНИЯ (Теперь открывают Уровень 2 - Каталог) -->
+<section id="services" class="py-10 lg:py-16 bg-[#FDFBF9]">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex flex-col sm:flex-row justify-between items-end mb-8 lg:mb-10 gap-6">
+<div class="max-w-xl">
+<h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl text-[#2A2522] mb-4 tracking-tight">Направления</h2>
+<p class="text-gray-500 font-light text-lg">Ключевые компетенции нашей клиники в сфере сохранения молодости</p>
+</div>
+</div>
+<!-- Сетка из 4 категорий -->
+<div id="home-categories-container">
+<!-- Карточки будут сгенерированы JS -->
+</div>
+</div>
+</section>
+<!-- Команда экспертов -->
+<section id="team" class="py-10 lg:py-16 bg-white border-t border-[#D0C0B1]/20 overflow-hidden relative">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="text-center max-w-3xl mx-auto mb-8 lg:mb-10">
+<h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl text-[#746258] mb-4 tracking-tight">Команда экспертов</h2>
+<p class="text-gray-500 leading-relaxed text-lg lg:text-xl font-light">Наши врачи регулярно повышают квалификацию на международных конгрессах.</p>
+</div>
+</div>
+<div class="relative max-w-7xl mx-auto">
+<button onclick="scrollTeam('left')" class="absolute left-1 sm:left-4 top-[140px] z-20 w-12 h-12 bg-white/90 backdrop-blur shadow-[0_8px_20px_rgb(0,0,0,0.1)] border border-[#D0C0B1]/40 rounded-full flex items-center justify-center text-[#746258] hover:bg-[#746258] hover:text-white active:scale-90 transition-all duration-300">
+<i data-lucide="chevron-left" class="w-6 h-6 -ml-0.5">
+</i>
+</button>
+<button onclick="scrollTeam('right')" class="absolute right-1 sm:right-4 top-[140px] z-20 w-12 h-12 bg-white/90 backdrop-blur shadow-[0_8px_20px_rgb(0,0,0,0.1)] border border-[#D0C0B1]/40 rounded-full flex items-center justify-center text-[#746258] hover:bg-[#746258] hover:text-white active:scale-90 transition-all duration-300">
+<i data-lucide="chevron-right" class="w-6 h-6 ml-0.5">
+</i>
+</button>
+<div id="team-carousel" class="w-full overflow-x-auto hide-scrollbar pb-12 pt-4 scroll-smooth">
+<div class="flex gap-6 lg:gap-8 snap-x snap-mandatory w-max px-4 sm:px-6 lg:px-8 mx-auto max-w-7xl">
+<!-- Врач 1 -->
+<div class="relative flex-shrink-0 w-[85vw] sm:w-[320px] lg:w-[280px] flex flex-col items-center group h-full snap-center bg-[#FDFBF9] rounded-[2.5rem] p-6 shadow-sm hover:shadow-[0_15px_35px_rgb(0,0,0,0.06)] border border-[#D0C0B1]/20 transition-all duration-500">
+<div class="w-48 h-48 rounded-full overflow-hidden mb-6 border-[4px] border-white shadow-md group-hover:border-[#D0C0B1]/50 transition-all duration-500 relative flex-shrink-0">
+<img src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=600" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" alt="Вороненко Елена">
+</div>
+<h3 class="font-serif text-2xl text-[#2A2522] mb-1 text-center">Вороненко Елена</h3>
+<p class="text-[10px] text-[#746258] uppercase tracking-[0.2em] font-bold mb-5 text-center">Главный врач</p>
+<div class="w-full text-left border-t border-[#D0C0B1]/30 pt-4 mb-6 mt-auto">
+<p class="text-[9px] uppercase tracking-widest text-gray-400 font-semibold mb-1">Образование</p>
+<p class="text-[11px] text-gray-500 leading-relaxed font-light line-clamp-2">Самарский государственный медицинский университет (2008).</p>
+</div>
+<button onclick="openDoctor('Вороненко Елена', 'Главный врач', 'Самарский государственный медицинский университет (2008). Сертификат «Организация здравоохранения и общественное здоровье».', 'Основатель клиники, эксперт международного уровня в области аппаратных методик.', 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=600')" class="w-full bg-[#746258] text-white px-5 py-3 rounded-full text-xs uppercase tracking-widest font-bold hover:bg-[#5A4C44] active:scale-95 transition-all shadow-md">Профиль</button>
+</div>
+<!-- Врач 2 -->
+<div class="relative flex-shrink-0 w-[85vw] sm:w-[320px] lg:w-[280px] flex flex-col items-center group h-full snap-center bg-[#FDFBF9] rounded-[2.5rem] p-6 shadow-sm hover:shadow-[0_15px_35px_rgb(0,0,0,0.06)] border border-[#D0C0B1]/20 transition-all duration-500">
+<div class="w-48 h-48 rounded-full overflow-hidden mb-6 border-[4px] border-white shadow-md group-hover:border-[#D0C0B1]/50 transition-all duration-500 relative flex-shrink-0">
+<img src="https://images.unsplash.com/photo-1594824436998-058b22591492?auto=format&fit=crop&q=80&w=600" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" alt="Егорова Алина">
+</div>
+<h3 class="font-serif text-2xl text-[#2A2522] mb-1 text-center">Егорова Алина</h3>
+<p class="text-[10px] text-[#746258] uppercase tracking-[0.2em] font-bold mb-5 text-center">Врач-косметолог</p>
+<div class="w-full text-left border-t border-[#D0C0B1]/30 pt-4 mb-6 mt-auto">
+<p class="text-[9px] uppercase tracking-widest text-gray-400 font-semibold mb-1">Образование</p>
+<p class="text-[11px] text-gray-500 leading-relaxed font-light line-clamp-2">Лечебное дело (2015), Ординатура по дерматовенерологии.</p>
+</div>
+<button onclick="openDoctor('Егорова Алина', 'Врач-косметолог', 'Лечебное дело (2015), Ординатура по дерматовенерологии. Аккредитация «Косметология» до 2028 г.', 'Специализируется на контурной пластике лица, бьютификации губ и лечении акне.', 'https://images.unsplash.com/photo-1594824436998-058b22591492?auto=format&fit=crop&q=80&w=600')" class="w-full bg-[#746258] text-white px-5 py-3 rounded-full text-xs uppercase tracking-widest font-bold hover:bg-[#5A4C44] active:scale-95 transition-all shadow-md">Профиль</button>
+</div>
+<!-- Врач 3 -->
+<div class="relative flex-shrink-0 w-[85vw] sm:w-[320px] lg:w-[280px] flex flex-col items-center group h-full snap-center bg-[#FDFBF9] rounded-[2.5rem] p-6 shadow-sm hover:shadow-[0_15px_35px_rgb(0,0,0,0.06)] border border-[#D0C0B1]/20 transition-all duration-500">
+<div class="w-48 h-48 rounded-full overflow-hidden mb-6 border-[4px] border-white shadow-md group-hover:border-[#D0C0B1]/50 transition-all duration-500 relative flex-shrink-0">
+<img src="https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=600" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" alt="Богаткина Дарья">
+</div>
+<h3 class="font-serif text-2xl text-[#2A2522] mb-1 text-center">Богаткина Дарья</h3>
+<p class="text-[10px] text-[#746258] uppercase tracking-[0.2em] font-bold mb-5 text-center">Косметолог-эстетист</p>
+<div class="w-full text-left border-t border-[#D0C0B1]/30 pt-4 mb-6 mt-auto">
+<p class="text-[9px] uppercase tracking-widest text-gray-400 font-semibold mb-1">Образование</p>
+<p class="text-[11px] text-gray-500 leading-relaxed font-light line-clamp-2">Медицинский колледж (2018). Сестринское дело в косметологии.</p>
+</div>
+<button onclick="openDoctor('Богаткина Дарья', 'Косметолог-эстетист', 'Медицинский колледж (2018). Сестринское дело в косметологии.', 'Мастер аппаратных чисток, уходов и пилингов.', 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=600')" class="w-full bg-[#746258] text-white px-5 py-3 rounded-full text-xs uppercase tracking-widest font-bold hover:bg-[#5A4C44] active:scale-95 transition-all shadow-md">Профиль</button>
+</div>
+<!-- Врач 4 -->
+<div class="relative flex-shrink-0 w-[85vw] sm:w-[320px] lg:w-[280px] flex flex-col items-center group h-full snap-center bg-[#FDFBF9] rounded-[2.5rem] p-6 shadow-sm hover:shadow-[0_15px_35px_rgb(0,0,0,0.06)] border border-[#D0C0B1]/20 transition-all duration-500">
+<div class="w-48 h-48 rounded-full overflow-hidden mb-6 border-[4px] border-white shadow-md group-hover:border-[#D0C0B1]/50 transition-all duration-500 relative flex-shrink-0">
+<img src="https://images.unsplash.com/photo-1527613426441-4da17471b66d?auto=format&fit=crop&q=80&w=600" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" alt="Шитикова Дарья">
+</div>
+<h3 class="font-serif text-2xl text-[#2A2522] mb-1 text-center">Шитикова Дарья</h3>
+<p class="text-[10px] text-[#746258] uppercase tracking-[0.2em] font-bold mb-5 text-center">Врач-дерматолог</p>
+<div class="w-full text-left border-t border-[#D0C0B1]/30 pt-4 mb-6 mt-auto">
+<p class="text-[9px] uppercase tracking-widest text-gray-400 font-semibold mb-1">Образование</p>
+<p class="text-[11px] text-gray-500 leading-relaxed font-light line-clamp-2">Педиатрия (2016), Ординатура по дерматовенерологии.</p>
+</div>
+<button onclick="openDoctor('Шитикова Дарья', 'Врач-дерматолог', 'Педиатрия (2016), Ординатура по дерматовенерологии.', 'Избавилась от купероза и пигментации за 3 сеанса BBL. Дарья очень внимательный специалист.', 'https://images.unsplash.com/photo-1527613426441-4da17471b66d?auto=format&fit=crop&q=80&w=600')" class="w-full bg-[#746258] text-white px-5 py-3 rounded-full text-xs uppercase tracking-widest font-bold hover:bg-[#5A4C44] active:scale-95 transition-all shadow-md">Профиль</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- ОТЗЫВЫ ПАЦИЕНТОВ (На всю ширину экрана) -->
+<section id="reviews" class="py-12 lg:py-24 bg-[#FDFBF9] border-t border-[#D0C0B1]/20">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="text-center max-w-3xl mx-auto mb-10 lg:mb-16">
+<h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl text-[#746258] mb-4 tracking-tight">Отзывы пациентов</h2>
+<p class="text-gray-500 font-light text-lg">Мы ценим доверие каждого пациента</p>
+</div>
+<div id="home-reviews-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+<!-- Отзыв 1 -->
+<div class="bg-white p-8 rounded-[2.5rem] border border-[#D0C0B1]/20 relative group hover:shadow-[0_15px_40px_rgb(0,0,0,0.04)] transition-all duration-500 flex flex-col">
+<div class="flex gap-1 mb-6 text-[#D0C0B1] group-hover:text-[#746258] transition-colors duration-500">
+<i data-lucide="star" class="w-4 h-4 fill-current">
+</i>
+<i data-lucide="star" class="w-4 h-4 fill-current">
+</i>
+<i data-lucide="star" class="w-4 h-4 fill-current">
+</i>
+<i data-lucide="star" class="w-4 h-4 fill-current">
+</i>
+<i data-lucide="star" class="w-4 h-4 fill-current">
+</i>
+</div>
+<p class="text-gray-600 font-light text-[15px] leading-relaxed mb-8 italic relative z-10 flex-grow">"Делала губы у Алины Игоревны. Очень переживала, что будет неестественно, но получилось идеально! Клиника потрясающая, сервис на высоте, кофе вкусный."</p>
+<div class="pt-6 border-t border-[#D0C0B1]/30 flex justify-between items-end mt-auto">
+<div>
+<p class="font-medium text-[#2A2522]">Мария С.</p>
+<p class="text-[11px] text-[#746258] mt-1.5 uppercase tracking-widest font-semibold">Контурная пластика</p>
+</div>
+</div>
+<i data-lucide="quote" class="absolute top-8 right-8 w-12 h-12 text-[#D0C0B1] opacity-[0.07] group-hover:opacity-[0.12] transition-opacity duration-500 pointer-events-none">
+</i>
+</div>
+<!-- Отзыв 2 -->
+<div class="bg-white p-8 rounded-[2.5rem] border border-[#D0C0B1]/20 relative group hover:shadow-[0_15px_40px_rgb(0,0,0,0.04)] transition-all duration-500 flex flex-col">
+<div class="flex gap-1 mb-6 text-[#D0C0B1] group-hover:text-[#746258] transition-colors duration-500">
+<i data-lucide="star" class="w-4 h-4 fill-current">
+</i>
+<i data-lucide="star" class="w-4 h-4 fill-current">
+</i>
+<i data-lucide="star" class="w-4 h-4 fill-current">
+</i>
+<i data-lucide="star" class="w-4 h-4 fill-current">
+</i>
+<i data-lucide="star" class="w-4 h-4 fill-current">
+</i>
+</div>
+<p class="text-gray-600 font-light text-[15px] leading-relaxed mb-8 italic relative z-10 flex-grow">"Результат от Ультраформера превзошел все ожидания. Овал лица подтянулся, кожа стала плотной. Спасибо Елене Вороненко за профессионализм и легкую руку!"</p>
+<div class="pt-6 border-t border-[#D0C0B1]/30 flex justify-between items-end mt-auto">
+<div>
+<p class="font-medium text-[#2A2522]">Елена В.</p>
+<p class="text-[11px] text-[#746258] mt-1.5 uppercase tracking-widest font-semibold">SMAS-лифтинг</p>
+</div>
+</div>
+<i data-lucide="quote" class="absolute top-8 right-8 w-12 h-12 text-[#D0C0B1] opacity-[0.07] group-hover:opacity-[0.12] transition-opacity duration-500 pointer-events-none">
+</i>
+</div>
+<!-- Отзыв 3 -->
+<div class="bg-white p-8 rounded-[2.5rem] border border-[#D0C0B1]/20 relative group hover:shadow-[0_15px_40px_rgb(0,0,0,0.04)] transition-all duration-500 flex flex-col">
+<div class="flex gap-1 mb-6 text-[#D0C0B1] group-hover:text-[#746258] transition-colors duration-500">
+<i data-lucide="star" class="w-4 h-4 fill-current">
+</i>
+<i data-lucide="star" class="w-4 h-4 fill-current">
+</i>
+<i data-lucide="star" class="w-4 h-4 fill-current">
+</i>
+<i data-lucide="star" class="w-4 h-4 fill-current">
+</i>
+<i data-lucide="star" class="w-4 h-4 fill-current">
+</i>
+</div>
+<p class="text-gray-600 font-light text-[15px] leading-relaxed mb-8 italic relative z-10 flex-grow">"Лечу акне у Шитиковой Дарьи. Это первый врач, который реально помог. Лицо чистое, сейчас делаем пилинги от постакне. Бесконечно благодарна!"</p>
+<div class="pt-6 border-t border-[#D0C0B1]/30 flex justify-between items-end mt-auto">
+<div>
+<p class="font-medium text-[#2A2522]">Анна К.</p>
+<p class="text-[11px] text-[#746258] mt-1.5 uppercase tracking-widest font-semibold">Лечение акне</p>
+</div>
+</div>
+<i data-lucide="quote" class="absolute top-8 right-8 w-12 h-12 text-[#D0C0B1] opacity-[0.07] group-hover:opacity-[0.12] transition-opacity duration-500 pointer-events-none">
+</i>
+</div>
+</div>
+<!-- Внешние ссылки на отзывы -->
+<div class="mt-12 lg:mt-16 flex flex-wrap justify-center gap-4">
+<button onclick="showToast('Переход на Яндекс Карты...')" class="flex items-center gap-3 px-8 py-4 bg-white border border-[#D0C0B1]/40 rounded-full shadow-sm hover:shadow-md hover:border-[#746258] active:scale-95 transition-all group">
+<span class="text-xs uppercase tracking-widest font-bold text-[#2A2522] group-hover:text-[#746258] transition-colors">Яндекс Карты</span>
+</button>
+<button onclick="showToast('Переход на 2GIS...')" class="flex items-center gap-3 px-8 py-4 bg-white border border-[#D0C0B1]/40 rounded-full shadow-sm hover:shadow-md hover:border-[#746258] active:scale-95 transition-all group">
+<span class="text-xs uppercase tracking-widest font-bold text-[#2A2522] group-hover:text-[#746258] transition-colors">2GIS</span>
+</button>
+<button onclick="showToast('Переход на ПроДокторов...')" class="flex items-center gap-3 px-8 py-4 bg-white border border-[#D0C0B1]/40 rounded-full shadow-sm hover:shadow-md hover:border-[#746258] active:scale-95 transition-all group">
+<span class="text-xs uppercase tracking-widest font-bold text-[#2A2522] group-hover:text-[#746258] transition-colors">ПроДокторов</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Документы и FAQ -->
+<section class="py-12 lg:py-32 bg-white relative overflow-hidden border-t border-[#D0C0B1]/10">
+<div class="absolute top-0 left-0 w-[40rem] h-[40rem] bg-[#D0C0B1]/10 rounded-full blur-3xl -translate-y-1/2 -translate-x-1/2">
+</div>
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-start">
+<!-- Левая колонка: Документы -->
+<div>
+<h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl text-[#746258] mb-4 lg:mb-6 tracking-tight">Документы и лицензии</h2>
+<p class="text-gray-500 text-lg font-light mb-8 lg:mb-10">Полный пакет документов, подтверждающих профессиональные компетенции нашей клиники.</p>
+<!-- Карточка документа -->
+<div class="bg-[#FDFBF9] rounded-[2.5rem] p-6 lg:p-10 border border-[#D0C0B1]/20 shadow-[0_20px_40px_rgb(0,0,0,0.02)] relative group cursor-pointer" onclick="showToast('Открытие документа на весь экран...')">
+<div class="aspect-[1/1.3] relative overflow-hidden rounded-[1.5rem] bg-white border border-[#D0C0B1]/30 shadow-sm">
+<img src="https://images.unsplash.com/photo-1568228146922-3be9f3900223?auto=format&fit=crop&q=80&w=600" alt="Лицензия" class="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-700 ease-out">
+<!-- Overlay с лупой -->
+<div class="absolute inset-0 bg-[#2A2522]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+<div class="w-16 h-16 bg-white/95 backdrop-blur-md rounded-full flex items-center justify-center text-[#746258] shadow-xl transform scale-50 group-hover:scale-100 transition-transform duration-300">
+<i data-lucide="zoom-in" class="w-6 h-6">
+</i>
+</div>
+</div>
+</div>
+<!-- Навигация слайдера (визуальная) -->
+<div class="mt-8 flex justify-center items-center gap-3">
+<button class="w-8 h-8 rounded-full border border-[#D0C0B1] flex items-center justify-center text-[#746258] hover:bg-[#746258] hover:text-white transition-colors">
+<i data-lucide="chevron-left" class="w-4 h-4 -ml-0.5">
+</i>
+</button>
+<div class="flex gap-2 mx-2">
+<div class="w-2 h-2 rounded-full bg-[#746258]">
+</div>
+<div class="w-2 h-2 rounded-full bg-[#D0C0B1]/50">
+</div>
+<div class="w-2 h-2 rounded-full bg-[#D0C0B1]/50">
+</div>
+<div class="w-2 h-2 rounded-full bg-[#D0C0B1]/50">
+</div>
+</div>
+<button class="w-8 h-8 rounded-full border border-[#D0C0B1] flex items-center justify-center text-[#746258] hover:bg-[#746258] hover:text-white transition-colors">
+<i data-lucide="chevron-right" class="w-4 h-4 ml-0.5">
+</i>
+</button>
+</div>
+</div>
+</div>
+<!-- Правая колонка: FAQ -->
+<div>
+<h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl text-[#746258] mb-4 lg:mb-6 tracking-tight">Частые вопросы</h2>
+<p class="text-gray-500 text-lg font-light mb-8 lg:mb-10">Всё, что вам нужно знать перед первым визитом</p>
+<div class="bg-white rounded-[2.5rem] p-6 sm:p-8 lg:p-10 border border-[#D0C0B1]/20 shadow-[0_20px_40px_rgb(0,0,0,0.02)]">
+<div class="border-b border-[#D0C0B1]/30 pb-6 group">
+<button onclick="toggleFaq(this)" class="flex justify-between items-center w-full text-left focus:outline-none">
+<span class="font-serif text-xl lg:text-2xl text-[#2A2522] pr-4 group-hover:text-[#746258] transition-colors duration-300">Лечите ли вы акне?</span>
+<div class="faq-icon w-10 h-10 flex-shrink-0 rounded-full border border-[#D0C0B1]/60 text-[#746258] flex items-center justify-center transition-all duration-500 ease-out group-hover:border-[#746258]">
+<i data-lucide="chevron-down" class="w-5 h-5 transition-transform">
+</i>
+</div>
+</button>
+<div class="faq-content acc-content">
+<p class="text-gray-500 font-light leading-relaxed pr-8 lg:pr-12 text-[15px] mt-4">Да, мы специализируемся на комплексном лечении акне любой степени тяжести. Наши врачи-дерматологи разрабатывают индивидуальные протоколы.</p>
+</div>
+</div>
+<div class="border-b border-[#D0C0B1]/30 py-6 group">
+<button onclick="toggleFaq(this)" class="flex justify-between items-center w-full text-left focus:outline-none">
+<span class="font-serif text-xl lg:text-2xl text-[#2A2522] pr-4 group-hover:text-[#746258] transition-colors duration-300">Что включает в себя консультация?</span>
+<div class="faq-icon w-10 h-10 flex-shrink-0 rounded-full border border-[#D0C0B1]/60 text-[#746258] flex items-center justify-center transition-all duration-500 ease-out group-hover:border-[#746258]">
+<i data-lucide="chevron-down" class="w-5 h-5 transition-transform">
+</i>
+</div>
+</button>
+<div class="faq-content acc-content">
+<p class="text-gray-500 font-light leading-relaxed pr-8 lg:pr-12 text-[15px] mt-4">Первичная консультация — это глубокий аудит состояния вашей кожи. Врач собирает подробный анамнез, проводит 3D-диагностику лица, оценивает качество тканей.</p>
+</div>
+</div>
+<div class="border-b border-[#D0C0B1]/30 py-6 group">
+<button onclick="toggleFaq(this)" class="flex justify-between items-center w-full text-left focus:outline-none">
+<span class="font-serif text-xl lg:text-2xl text-[#2A2522] pr-4 group-hover:text-[#746258] transition-colors duration-300">Правда, что увеличивать губы у вас не больно?</span>
+<div class="faq-icon w-10 h-10 flex-shrink-0 rounded-full border border-[#D0C0B1]/60 text-[#746258] flex items-center justify-center transition-all duration-500 ease-out group-hover:border-[#746258]">
+<i data-lucide="chevron-down" class="w-5 h-5 transition-transform">
+</i>
+</div>
+</button>
+<div class="faq-content acc-content">
+<p class="text-gray-500 font-light leading-relaxed pr-8 lg:pr-12 text-[15px] mt-4">Да, комфорт пациента — наш абсолютный приоритет. Мы используем премиальную аппликационную анестезию (крем), а сами препараты (филлеры) уже содержат в составе лидокаин.</p>
+</div>
+</div>
+<div class="border-b border-[#D0C0B1]/30 py-6 group">
+<button onclick="toggleFaq(this)" class="flex justify-between items-center w-full text-left focus:outline-none">
+<span class="font-serif text-xl lg:text-2xl text-[#2A2522] pr-4 group-hover:text-[#746258] transition-colors duration-300">Есть у вас процедуры против дряблости кожи?</span>
+<div class="faq-icon w-10 h-10 flex-shrink-0 rounded-full border border-[#D0C0B1]/60 text-[#746258] flex items-center justify-center transition-all duration-500 ease-out group-hover:border-[#746258]">
+<i data-lucide="chevron-down" class="w-5 h-5 transition-transform">
+</i>
+</div>
+</button>
+<div class="faq-content acc-content">
+<p class="text-gray-500 font-light leading-relaxed pr-8 lg:pr-12 text-[15px] mt-4">Безусловно. Для восстановления тургора и плотности кожи мы применяем самые передовые протоколы. В нашем арсенале — микроигольчатый RF-лифтинг (Morpheus 8) и ультразвуковой SMAS-лифтинг.</p>
+</div>
+</div>
+<div class="pt-6 group">
+<button onclick="toggleFaq(this)" class="flex justify-between items-center w-full text-left focus:outline-none">
+<span class="font-serif text-xl lg:text-2xl text-[#2A2522] pr-4 group-hover:text-[#746258] transition-colors duration-300">Есть ли у вас лицензия и высшее образование у врачей?</span>
+<div class="faq-icon w-10 h-10 flex-shrink-0 rounded-full border border-[#D0C0B1]/60 text-[#746258] flex items-center justify-center transition-all duration-500 ease-out group-hover:border-[#746258]">
+<i data-lucide="chevron-down" class="w-5 h-5 transition-transform">
+</i>
+</div>
+</button>
+<div class="faq-content acc-content">
+<p class="text-gray-500 font-light leading-relaxed pr-8 lg:pr-12 text-[15px] mt-4">Разумеется. Клиника имеет действующую медицинскую лицензию. Все наши специалисты — это врачи-дерматовенерологи и косметологи с фундаментальным высшим медицинским образованием.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Прайс лист -->
+<section id="price" class="py-10 lg:py-16 bg-[#FDFBF9] border-t border-[#D0C0B1]/20">
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="text-center mb-10 lg:mb-12">
+<h2 class="font-serif text-4xl lg:text-[5rem] text-[#2A2522] mb-4 lg:mb-6 tracking-tight">Прайс-лист</h2>
+<p class="text-gray-500 text-lg lg:text-xl font-light">Точная стоимость процедур определяется врачом на индивидуальной консультации.</p>
+</div>
+<div class="bg-white rounded-[2.5rem] p-8 md:p-14 lg:p-16 shadow-[0_20px_50px_rgb(0,0,0,0.03)] border border-[#D0C0B1]/20">
+<div class="mb-14">
+<h2 class="font-serif text-2xl lg:text-3xl text-[#746258] mb-8 flex items-center">
+<span class="w-8 h-px bg-[#D0C0B1] mr-4">
+</span> Популярные процедуры                    </h2>
+<div class="space-y-6">
+<div class="flex justify-between items-end border-b border-[#D0C0B1]/30 pb-3 group cursor-pointer" onclick="openBooking('Контурная пластика губ')">
+<div class="pr-4">
+<p class="text-[15px] sm:text-base text-[#2A2522] font-medium group-hover:text-[#746258] transition-colors">Контурная пластика губ (Novacutan F-Bio)</p>
+<p class="text-xs text-gray-400 mt-1 uppercase tracking-wider font-semibold">1 мл</p>
+</div>
+<span class="text-[#746258] text-lg font-serif whitespace-nowrap">16 000 ₽</span>
+</div>
+<div class="flex justify-between items-end border-b border-[#D0C0B1]/30 pb-3 group cursor-pointer" onclick="openBooking('Биоревитализация')">
+<div class="pr-4">
+<p class="text-[15px] sm:text-base text-[#2A2522] font-medium group-hover:text-[#746258] transition-colors">Биоревитализация (Meso-Xanthin F199)</p>
+<p class="text-xs text-gray-400 mt-1 uppercase tracking-wider font-semibold">1.5 мл</p>
+</div>
+<span class="text-[#746258] text-lg font-serif whitespace-nowrap">15 500 ₽</span>
+</div>
+<div class="flex justify-between items-end border-b border-[#D0C0B1]/30 pb-3 group cursor-pointer" onclick="openBooking('Игольчатый RF-лифтинг')">
+<div class="pr-4">
+<p class="text-[15px] sm:text-base text-[#2A2522] font-medium group-hover:text-[#746258] transition-colors">Игольчатый RF-лифтинг (Лицо полностью)</p>
+<p class="text-xs text-gray-400 mt-1 uppercase tracking-wider font-semibold">Аппарат Inmode Morpheus 8</p>
+</div>
+<span class="text-[#746258] text-lg font-serif whitespace-nowrap">35 000 ₽</span>
+</div>
+</div>
+</div>
+<div class="mt-16 text-center border-t border-[#D0C0B1]/20 pt-12">
+<button onclick="showToast('PDF файл начал скачиваться...')" class="bg-[#FDFBF9] border border-[#D0C0B1] text-[#746258] px-10 py-4 rounded-full text-xs uppercase tracking-widest font-bold hover:bg-[#746258] hover:text-white hover:border-[#746258] active:scale-95 transition-all duration-300 shadow-sm hover:shadow-xl hover:-translate-y-0.5">                        Скачать полный прайс (PDF)                    </button>
+</div>
+</div>
+</div>
+</section>
+<!-- Контакты и Карта -->
+<section id="contacts" class="py-10 lg:py-16 bg-[#FDFBF9] border-t border-[#D0C0B1]/20">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-20 items-center">
+<div>
+<h2 class="font-serif text-4xl lg:text-5xl text-[#2A2522] mb-8 lg:mb-10 tracking-tight">Как нас найти</h2>
+<ul class="space-y-6 lg:space-y-8 text-[#2A2522]">
+<li class="flex items-start group">
+<div class="w-12 h-12 rounded-full bg-white border border-[#D0C0B1]/40 flex items-center justify-center mr-5 flex-shrink-0 group-hover:border-[#746258] group-hover:text-[#746258] transition-colors shadow-sm">
+<i data-lucide="map-pin" class="w-5 h-5">
+</i>
+</div>
+<div>
+<p class="text-[11px] uppercase tracking-widest text-gray-400 font-semibold mb-1">Адрес</p>
+<p class="text-lg lg:text-xl font-medium">г. Самара, ул. Мяги, 24А</p>
+<p class="text-sm text-gray-500 font-light mt-1">Отдельный вход со стороны улицы</p>
+</div>
+</li>
+<li class="flex items-start group">
+<div class="w-12 h-12 rounded-full bg-white border border-[#D0C0B1]/40 flex items-center justify-center mr-5 flex-shrink-0 group-hover:border-[#746258] group-hover:text-[#746258] transition-colors shadow-sm">
+<i data-lucide="phone" class="w-5 h-5">
+</i>
+</div>
+<div>
+<p class="text-[11px] uppercase tracking-widest text-gray-400 font-semibold mb-1">Телефон</p>
+<a href="tel:+78000000000" class="text-lg lg:text-xl font-medium hover:text-[#746258] transition-colors">8 (800) 000-00-00</a>
+</div>
+</li>
+</ul>
+<div class="mt-10 lg:mt-12">
+<a href="https://yandex.ru/maps/-/CPgiUAKD" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center bg-[#746258] text-white px-8 py-4 rounded-full text-xs uppercase tracking-widest font-bold hover:bg-[#5A4C44] active:scale-95 transition-all duration-300 shadow-md hover:shadow-lg">                            Проложить маршрут                        </a>
+</div>
+</div>
+<div class="relative w-full aspect-[4/3] lg:aspect-auto lg:h-[500px] rounded-[2.5rem] overflow-hidden shadow-[0_20px_50px_rgb(0,0,0,0.08)] border border-[#D0C0B1]/30 group bg-[#E5E3DF]">
+<iframe src="https://yandex.ru/map-widget/v1/?ll=50.170464%2C53.198291&z=17&pt=50.170464,53.198291,pm2rdm" width="100%" height="100%" frameborder="0" allowfullscreen="true" class="relative z-10 w-full h-full grayscale-[20%] contrast-100 group-hover:grayscale-0 transition-all duration-700">
+</iframe>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- ================= УРОВЕНЬ 2: КАТАЛОГ ПРОЦЕДУР (Внутри Направления) ================= -->
+<div id="view-category" class="hidden transition-opacity duration-500 opacity-0 pb-24 bg-[#FDFBF9] min-h-screen">
+<section class="relative pt-32 pb-16 lg:pt-48 lg:pb-24 overflow-hidden bg-[#1A1817]">
+<div id="cat-hero-img" class="absolute inset-0 z-0 opacity-50 mix-blend-overlay bg-cover bg-center transition-all duration-1000">
+</div>
+<div class="absolute inset-0 bg-gradient-to-t from-[#FDFBF9] via-[#1A1817]/40 to-transparent z-0">
+</div>
+<div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+<div class="inline-flex items-center space-x-3 text-[10px] sm:text-xs uppercase tracking-widest font-semibold text-white/70 mb-8 cursor-pointer hover:text-white transition-colors" onclick="goHome()">
+<span>Главная</span>
+<i data-lucide="chevron-right" class="w-3 h-3">
+</i>
+<span>Услуги</span>
+<i data-lucide="chevron-right" class="w-3 h-3">
+</i>
+<span id="cat-breadcrumb" class="text-white">Направление</span>
+</div>
+<h1 id="cat-title" class="font-serif text-4xl sm:text-5xl lg:text-[5rem] text-white mb-6 tracking-tight leading-tight">Направление</h1>
+<p id="cat-desc" class="text-white/90 text-lg lg:text-xl font-light max-w-2xl mx-auto">Описание направления.</p>
+</div>
+</section>
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20 -mt-10 lg:-mt-16">
+<!-- Контейнер для карточек конкретных процедур -->
+<div id="cat-grid" class="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+<!-- Генерируется через JS -->
+</div>
+<div class="mt-16 text-center">
+<button onclick="goHome()" class="inline-flex items-center justify-center text-[#746258] hover:text-[#2A2522] font-semibold text-xs sm:text-sm uppercase tracking-widest transition-colors group">
+<i data-lucide="arrow-left" class="w-4 h-4 mr-3 group-hover:-translate-x-1 transition-transform">
+</i> Вернуться ко всем направлениям            </button>
+</div>
+</section>
+</div>
+<!-- ================= УРОВЕНЬ 3: СТРАНИЦА КОНКРЕТНОЙ ПРОЦЕДУРЫ ================= -->
+<div id="view-procedure" class="hidden transition-opacity duration-500 opacity-0 pb-24 bg-[#FDFBF9] min-h-screen">
+<!-- Hero секция страницы процедуры -->
+<section class="relative pt-32 pb-24 lg:pt-48 lg:pb-32 overflow-hidden bg-[#1A1817]">
+<div id="proc-hero-img" class="absolute inset-0 z-0 opacity-40 mix-blend-overlay bg-cover bg-center transition-all duration-1000">
+</div>
+<div class="absolute inset-0 bg-gradient-to-t from-[#FDFBF9] via-[#1A1817]/60 to-transparent z-0">
+</div>
+<div class="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+<div class="inline-flex items-center space-x-2 sm:space-x-3 text-[10px] sm:text-xs uppercase tracking-widest font-semibold text-white/70 mb-8">
+<span class="cursor-pointer hover:text-white" onclick="goHome()">Услуги</span>
+<i data-lucide="chevron-right" class="w-3 h-3">
+</i>
+<span id="proc-cat-breadcrumb" class="cursor-pointer hover:text-white" onclick="goBackToCategory()">Направление</span>
+<i data-lucide="chevron-right" class="w-3 h-3">
+</i>
+<span id="proc-breadcrumb" class="text-white">Процедура</span>
+</div>
+<p id="proc-price-top" class="text-[#D0C0B1] font-serif text-2xl lg:text-3xl mb-4 italic">
+</p>
+<h1 id="proc-title" class="font-serif text-4xl sm:text-5xl lg:text-6xl text-white tracking-tight leading-[1.1] mb-8">Процедура</h1>
+<button id="proc-btn-top" class="bg-[#746258] text-white px-10 py-4 rounded-full text-xs uppercase tracking-widest font-bold hover:bg-[#5A4C44] active:scale-95 transition-all duration-300 shadow-xl">                Записаться на прием            </button>
+</div>
+</section>
+<!-- Основной контент страницы -->
+<section class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20">
+<div class="bg-white rounded-[2.5rem] p-8 md:p-12 lg:p-16 shadow-[0_20px_50px_rgb(0,0,0,0.04)] border border-[#D0C0B1]/20 -mt-16">
+<p id="proc-desc" class="text-[#2A2522] font-light leading-relaxed text-lg sm:text-xl mb-16 text-center">
+</p>
+<!-- Как это работает (Аккордеон) -->
+<div class="mb-16">
+<h3 class="font-serif text-3xl text-[#746258] mb-8 flex items-center border-b border-[#D0C0B1]/30 pb-6">
+<span class="w-8 h-px bg-[#D0C0B1] mr-4 hidden sm:block">
+</span>                    Как это <span class="italic text-[#2A2522] ml-2">работает</span>
+</h3>
+<div id="proc-how" class="space-y-2">
+<!-- Генерируется через JS -->
+</div>
+</div>
+<!-- Какие проблемы решает (Аккордеон) -->
+<div class="mb-16">
+<h3 class="font-serif text-3xl text-[#746258] mb-8 flex items-center border-b border-[#D0C0B1]/30 pb-6">
+<span class="w-8 h-px bg-[#D0C0B1] mr-4 hidden sm:block">
+</span>                    Какие проблемы <span class="italic text-[#2A2522] ml-2">решает</span>
+</h3>
+<div id="proc-problems" class="space-y-2">
+<!-- Генерируется через JS -->
+</div>
+</div>
+<!-- Прайс -->
+<div>
+<h3 class="font-serif text-3xl text-[#746258] mb-8 flex items-center border-b border-[#D0C0B1]/30 pb-6">
+<span class="w-8 h-px bg-[#D0C0B1] mr-4 hidden sm:block">
+</span>                    Сколько это <span class="italic text-[#2A2522] ml-2">стоит</span>
+</h3>
+<div class="flex bg-[#FDFBF9] p-1.5 rounded-2xl mb-8 border border-[#D0C0B1]/30 w-full sm:w-max mx-auto">
+<button class="flex-1 sm:flex-none px-6 py-3 rounded-xl bg-white shadow-sm text-sm font-semibold text-[#746258] transition-all">Ведущие врачи</button>
+<button class="flex-1 sm:flex-none px-6 py-3 rounded-xl text-sm font-semibold text-gray-400 hover:text-[#2A2522] transition-all">Главный врач</button>
+</div>
+<div id="proc-prices" class="space-y-4">
+<!-- Генерируется через JS -->
+</div>
+</div>
+</div>
+<div class="mt-12 text-center">
+<button onclick="goBackToCategory()" class="inline-flex items-center justify-center text-[#746258] hover:text-[#2A2522] font-semibold text-sm uppercase tracking-widest transition-colors group">
+<i data-lucide="arrow-left" class="w-4 h-4 mr-3 group-hover:-translate-x-1 transition-transform">
+</i> Вернуться к направлению            </button>
+</div>
+</section>
+</div>
+<!-- ================= УРОВЕНЬ 4: УГОЛОК ПОТРЕБИТЕЛЯ ================= -->
+<div id="view-consumer" class="hidden transition-opacity duration-500 opacity-0 pb-24 bg-[#FDFBF9] min-h-screen">
+<!-- Hero секция -->
+<section class="relative pt-32 pb-24 lg:pt-48 lg:pb-32 overflow-hidden bg-[#1A1817]">
+<!-- Фоновое изображение для Уголка потребителя (строгое/медицинское) -->
+<div class="absolute inset-0 z-0 opacity-40 mix-blend-overlay bg-cover bg-center transition-all duration-1000" style="background-image: url('https://images.unsplash.com/photo-1586281380349-632531db7ed4?auto=format&fit=crop&q=80&w=1600')">
+</div>
+<div class="absolute inset-0 bg-gradient-to-t from-[#FDFBF9] via-[#1A1817]/70 to-transparent z-0">
+</div>
+<div class="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+<div class="inline-flex items-center space-x-2 sm:space-x-3 text-[10px] sm:text-xs uppercase tracking-widest font-semibold text-white/70 mb-8">
+<span class="cursor-pointer hover:text-white transition-colors" onclick="goHome()">Главная</span>
+<i data-lucide="chevron-right" class="w-3 h-3">
+</i>
+<span class="text-white">Уголок потребителя</span>
+</div>
+<h1 class="font-serif text-4xl sm:text-5xl lg:text-6xl text-white tracking-tight leading-[1.1] mb-6">Уголок потребителя</h1>
+<p class="text-white/80 text-lg lg:text-xl font-light max-w-2xl mx-auto">Официальная правовая информация, лицензии и нормативные документы клиники.</p>
+</div>
+</section>
+<!-- Основной контент (Аккордеоны с документами) -->
+<section class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20">
+<div class="bg-white rounded-[2.5rem] p-6 md:p-12 lg:p-16 shadow-[0_20px_50px_rgb(0,0,0,0.04)] border border-[#D0C0B1]/20 -mt-16">
+<!-- Блок 1: Лицензии -->
+<div class="mb-6">
+<button onclick="toggleAcc(this)" class="w-full flex justify-between items-center p-5 md:p-6 text-left focus:outline-none group bg-[#FDFBF9] rounded-2xl border border-[#D0C0B1]/30 hover:border-[#746258]/50 transition-colors">
+<div class="flex items-center">
+<div class="w-10 h-10 rounded-full bg-white border border-[#D0C0B1]/40 flex items-center justify-center mr-4 shadow-sm flex-shrink-0">
+<i data-lucide="file-badge-2" class="w-5 h-5 text-[#746258]">
+</i>
+</div>
+<span class="font-serif text-xl sm:text-2xl text-[#2A2522] group-hover:text-[#746258] transition-colors">Лицензии и реквизиты</span>
+</div>
+<div class="acc-icon w-8 h-8 rounded-full border border-[#D0C0B1]/60 text-[#746258] flex items-center justify-center transition-all duration-300 flex-shrink-0 ml-4 group-hover:border-[#746258]">
+<i data-lucide="chevron-down" class="w-4 h-4">
+</i>
+</div>
+</button>
+<!-- Контент внутри (Ссылки на PDF) -->
+<div class="acc-content px-5 md:px-6 pb-2 pt-0">
+<div class="space-y-3 mt-4">
+<a href="#" class="flex items-center p-4 bg-white border border-gray-100 rounded-xl hover:shadow-md hover:border-[#D0C0B1]/50 transition-all group">
+<i data-lucide="file-text" class="w-5 h-5 text-gray-400 mr-4 group-hover:text-[#746258] transition-colors">
+</i>
+<span class="text-sm font-medium text-gray-600 group-hover:text-[#2A2522]">Лицензия на осуществление медицинской деятельности (PDF)</span>
+<i data-lucide="download" class="w-4 h-4 text-gray-300 ml-auto group-hover:text-[#746258]">
+</i>
+</a>
+<a href="#" class="flex items-center p-4 bg-white border border-gray-100 rounded-xl hover:shadow-md hover:border-[#D0C0B1]/50 transition-all group">
+<i data-lucide="file-text" class="w-5 h-5 text-gray-400 mr-4 group-hover:text-[#746258] transition-colors">
+</i>
+<span class="text-sm font-medium text-gray-600 group-hover:text-[#2A2522]">Реквизиты организации ООО "Эстетика" (PDF)</span>
+<i data-lucide="download" class="w-4 h-4 text-gray-300 ml-auto group-hover:text-[#746258]">
+</i>
+</a>
+</div>
+</div>
+</div>
+<!-- Блок 2: Права граждан -->
+<div class="mb-6">
+<button onclick="toggleAcc(this)" class="w-full flex justify-between items-center p-5 md:p-6 text-left focus:outline-none group bg-[#FDFBF9] rounded-2xl border border-[#D0C0B1]/30 hover:border-[#746258]/50 transition-colors">
+<div class="flex items-center">
+<div class="w-10 h-10 rounded-full bg-white border border-[#D0C0B1]/40 flex items-center justify-center mr-4 shadow-sm flex-shrink-0">
+<i data-lucide="scale" class="w-5 h-5 text-[#746258]">
+</i>
+</div>
+<span class="font-serif text-xl sm:text-2xl text-[#2A2522] group-hover:text-[#746258] transition-colors">Права и обязанности граждан</span>
+</div>
+<div class="acc-icon w-8 h-8 rounded-full border border-[#D0C0B1]/60 text-[#746258] flex items-center justify-center transition-all duration-300 flex-shrink-0 ml-4 group-hover:border-[#746258]">
+<i data-lucide="chevron-down" class="w-4 h-4">
+</i>
+</div>
+</button>
+<div class="acc-content px-5 md:px-6 pb-2 pt-0">
+<div class="space-y-3 mt-4">
+<a href="#" class="flex items-center p-4 bg-white border border-gray-100 rounded-xl hover:shadow-md hover:border-[#D0C0B1]/50 transition-all group">
+<i data-lucide="file-text" class="w-5 h-5 text-gray-400 mr-4 group-hover:text-[#746258] transition-colors">
+</i>
+<span class="text-sm font-medium text-gray-600 group-hover:text-[#2A2522]">ФЗ №323 "Об основах охраны здоровья граждан в РФ" (PDF)</span>
+<i data-lucide="download" class="w-4 h-4 text-gray-300 ml-auto group-hover:text-[#746258]">
+</i>
+</a>
+<a href="#" class="flex items-center p-4 bg-white border border-gray-100 rounded-xl hover:shadow-md hover:border-[#D0C0B1]/50 transition-all group">
+<i data-lucide="file-text" class="w-5 h-5 text-gray-400 mr-4 group-hover:text-[#746258] transition-colors">
+</i>
+<span class="text-sm font-medium text-gray-600 group-hover:text-[#2A2522]">Постановление Правительства РФ №736 о платных мед. услугах (PDF)</span>
+<i data-lucide="download" class="w-4 h-4 text-gray-300 ml-auto group-hover:text-[#746258]">
+</i>
+</a>
+</div>
+</div>
+</div>
+<!-- Блок 3: Контролирующие органы -->
+<div class="mb-6">
+<button onclick="toggleAcc(this)" class="w-full flex justify-between items-center p-5 md:p-6 text-left focus:outline-none group bg-[#FDFBF9] rounded-2xl border border-[#D0C0B1]/30 hover:border-[#746258]/50 transition-colors">
+<div class="flex items-center">
+<div class="w-10 h-10 rounded-full bg-white border border-[#D0C0B1]/40 flex items-center justify-center mr-4 shadow-sm flex-shrink-0">
+<i data-lucide="shield-check" class="w-5 h-5 text-[#746258]">
+</i>
+</div>
+<span class="font-serif text-xl sm:text-2xl text-[#2A2522] group-hover:text-[#746258] transition-colors">Контролирующие органы</span>
+</div>
+<div class="acc-icon w-8 h-8 rounded-full border border-[#D0C0B1]/60 text-[#746258] flex items-center justify-center transition-all duration-300 flex-shrink-0 ml-4 group-hover:border-[#746258]">
+<i data-lucide="chevron-down" class="w-4 h-4">
+</i>
+</div>
+</button>
+<div class="acc-content px-5 md:px-6 pb-2 pt-0">
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+<div class="p-5 bg-white border border-gray-100 rounded-xl">
+<h5 class="font-bold text-[#2A2522] mb-2 leading-tight">Министерство здравоохранения Самарской области</h5>
+<p class="text-sm text-gray-500 mb-3">г. Самара, ул. Ленинская, 73</p>
+<a href="tel:+78463329309" class="inline-flex items-center text-sm font-semibold text-[#746258] hover:text-[#2A2522] transition-colors">
+<i data-lucide="phone" class="w-3.5 h-3.5 mr-2">
+</i> 8 (846) 332-93-09                            </a>
+</div>
+<div class="p-5 bg-white border border-gray-100 rounded-xl">
+<h5 class="font-bold text-[#2A2522] mb-2 leading-tight">Территориальный орган Росздравнадзора</h5>
+<p class="text-sm text-gray-500 mb-3">г. Самара, ул. Арцыбушевская, 13</p>
+<a href="tel:+78463332087" class="inline-flex items-center text-sm font-semibold text-[#746258] hover:text-[#2A2522] transition-colors">
+<i data-lucide="phone" class="w-3.5 h-3.5 mr-2">
+</i> 8 (846) 333-20-87                            </a>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-12 text-center">
+<button onclick="goHome()" class="inline-flex items-center justify-center text-[#746258] hover:text-[#2A2522] font-semibold text-sm uppercase tracking-widest transition-colors group">
+<i data-lucide="arrow-left" class="w-4 h-4 mr-3 group-hover:-translate-x-1 transition-transform">
+</i> На главную страницу            </button>
+</div>
+</section>
+</div>
+<!-- FOOTER -->
+<footer class="bg-[#F9F6F0] text-[#2A2522] pt-24 pb-12 border-t border-[#D0C0B1]/50">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-16 mb-20">
+<div>
+<div class="flex items-center gap-3 cursor-pointer shrink-0 group mb-8" onclick="goHome()">
+<svg viewBox="194 165 112 113" class="w-10 h-10 lg:w-12 lg:h-12 text-[#746258] group-hover:opacity-80 transition-opacity" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+<path d="M250,165.7c-30.8,0-55.8,25-55.8,55.8s25,55.8,55.8,55.8s55.8-25,55.8-55.8S280.8,165.7,250,165.7z M224.2,243.6v-45.7 c0,0,16.6,0,17.4,0c7.8,0,14.6,6.2,14.6,15.6c0,11.3-8.8,15.2-15.6,15.2c-0.8,0-16.4,0-16.4,0v14.9 M262.4,243.6l-9.1-30.6h2 l9.4,30.6H262.4z M273.7,243.6l15.1-30.6h2.2l-15.4,30.6H273.7z"/>
+<path d="M226.7,200.3v26.1h14.9c5.2,0,12.5-3.3,12.5-12.8c0-8.2-6.5-13.3-12.5-13.3H226.7z"/>
+<path d="M239.5,188.7c-8.9,0-15.3,4.9-15.3,4.9s6.6-6.4,18-6.4c11.4,0,17.2,5.2,17.2,5.2S253,188.7,239.5,188.7z"/>
+<path d="M285.3,243.6c-1.3,0-2.3-1-2.3-2.3c0-1.3,1-2.3,2.3-2.3c1.3,0,2.3,1,2.3,2.3C287.6,242.6,286.6,243.6,285.3,243.6z"/>
+</svg>
+<div class="flex flex-col border-l border-[#D0C0B1]/60 pl-3">
+<span class="font-serif text-[18px] lg:text-[22px] text-[#2A2522] leading-none tracking-wide group-hover:opacity-80 transition-opacity">VORONÉNKO</span>
+<span class="text-[8px] lg:text-[9px] uppercase tracking-[0.2em] text-[#746258] mt-0.5 font-semibold">Cosmetology Clinic</span>
+</div>
+</div>
+<p class="text-[14px] text-gray-500 font-light leading-relaxed">                        Продление молодости кожи и профессиональная забота о Вашем здоровье по мировым стандартам.                    </p>
+</div>
+<div>
+<h4 class="font-serif text-2xl mb-8 text-[#2A2522]">Контакты</h4>
+<ul class="space-y-5 text-[15px] text-gray-600 font-light">
+<li class="flex items-start">
+<i data-lucide="map-pin" class="w-5 h-5 mr-4 text-[#746258] flex-shrink-0 mt-0.5">
+</i>
+<span>г. Самара, ул. Мяги, 24А</span>
+</li>
+<li class="flex items-center">
+<i data-lucide="phone" class="w-5 h-5 mr-4 text-[#746258] flex-shrink-0">
+</i>
+<a href="tel:+78000000000" class="hover:text-[#746258] transition-colors font-medium">8 (800) 000-00-00</a>
+</li>
+<li class="flex items-center">
+<i data-lucide="clock" class="w-5 h-5 mr-4 text-[#746258] flex-shrink-0">
+</i>
+<span>Ежедневно с 09:00 до 21:00</span>
+</li>
+</ul>
+</div>
+<div>
+<h4 class="font-serif text-2xl mb-8 text-[#2A2522]">Пациентам</h4>
+<ul class="space-y-4 text-[15px] text-gray-600 font-light">
+<li>
+<a href="#price" class="hover:text-[#746258] hover:translate-x-1 transition-all inline-block font-medium" onclick="goHome()">Услуги и цены</a>
+</li>
+<li>
+<a href="#team" class="hover:text-[#746258] hover:translate-x-1 transition-all inline-block font-medium" onclick="goHome()">Специалисты</a>
+</li>
+<li>
+<button onclick="openModal('cert-modal')" class="hover:text-[#746258] hover:translate-x-1 transition-all font-medium">Подарочные сертификаты</button>
+</li>
+<li>
+<button onclick="goHome(); setTimeout(() => document.getElementById('reviews').scrollIntoView({behavior: 'smooth'}), 100);" class="hover:text-[#746258] hover:translate-x-1 transition-all font-medium">Отзывы</button>
+</li>
+</ul>
+</div>
+<div>
+<h4 class="font-serif text-2xl mb-8 text-[#2A2522]">Правовая информация</h4>
+<ul class="space-y-4 text-[15px] text-gray-600 font-light">
+<li>
+<button onclick="showView('view-consumer')" class="hover:text-[#746258] underline decoration-gray-300 transition-colors text-left font-medium text-[#2A2522]">Уголок потребителя</button>
+</li>
+<li>
+<button onclick="scrollToDocuments()" class="hover:text-[#746258] underline decoration-gray-300 transition-colors text-left">Документы и лицензии</button>
+</li>
+<li>
+<button onclick="openModal('policy-modal')" class="hover:text-[#746258] underline decoration-gray-300 transition-colors text-left">Политика конфиденциальности</button>
+</li>
+<li>
+<button onclick="openModal('terms-modal')" class="hover:text-[#746258] underline decoration-gray-300 transition-colors text-left">Пользовательское соглашение</button>
+</li>
+<li class="mt-8 pt-6 border-t border-[#D0C0B1]/40">
+<span class="block text-xs mb-1.5 text-gray-500">Лицензия № ЛО-XX-XX-XXXXXX от XX.XX.20XX</span>
+<span class="block text-xs text-gray-500">ООО "Эстетика" ОГРН XXXXXXXXXXXXX</span>
+</li>
+</ul>
+</div>
+</div>
+<div class="border-t border-[#D0C0B1]/40 pt-8 flex flex-col md:flex-row justify-between items-center gap-6 text-[11px] text-gray-400 font-semibold tracking-widest uppercase">
+<p>© 2026 Клиника Dr. VORONENKO. Все права защищены.</p>
+<p class="text-center border border-[#D0C0B1]/40 px-6 py-3 rounded-md bg-white/50 backdrop-blur-sm text-gray-500">                    Имеются противопоказания. Необходима консультация специалиста.                </p>
+</div>
+</div>
+</footer>
+<!-- МОДАЛЬНОЕ ОКНО: ПОЛИТИКА КОНФИДЕНЦИАЛЬНОСТИ -->
+<div id="policy-modal" class="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-[#1A1817]/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300">
+<div class="absolute inset-0" onclick="closeModal('policy-modal')">
+</div>
+<div class="relative bg-[#FDFBF9] rounded-[2.5rem] shadow-2xl w-full max-w-3xl h-[80vh] flex flex-col transform scale-95 transition-transform duration-300" id="policy-modal-content">
+<div class="p-8 lg:p-10 border-b border-[#D0C0B1]/30 flex justify-between items-center shrink-0">
+<h3 class="font-serif text-2xl lg:text-3xl text-[#2A2522]">Политика конфиденциальности</h3>
+<button onclick="closeModal('policy-modal')" class="text-gray-400 hover:text-[#2A2522] transition-colors">
+<i data-lucide="x" class="w-6 h-6">
+</i>
+</button>
+</div>
+<div class="p-8 lg:p-10 overflow-y-auto font-light text-gray-600 text-sm leading-relaxed space-y-6">
+<p>Настоящая Политика конфиденциальности персональных данных (далее – Политика конфиденциальности) действует в отношении всей информации, которую Клиника может получить о Пользователе во время использования сайта.</p>
+<h4 class="font-medium text-[#2A2522] text-base">1. Определение терминов</h4>
+<p>1.1. В настоящей Политике конфиденциальности используются следующие термины: <br>                «Администрация сайта» – уполномоченные сотрудники на управление сайтом, действующие от имени Клиники, которые организуют и осуществляют обработку персональных данных.</p>
+<h4 class="font-medium text-[#2A2522] text-base">2. Общие положения</h4>
+<p>2.1. Использование Пользователем сайта означает согласие с настоящей Политикой конфиденциальности и условиями обработки персональных данных Пользователя.<br>                2.2. В случае несогласия с условиями Политики конфиденциальности Пользователь должен прекратить использование сайта.</p>
+<h4 class="font-medium text-[#2A2522] text-base">3. Предмет политики конфиденциальности</h4>
+<p>3.1. Настоящая Политика устанавливает обязательства Администрации сайта по неразглашению и обеспечению режима защиты конфиденциальности персональных данных, которые Пользователь предоставляет по запросу при оформлении заявки на запись.<br>                3.2. Персональные данные, разрешённые к обработке: Имя, контактный телефон, интересующая услуга.</p>
+<p class="italic mt-8 text-gray-400">Данный текст является типовым шаблоном правовой информации и подлежит замене на реальный юридический документ клиники.</p>
+</div>
+</div>
+</div>
+<!-- МОДАЛЬНОЕ ОКНО: ПОЛЬЗОВАТЕЛЬСКОЕ СОГЛАШЕНИЕ -->
+<div id="terms-modal" class="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-[#1A1817]/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300">
+<div class="absolute inset-0" onclick="closeModal('terms-modal')">
+</div>
+<div class="relative bg-[#FDFBF9] rounded-[2.5rem] shadow-2xl w-full max-w-3xl h-[80vh] flex flex-col transform scale-95 transition-transform duration-300" id="terms-modal-content">
+<div class="p-8 lg:p-10 border-b border-[#D0C0B1]/30 flex justify-between items-center shrink-0">
+<h3 class="font-serif text-2xl lg:text-3xl text-[#2A2522]">Пользовательское соглашение</h3>
+<button onclick="closeModal('terms-modal')" class="text-gray-400 hover:text-[#2A2522] transition-colors">
+<i data-lucide="x" class="w-6 h-6">
+</i>
+</button>
+</div>
+<div class="p-8 lg:p-10 overflow-y-auto font-light text-gray-600 text-sm leading-relaxed space-y-6">
+<p>Настоящее Пользовательское соглашение регулирует отношения между Клиникой косметологии (далее — Клиника) и пользователем сети Интернет (далее — Пользователь), возникающие при использовании интернет-ресурса.</p>
+<h4 class="font-medium text-[#2A2522] text-base">1. Предмет соглашения</h4>
+<p>1.1. Клиника предлагает Пользователю доступ к информации о медицинских услугах, специалистах, ценах и акциях, размещенных на сайте.<br>                1.2. Информация на сайте носит исключительно справочный характер и не является публичной офертой.</p>
+<h4 class="font-medium text-[#2A2522] text-base">2. Медицинские оговорки</h4>
+<p>2.1. Описание процедур и услуг не заменяет очной консультации специалиста.<br>                2.2. Имеются противопоказания. Перед проведением любых медицинских вмешательств необходима консультация профильного врача.</p>
+<p class="italic mt-8 text-gray-400">Данный текст является типовым шаблоном правовой информации и подлежит замене на реальный юридический документ клиники.</p>
+</div>
+</div>
+</div>
+<!-- МОДАЛЬНОЕ ОКНО: ПОДАРОЧНЫЕ СЕРТИФИКАТЫ -->
+<div id="cert-modal" class="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-[#1A1817]/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300">
+<div class="absolute inset-0" onclick="closeModal('cert-modal')">
+</div>
+<div class="relative bg-[#FDFBF9] rounded-[2.5rem] shadow-2xl w-full max-w-lg p-8 lg:p-12 transform scale-95 transition-transform duration-300 text-center" id="cert-modal-content">
+<button onclick="closeModal('cert-modal')" class="absolute top-6 right-6 text-gray-400 hover:text-[#2A2522] transition-colors">
+<i data-lucide="x" class="w-6 h-6">
+</i>
+</button>
+<div class="w-20 h-20 bg-[#D0C0B1]/20 rounded-full flex items-center justify-center mx-auto mb-6 text-[#746258]">
+<i data-lucide="gift" class="w-10 h-10">
+</i>
+</div>
+<h3 class="font-serif text-3xl text-[#2A2522] mb-4">Подарочные сертификаты</h3>
+<p class="text-gray-500 font-light text-sm mb-8 leading-relaxed">Подарите красоту и заботу своим близким. У нас доступны сертификаты на любой номинал от 5 000 ₽. Красивая дизайнерская упаковка предоставляется бесплатно.</p>
+<button onclick="closeModal('cert-modal'); setTimeout(() => openBooking('Подарочный сертификат'), 300)" class="w-full bg-[#746258] text-white py-4 rounded-full font-bold uppercase tracking-widest text-sm hover:bg-[#5A4C44] active:scale-95 transition-all shadow-md">                Заказать сертификат            </button>
+</div>
+</div>
+<!-- JAVASCRIPT: ДАННЫЕ И ЛОГИКА САЙТА -->
+<script>        // Безопасная инициализация иконок        function updateIcons() {            if (typeof lucide !== 'undefined') {                lucide.createIcons();             }        }        // --- УТИЛИТА ДЛЯ ССЫЛОК GOOGLE DRIVE ---        function formatImageUrl(url) {            if (!url) return '';            url = url.trim();            // Автоматическая конвертация ссылок Google Drive в прямые ссылки для картинок            if (url.includes('drive.google.com')) {                const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);                if (match && match[1]) {                    return `https://drive.google.com/uc?export=view&id=${match[1]}`;                }            }            return url;        }        // --- БАЗА ДАННЫХ (РЫБА) ---        const DB = {            categories: {                'aesthetic': {                    title: 'Эстетическая косметология',                    desc: 'Чистки, химические пилинги, уходовые программы',                    img: 'https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?auto=format&fit=crop&q=80&w=1600',                    procedures: ['cleaning', 'peeling']                },                'hardware': {                    title: 'Аппаратная косметология',                    desc: 'SMAS-лифтинг, микроигольчатый RF, фотоомоложение',                    img: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&q=80&w=1600',                    procedures: ['smas', 'rf', 'bbl']                },                'injection': {                    title: 'Инъекционная косметология',                    desc: 'Контурная пластика, биоревитализация, мезотерапия',                    img: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=1600',                    procedures: ['lips', 'contour', 'biorev']                },                'botulinum': {                    title: 'Ботулинотерапия',                    desc: 'Коррекция мимических морщин, лечение гипергидроза',                    img: 'https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?auto=format&fit=crop&q=80&w=1600',                    procedures: ['botox']                }            },            procedures: {                'lips': {                    categoryId: 'injection',                    title: 'Контурная пластика губ',                    priceText: 'от 12 000 ₽',                    img: 'https://images.unsplash.com/photo-1588636402450-4ff6d877e8ea?auto=format&fit=crop&q=80&w=800',                    desc: 'Контурная пластика губ — это искусство, где каждая деталь имеет значение. Мы используем только сертифицированные препараты и самые современные техники, чтобы создать губы, подчеркивающие Вашу естественную красоту и индивидуальность. Мы знаем, как важно сохранить гармонию и баланс.',                    howItWorks: [                        { q: 'Консультация и анализ', a: 'Врач внимательно изучает пропорции лица, выслушивает пожелания и подбирает плотность филлера.' },                        { q: 'Подготовка к процедуре', a: 'Демакияж, антисептическая обработка и нанесение аппликационной кремовой анестезии (15-20 минут).' },                        { q: 'Инъекция филлера', a: 'Атравматичное введение препарата тончайшей иглой. Препараты уже содержат лидокаин для вашего комфорта.' },                        { q: 'Массаж и финальная коррекция', a: 'Легкий массаж губ для равномерного распределения геля в тканях.' }                    ],                    problems: [                        { q: 'Нехватка объема', a: 'Филлеры на основе гиалуроновой кислоты делают губы более полными и привлекательными, восполняя утраченный с возрастом объем.' },                        { q: 'Асимметрия', a: 'Процедура позволяет скорректировать форму, сделать губы сбалансированными и симметричными.' },                        { q: 'Размытые контуры', a: 'Восстановление четкого контура, выделение "Арки Купидона", что делает губы более выразительными.' },                        { q: 'Опущенные уголки губ', a: 'Поднятие уголков придает лицу более радостное и приветливое выражение.' }                    ],                    prices: [                        { name: 'Контурная пластика препаратом Novacutan F-Bio', vol: '1.0 мл', time: '60 минут', cost: '16 000 ₽' },                        { name: 'Контурная пластика препаратом Belotero Lips', vol: '0.6 мл', time: '60 минут', cost: '14 500 ₽' }                    ]                },                'contour': {                    categoryId: 'injection', title: 'Контурная пластика лица', priceText: 'от 15 000 ₽', img: 'https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?auto=format&fit=crop&q=80&w=800', desc: 'Восполнение объемов в области скул, подбородка и углов нижней челюсти.', howItWorks: [{q:'Консультация', a:'Осмотр'}], problems: [{q:'Птоз', a:'Лифтинг'}], prices: [{name: 'Препарат', vol:'1 мл', time:'60 мин', cost:'15 000 ₽'}]                },                'biorev': {                    categoryId: 'injection', title: 'Биоревитализация', priceText: 'от 9 000 ₽', img: 'https://images.unsplash.com/photo-1554284126-aa88f22d8b74?auto=format&fit=crop&q=80&w=800', desc: 'Глубокое увлажнение и сияние кожи за счет инъекций гиалуроновой кислоты.', howItWorks: [{q:'Консультация', a:'Осмотр'}], problems: [{q:'Сухость', a:'Увлажнение'}], prices: [{name: 'Meso-Xanthin', vol:'1.5 мл', time:'40 мин', cost:'15 500 ₽'}]                },                'botox': {                    categoryId: 'botulinum', title: 'Ботулинотерапия', priceText: 'от 300 ₽/ед', img: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=800', desc: 'Устранение мимических морщин без эффекта "маски".', howItWorks: [{q:'Разметка', a:'Точки введения'}], problems: [{q:'Морщины на лбу', a:'Гладкая кожа'}], prices: [{name: 'Ботокс / Диспорт', vol:'1 ед.', time:'30 мин', cost:'300 ₽'}]                },                'smas': {                    categoryId: 'hardware', title: 'SMAS-лифтинг', priceText: 'от 25 000 ₽', img: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&q=80&w=800', desc: 'Безоперационная подтяжка лица.', howItWorks: [{q:'Разметка', a:'Осмотр'}], problems: [{q:'Брыли', a:'Четкий овал'}], prices: [{name: 'Лицо полностью', vol:'500 линий', time:'90 мин', cost:'45 000 ₽'}]                },                'rf': {                    categoryId: 'hardware', title: 'Игольчатый RF-лифтинг', priceText: 'от 20 000 ₽', img: 'https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&q=80&w=800', desc: 'Уплотнение кожи и сокращение кожного лоскута.', howItWorks: [{q:'Анестезия', a:'Крем'}], problems: [{q:'Дряблость', a:'Упругость'}], prices: [{name: 'Лицо', vol:'1 насадка', time:'60 мин', cost:'35 000 ₽'}]                },                'bbl': {                    categoryId: 'hardware', title: 'Фотоомоложение BBL', priceText: 'от 10 000 ₽', img: 'https://images.unsplash.com/photo-1584362917165-526a968579e8?auto=format&fit=crop&q=80&w=800', desc: 'Лечение пигментации и купероза.', howItWorks: [{q:'Вспышки', a:'Свет'}], problems: [{q:'Пигмент', a:'Ровный тон'}], prices: [{name: 'Лицо', vol:'1 сеанс', time:'40 мин', cost:'15 000 ₽'}]                },                'cleaning': {                    categoryId: 'aesthetic', title: 'Чистка лица', priceText: 'от 4 000 ₽', img: 'https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?auto=format&fit=crop&q=80&w=800', desc: 'Глубокое очищение пор.', howItWorks: [{q:'УЗ-чистка', a:'Аппарат'}], problems: [{q:'Комедоны', a:'Чистая кожа'}], prices: [{name: 'Комбинированная', vol:'1 сеанс', time:'90 мин', cost:'4 500 ₽'}]                },                'peeling': {                    categoryId: 'aesthetic', title: 'Химический пилинг', priceText: 'от 3 500 ₽', img: 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?auto=format&fit=crop&q=80&w=800', desc: 'Обновление эпидермиса.', howItWorks: [{q:'Нанесение кислот', a:'Экспозиция'}], problems: [{q:'Постакне', a:'Обновление'}], prices: [{name: 'BioRePeel', vol:'1 сеанс', time:'45 мин', cost:'5 000 ₽'}]                }            }        };        let currentCategoryId = null;        // --- ИНИЦИАЛИЗАЦИЯ КАТЕГОРИЙ (ОБНОВЛЕНО) ---        function initHomeCategories() {            const container = document.getElementById('home-categories-container');            if(!container) return;             container.className = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8";            let html = '';            for (const [key, data] of Object.entries(DB.categories)) {                // Изменен класс aspect-[4/5] на aspect-[16/9] md:aspect-[4/5]                // Добавлены классы адаптивного шрифта и отступов для мобилки                html += `                    <div onclick="openCategoryPage('${key}')" class="group cursor-pointer rounded-[2rem] md:rounded-[2.5rem] overflow-hidden relative aspect-[16/9] sm:aspect-[4/5] w-full border border-[#D0C0B1]/20 shadow-sm hover:shadow-xl transition-all duration-500 active:scale-[0.98]">
+<img src="${data.img}" class="absolute inset-0 w-full h-full object-cover transition-transform duration-[2s] ease-out group-hover:scale-105 z-0" alt="${data.title}">
+<div class="absolute inset-0 bg-gradient-to-t from-[#1A1817]/95 via-[#1A1817]/40 to-transparent flex flex-col justify-end p-5 md:p-6 lg:p-8 z-10">
+<h3 class="text-white font-serif text-xl md:text-2xl lg:text-3xl mb-1.5 md:mb-2 tracking-tight leading-[1.1]">                                ${data.title.replace(' ', '<br>')}                            </h3>
+<p class="text-white/90 text-xs md:text-[13px] lg:text-sm mb-4 md:mb-6 font-light line-clamp-2 sm:line-clamp-none">${data.desc}</p>
+<button class="w-max bg-white/20 backdrop-blur-md text-white border border-white/40 px-5 py-2 md:px-6 md:py-2.5 rounded-full text-[9px] md:text-[10px] uppercase tracking-widest font-semibold hover:bg-white hover:text-[#746258] transition-all duration-300">Подробнее</button>
+</div>
+</div>                `;            }            container.innerHTML = html;        }        // --- ЛОГИКА КАРАСУЕЛИ ИНТЕРЬЕРА (ГЛАВНЫЙ ЭКРАН) ---        let currentHeroSlide = 0;        let heroSlidesData = [];        let heroSlideInterval;        function initHeroSlider() {            // Попытка взять фото из localStorage (из админки)            const savedMainPage = JSON.parse(localStorage.getItem('dbMainPage'));            if (savedMainPage && savedMainPage.interior && savedMainPage.interior.length > 0) {                heroSlidesData = savedMainPage.interior.map(item => item.img);            } else {                // Дефолтные красивые заглушки, если в админке пусто                heroSlidesData = [                    "https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&q=80&w=1200",                    "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&q=80&w=1200",                    "https://images.unsplash.com/photo-1586289883446-f283259b3d0a?auto=format&fit=crop&q=80&w=1200"                ];            }            renderHeroSlider();            startHeroSliderAuto();        }        function renderHeroSlider() {            const slidesContainer = document.getElementById('hero-interior-slides');            const dotsContainer = document.getElementById('hero-interior-dots');            if (!slidesContainer || !dotsContainer) return;            slidesContainer.innerHTML = heroSlidesData.map((img, index) => `                <img src="${img}" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-[1.2s] ease-in-out ${index === currentHeroSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'}" alt="Интерьер клиники">            `).join('');            dotsContainer.innerHTML = heroSlidesData.map((_, index) => `                <div onclick="goToHeroSlide(${index})" class="h-2 rounded-full cursor-pointer transition-all duration-300 shadow-sm ${index === currentHeroSlide ? 'w-6 bg-white' : 'w-2 bg-white/50 hover:bg-white/90'}">
+</div>            `).join('');        }        function goToHeroSlide(index) {            currentHeroSlide = index;            if (currentHeroSlide >= heroSlidesData.length) currentHeroSlide = 0;            if (currentHeroSlide < 0) currentHeroSlide = heroSlidesData.length - 1;            renderHeroSlider();            resetHeroSliderAuto();        }        function nextHeroSlide() { goToHeroSlide(currentHeroSlide + 1); }        function prevHeroSlide() { goToHeroSlide(currentHeroSlide - 1); }        function startHeroSliderAuto() { heroSlideInterval = setInterval(nextHeroSlide, 4000); }        function resetHeroSliderAuto() { clearInterval(heroSlideInterval); startHeroSliderAuto(); }        // --- ЛОГИКА НАВИГАЦИИ МЕЖДУ СТРАНИЦАМИ ---        function showView(viewId) {            const views = document.querySelectorAll('.view-section');            views.forEach(v => {                v.classList.add('hidden', 'opacity-0');            });                        const target = document.getElementById(viewId);            if(target) {                target.classList.remove('hidden');                setTimeout(() => target.classList.remove('opacity-0'), 50);                window.scrollTo({ top: 0, behavior: 'smooth' });                updateIcons();            }        }        function hideAllViews() {            const viewHome = document.getElementById('view-home');            const viewCat = document.getElementById('view-category');            const viewProc = document.getElementById('view-procedure');            const viewConsumer = document.getElementById('view-consumer');                        if(viewHome) viewHome.classList.add('hidden', 'opacity-0');            if(viewCat) viewCat.classList.add('hidden', 'opacity-0');            if(viewProc) viewProc.classList.add('hidden', 'opacity-0');            if(viewConsumer) viewConsumer.classList.add('hidden', 'opacity-0');        }        function goHome() {            hideAllViews();            const v = document.getElementById('view-home');            if(v) {                v.classList.remove('hidden');                setTimeout(() => v.classList.remove('opacity-0'), 50);                window.scrollTo({ top: 0, behavior: 'smooth' });            }        }        function goBackToCategory() {            if(currentCategoryId) openCategoryPage(currentCategoryId);            else goHome();        }        // --- Функция для скролла к документам ---        function scrollToDocuments() {            goHome();             setTimeout(() => {                const headings = Array.from(document.querySelectorAll('h2'));                const docHeading = headings.find(h => h.textContent.includes('Документы'));                                if (docHeading) {                    const section = docHeading.closest('section');                    if (section) {                        section.scrollIntoView({ behavior: 'smooth' });                        return;                    }                }                                const contacts = document.getElementById('contacts');                if (contacts) contacts.scrollIntoView({ behavior: 'smooth' });            }, 100);         }        // --- СТРАНИЦА КАТЕГОРИИ ---        function openCategoryPage(catKey) {            const data = DB.categories[catKey];            if (!data) return;            currentCategoryId = catKey;            const catTitle = document.getElementById('cat-title');            if(catTitle) {                catTitle.innerText = data.title;                document.getElementById('cat-breadcrumb').innerText = data.title;                document.getElementById('cat-desc').innerText = data.desc;                document.getElementById('cat-hero-img').style.backgroundImage = `url('${data.img}')`;                let html = '';                data.procedures.forEach(procKey => {                    const proc = DB.procedures[procKey];                    html += `                        <div onclick="openProcedurePage('${procKey}')" class="bg-white rounded-3xl p-3 sm:p-4 border border-[#D0C0B1]/20 shadow-[0_10px_30px_rgb(0,0,0,0.03)] cursor-pointer group hover:shadow-lg transition-all hover:-translate-y-1">
+<div class="w-full aspect-square rounded-2xl overflow-hidden mb-4 bg-[#FDFBF9]">
+<img src="${proc.img}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt="${proc.title}">
+</div>
+<h4 class="font-serif text-[15px] sm:text-lg text-[#2A2522] leading-tight mb-2 group-hover:text-[#746258] transition-colors">${proc.title}</h4>
+<p class="text-xs text-gray-400 uppercase tracking-widest font-semibold">${proc.priceText}</p>
+</div>                    `;                });                document.getElementById('cat-grid').innerHTML = html;            }            hideAllViews();            const v = document.getElementById('view-category');            if(v) {                v.classList.remove('hidden');                setTimeout(() => v.classList.remove('opacity-0'), 50);                window.scrollTo({ top: 0, behavior: 'smooth' });                updateIcons();            }        }        // --- СТРАНИЦА ПРОЦЕДУРЫ ---        function openProcedurePage(procKey) {            const proc = DB.procedures[procKey];            if (!proc) return;            const cat = DB.categories[proc.categoryId];            const procTitle = document.getElementById('proc-title');            if(procTitle) {                procTitle.innerText = proc.title;                document.getElementById('proc-breadcrumb').innerText = proc.title;                document.getElementById('proc-cat-breadcrumb').innerText = cat.title;                document.getElementById('proc-price-top').innerText = proc.priceText;                document.getElementById('proc-desc').innerText = proc.desc;                document.getElementById('proc-hero-img').style.backgroundImage = `url('${proc.img}')`;                document.getElementById('proc-btn-top').onclick = () => openBooking(proc.title);                document.getElementById('proc-how').innerHTML = proc.howItWorks.map(item => `                    <div class="bg-[#FDFBF9] rounded-2xl border border-[#D0C0B1]/30 overflow-hidden mb-3">
+<button onclick="toggleAcc(this)" class="w-full flex justify-between items-center p-5 text-left focus:outline-none group">
+<span class="font-medium text-[#2A2522] text-sm sm:text-base group-hover:text-[#746258] transition-colors">${item.q}</span>
+<div class="acc-icon w-8 h-8 rounded-full border border-[#D0C0B1]/60 text-[#746258] flex items-center justify-center transition-all duration-300 flex-shrink-0 ml-4 group-hover:border-[#746258]">
+<i data-lucide="chevron-down" class="w-4 h-4">
+</i>
+</div>
+</button>
+<div class="acc-content px-5 pb-5 pt-0 text-sm text-gray-500 font-light leading-relaxed">                            ${item.a}                        </div>
+</div>                `).join('');                document.getElementById('proc-problems').innerHTML = proc.problems.map(item => `                    <div class="bg-[#FDFBF9] rounded-2xl border border-[#D0C0B1]/30 overflow-hidden mb-3">
+<button onclick="toggleAcc(this)" class="w-full flex justify-between items-center p-5 text-left focus:outline-none group">
+<span class="font-medium text-[#2A2522] text-sm sm:text-base group-hover:text-[#746258] transition-colors">${item.q}</span>
+<div class="acc-icon w-8 h-8 rounded-full border border-[#D0C0B1]/60 text-[#746258] flex items-center justify-center transition-all duration-300 flex-shrink-0 ml-4 group-hover:border-[#746258]">
+<i data-lucide="chevron-down" class="w-4 h-4">
+</i>
+</div>
+</button>
+<div class="acc-content px-5 pb-5 pt-0 text-sm text-gray-500 font-light leading-relaxed">                            ${item.a}                        </div>
+</div>                `).join('');                document.getElementById('proc-prices').innerHTML = proc.prices.map(item => `                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white border border-[#D0C0B1]/30 p-6 rounded-2xl">
+<div class="mb-4 sm:mb-0 pr-4">
+<p class="text-[#2A2522] font-medium mb-1">${item.name}</p>
+<p class="text-[11px] text-gray-400 uppercase tracking-widest font-semibold">${item.vol} / ${item.time}</p>
+</div>
+<div class="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end">
+<span class="text-[#746258] font-serif text-2xl whitespace-nowrap">${item.cost}</span>
+<button onclick="openBooking('${proc.title}')" class="bg-[#FDFBF9] border border-[#D0C0B1] text-[#746258] px-6 py-2.5 rounded-full text-xs uppercase tracking-widest font-bold hover:bg-[#746258] hover:text-white active:scale-95 transition-all">Запись</button>
+</div>
+</div>                `).join('');            }            hideAllViews();            const v = document.getElementById('view-procedure');            if(v) {                v.classList.remove('hidden');                setTimeout(() => v.classList.remove('opacity-0'), 50);                window.scrollTo({ top: 0, behavior: 'smooth' });                updateIcons();            }        }        // --- ОБЩИЕ УТИЛИТЫ ---        function showToast(msg) {            const toast = document.getElementById('toast');            if(!toast) return;            document.getElementById('toast-msg').innerText = msg;            toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-10');            setTimeout(() => {                toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-10');            }, 3000);        }        function toggleMobileMenu() {            const menu = document.getElementById('mobile-menu');            if(!menu) return;            if(menu.classList.contains('hidden')) {                menu.classList.remove('hidden');                setTimeout(() => menu.classList.remove('opacity-0', 'translate-y-[-10px]'), 10);            } else {                menu.classList.add('opacity-0', 'translate-y-[-10px]');                setTimeout(() => menu.classList.add('hidden'), 300);            }        }        function toggleContrast() {            document.body.classList.toggle('grayscale');            document.body.classList.toggle('contrast-125');            document.body.classList.toggle('bg-white');            document.body.classList.toggle('text-black');            showToast('Переключение режима...');        }        function openModal(id) {            const modal = document.getElementById(id);            const content = document.getElementById(id + '-content');            if(!modal || !content) return;            modal.classList.remove('opacity-0', 'pointer-events-none');            setTimeout(() => content.classList.remove('scale-95'), 10);        }        function closeModal(id) {            const modal = document.getElementById(id);            const content = document.getElementById(id + '-content');            if(!modal || !content) return;            content.classList.add('scale-95');            setTimeout(() => modal.classList.add('opacity-0', 'pointer-events-none'), 200);        }        function openBooking(service = '', doctor = '') {            let interest = '';            if (service) interest = service;            else if (doctor) interest = 'Врач: ' + doctor;            const bInterest = document.getElementById('booking-interest');            if(bInterest) bInterest.value = interest;            closeModal('doctor-modal');            openModal('booking-modal');        }        function submitBooking(e) {            e.preventDefault();            closeModal('booking-modal');            showToast('Ваша заявка успешно отправлена! Мы скоро свяжемся с вами.');        }        function openDoctor(name, role, edu, bio, imgUrl) {            const docImg = document.getElementById('doc-img');            if(!docImg) return;            docImg.src = imgUrl;            document.getElementById('doc-role').innerText = role;            document.getElementById('doc-name').innerText = name;            document.getElementById('doc-bio').innerText = bio;            document.getElementById('doc-edu').innerText = edu;            document.getElementById('doc-book-btn').onclick = () => openBooking('', name);            openModal('doctor-modal');        }        function toggleFaq(btn) {            const content = btn.nextElementSibling;            const icon = btn.querySelector('.acc-icon') || btn.querySelector('.faq-icon');                        if (content.style.maxHeight) {                content.style.maxHeight = null;                content.classList.remove('active', 'opacity-100');                icon.classList.remove('rotate-180', 'bg-[#746258]', 'text-white', 'border-[#746258]');            } else {                content.style.maxHeight = content.scrollHeight + 40 + "px";                content.classList.add('active', 'opacity-100');                icon.classList.add('rotate-180', 'bg-[#746258]', 'text-white', 'border-[#746258]');            }        }        window.toggleAcc = toggleFaq;                 function scrollTeam(direction) {            const carousel = document.getElementById('team-carousel');            if(!carousel) return;            const cardWidth = window.innerWidth < 640 ? window.innerWidth * 0.85 : 280;             const scrollAmount = cardWidth + 32;             if (direction === 'left') {                carousel.scrollBy({ left: -scrollAmount, behavior: 'smooth' });            } else {                carousel.scrollBy({ left: scrollAmount, behavior: 'smooth' });            }        }        window.addEventListener('scroll', () => {            const header = document.getElementById('navbar');            if(!header) return;            if (window.scrollY > 20) {                header.classList.add('shadow-[0_4px_30px_rgb(0,0,0,0.03)]', 'border-b', 'border-[#D0C0B1]/20');                header.classList.remove('border-[#D0C0B1]/30');            } else {                header.classList.remove('shadow-[0_4px_30px_rgb(0,0,0,0.03)]', 'border-b', 'border-[#D0C0B1]/20');                header.classList.add('border-[#D0C0B1]/30');            }        });        // Запуск при старте         document.addEventListener("DOMContentLoaded", () => {            updateIcons();            initHomeCategories();            initHeroSlider(); // Запускаем нашу новую карусель интерьера!        });    </script>
+</body>
+</html>
