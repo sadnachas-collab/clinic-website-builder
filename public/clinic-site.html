@@ -16,10 +16,9 @@
 <!-- Иконки Lucide -->
 <script src="https://unpkg.com/lucide@latest">
 </script>
-<!-- Плагин для слабовидящих (BVI - ГОСТ РФ) ПРЯМАЯ ССЫЛКА НА GITHUB АВТОРА -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/veks/button-visually-impaired-javascript@master/dist/css/bvi.min.css">
-<script src="https://cdn.jsdelivr.net/gh/veks/button-visually-impaired-javascript@master/dist/js/bvi.min.js">
-</script>
+<!-- Плагин для слабовидящих (BVI - ГОСТ РФ), пин-версия с npm -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bvi@1.0.2/dist/css/bvi.min.css">
+<script src="https://cdn.jsdelivr.net/npm/bvi@1.0.2/dist/js/bvi.min.js"></script>
 <!-- Настройки Tailwind -->
 <script>    tailwind.config = {        theme: {            extend: {                fontFamily: {                    sans: ['Montserrat', 'sans-serif'],                    serif: ['Playfair Display', 'serif'],                }            }        }    }</script>
 <!-- Глобальные стили -->
@@ -221,8 +220,45 @@
 </div>
 </div>
 </header>
-<script>    document.addEventListener("DOMContentLoaded", () => {        // Умная инициализация плагина для слабовидящих по ГОСТ
-        const initBvi = (attempts = 0) => {            if (typeof isvek !== 'undefined' && isvek.Bvi) {                new isvek.Bvi({                    target: '.bvi-open',                    fontSize: 24,                    theme: 'white'                });            } else if (attempts < 20) {                setTimeout(() => initBvi(attempts + 1), 500);            }        };        initBvi();    });</script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  // Инициализация плагина для слабовидящих (BVI, ГОСТ Р 52872-2019)
+  let bviReady = false;
+  const initBvi = (attempts = 0) => {
+    if (typeof isvek !== 'undefined' && isvek.Bvi) {
+      try {
+        window.bviInstance = new isvek.Bvi({ target: '.bvi-open', fontSize: 24, theme: 'white' });
+        bviReady = true;
+        console.log('[BVI] инициализирован');
+      } catch (err) {
+        console.warn('[BVI] ошибка инициализации:', err);
+      }
+    } else if (attempts < 6) {
+      setTimeout(() => initBvi(attempts + 1), 500);
+    } else {
+      console.warn('[BVI] скрипт не загрузился за 3 сек');
+    }
+  };
+  initBvi();
+
+  // Fallback: если BVI не подхватил клик — пробуем дёрнуть вручную или показать тост
+  document.querySelectorAll('.bvi-open').forEach(el => {
+    el.addEventListener('click', (e) => {
+      if (bviReady) return; // BVI сам обработает
+      e.preventDefault();
+      try {
+        if (window.bviInstance && typeof window.bviInstance.bviOn === 'function') {
+          window.bviInstance.bviOn();
+          return;
+        }
+      } catch (_) {}
+      if (typeof showToast === 'function') {
+        showToast('Версия для слабовидящих временно недоступна. Используйте Ctrl + «+» для увеличения шрифта.');
+      }
+    });
+  });
+});
+</script>
 <!-- ========================================================================= -->
 <!-- ================= УРОВЕНЬ 1: ГЛАВНАЯ СТРАНИЦА ============================ -->
 <!-- ========================================================================= -->
