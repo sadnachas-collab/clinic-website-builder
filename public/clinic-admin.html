@@ -9,8 +9,30 @@
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest">
 </script>
+<link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.min.js"></script>
 <script>        tailwind.config = {            theme: {                extend: {                    fontFamily: {                        sans: ['Montserrat', 'sans-serif'],                    },                    colors: {                        brand: {                            50: '#FDFBF9',                            200: '#D0C0B1',                            600: '#746258',                            800: '#5A4C44',                            900: '#2A2522'                        }                    }                }            }        }    </script>
-<style>        body { background-color: #f3f4f6; }        .hide-scrollbar::-webkit-scrollbar { display: none; }        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }                .admin-section { display: none; opacity: 0; transition: opacity 0.3s ease; }        .admin-section.active { display: block; opacity: 1; animation: fadeIn 0.4s ease forwards; }                .nav-btn { text-align: left; }                @keyframes fadeIn {            from { opacity: 0; transform: translateY(10px); }            to { opacity: 1; transform: translateY(0); }        }    </style>
+<style>        body { background-color: #f3f4f6; }        .hide-scrollbar::-webkit-scrollbar { display: none; }        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }                .admin-section { display: none; opacity: 0; transition: opacity 0.3s ease; }        .admin-section.active { display: block; opacity: 1; animation: fadeIn 0.4s ease forwards; }                .nav-btn { text-align: left; }                @keyframes fadeIn {            from { opacity: 0; transform: translateY(10px); }            to { opacity: 1; transform: translateY(0); }        }
+        /* ---- Rich text editor (Quill) ---- */
+        .rich-wrap { border: 1px solid #e5e7eb; border-radius: 0.75rem; background: #fff; overflow: hidden; }
+        .rich-wrap .ql-toolbar.ql-snow { border: none; border-bottom: 1px solid #f1f1f1; background: #FDFBF9; border-radius: 0.75rem 0.75rem 0 0; padding: 6px 8px; }
+        .rich-wrap .ql-container.ql-snow { border: none; font-family: 'Montserrat', sans-serif; font-size: 14px; min-height: 90px; }
+        .rich-wrap .ql-editor { min-height: 90px; padding: 12px 14px; color: #2A2522; line-height: 1.55; }
+        .rich-wrap.large .ql-editor { min-height: 220px; }
+        .rich-wrap .ql-editor h3 { font-size: 1.05rem; font-weight: 700; color: #2A2522; margin: 0.6em 0 0.3em; }
+        .rich-wrap .ql-editor .lead { font-size: 1.05rem; font-weight: 500; color: #5A4C44; }
+        .rich-wrap .ql-editor a { color: #746258; text-decoration: underline; }
+        .rich-wrap .ql-snow .ql-picker.ql-header .ql-picker-label::before,
+        .rich-wrap .ql-snow .ql-picker.ql-header .ql-picker-item::before { content: 'Обычный'; }
+        .rich-wrap .ql-snow .ql-picker.ql-header .ql-picker-label[data-value="3"]::before,
+        .rich-wrap .ql-snow .ql-picker.ql-header .ql-picker-item[data-value="3"]::before { content: 'Подзаголовок'; font-weight: 700; }
+        .rich-wrap .ql-snow .ql-picker.ql-header .ql-picker-label[data-value="lead"]::before,
+        .rich-wrap .ql-snow .ql-picker.ql-header .ql-picker-item[data-value="lead"]::before { content: 'Крупный текст'; }
+        /* акцентные цвета — только два */
+        .rich-wrap .ql-snow .ql-color-picker .ql-picker-item[data-value="#746258"] { background-color: #746258; }
+        .rich-wrap .ql-snow .ql-color-picker .ql-picker-item[data-value="#b91c1c"] { background-color: #b91c1c; }
+    </style>
+
 </head>
 <body class="text-brand-900 font-sans">
 <!-- УВЕДОМЛЕНИЕ (TOAST) -->
@@ -270,7 +292,7 @@
 </div>
 <div>
 <label class="block text-xs font-semibold text-gray-500 mb-1">Основное описание (О клинике)</label>
-<textarea id="mp-about-text" rows="3" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:border-brand-600 outline-none text-sm resize-y">
+<textarea id="mp-about-text" data-rich="1" rows="3" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:border-brand-600 outline-none text-sm resize-y">
 </textarea>
 </div>
 </div>
@@ -476,7 +498,7 @@
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 <div class="md:col-span-2">
 <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Короткое описание</label>
-<textarea id="ft-desc" rows="2" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-brand-600 focus:bg-white outline-none resize-none">
+<textarea id="ft-desc" data-rich="1" rows="2" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-brand-600 focus:bg-white outline-none resize-none">
 </textarea>
 </div>
 <div>
@@ -535,17 +557,17 @@
 <div class="space-y-8">
 <div>
 <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Политика конфиденциальности</label>
-<textarea id="ft-policy" rows="12" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-brand-600 focus:bg-white outline-none resize-y text-sm leading-relaxed whitespace-pre-wrap">
+<textarea id="ft-policy" data-rich="1" data-rich-size="large" rows="12" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-brand-600 focus:bg-white outline-none resize-y text-sm leading-relaxed whitespace-pre-wrap">
 </textarea>
 </div>
 <div>
 <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Пользовательское соглашение</label>
-<textarea id="ft-terms" rows="12" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-brand-600 focus:bg-white outline-none resize-y text-sm leading-relaxed whitespace-pre-wrap">
+<textarea id="ft-terms" data-rich="1" data-rich-size="large" rows="12" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-brand-600 focus:bg-white outline-none resize-y text-sm leading-relaxed whitespace-pre-wrap">
 </textarea>
 </div>
 <div>
 <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Согласие на обработку персональных данных (152-ФЗ)</label>
-<textarea id="ft-consent" rows="12" placeholder="Текст согласия на обработку ПДн — отдельный документ по 152-ФЗ" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-brand-600 focus:bg-white outline-none resize-y text-sm leading-relaxed whitespace-pre-wrap">
+<textarea id="ft-consent" data-rich="1" data-rich-size="large" rows="12" placeholder="Текст согласия на обработку ПДн — отдельный документ по 152-ФЗ" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-brand-600 focus:bg-white outline-none resize-y text-sm leading-relaxed whitespace-pre-wrap">
 </textarea>
 </div>
 <div class="flex justify-end pt-4 border-t border-gray-100">
@@ -651,7 +673,7 @@
 </div>
 <div class="md:col-span-2">
 <label class="block text-xs text-gray-500 mb-1">Главное описание</label>
-<textarea id="pe-desc" rows="3" class="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:border-brand-600 outline-none resize-none">
+<textarea id="pe-desc" data-rich="1" rows="3" class="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:border-brand-600 outline-none resize-none">
 </textarea>
 </div>
 </div>
@@ -937,7 +959,7 @@
 </div>
 <div class="sm:col-span-2">
 <label class="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Текст отзыва</label>
-<textarea id="rev-text-${r.id}" class="w-full px-3 py-2 text-sm border rounded outline-none focus:border-brand-600" rows="3">${r.text}</textarea>
+<textarea id="rev-text-${r.id}" data-rich="1" class="w-full px-3 py-2 text-sm border rounded outline-none focus:border-brand-600" rows="3">${r.text}</textarea>
 </div>
 <div class="sm:col-span-2 flex justify-end gap-2">
 <button onclick="cancelEditReview(${r.id})" class="px-4 py-2 border rounded text-xs font-bold uppercase text-gray-600">Отмена</button>
@@ -983,7 +1005,7 @@
 </div>
 <div>
 <label class="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Ответ</label>
-<textarea id="faq-a-${f.id}" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:border-brand-600 outline-none resize-y" rows="3" placeholder="Подробный ответ...">${f.a}</textarea>
+<textarea id="faq-a-${f.id}" data-rich="1" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:border-brand-600 outline-none resize-y" rows="3" placeholder="Подробный ответ...">${f.a}</textarea>
 </div>
 <div class="flex justify-end gap-3 mt-2 border-t border-gray-100 pt-4">
 <button type="button" onclick="cancelEditFaq(${f.id})" class="px-5 py-2.5 border border-gray-200 text-gray-600 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-gray-50 transition-colors">Отмена</button>
@@ -1065,7 +1087,7 @@
 </tr>`).join(''); lucide.createIcons();        }        function deleteCatProcedure(id) { if(confirm('Удалить эту процедуру навсегда?')) { dbCatProcedures = dbCatProcedures.filter(p => p.id !== id); persistData(); renderCatProcedures(); } }        let tempEditProc = null;        function openProcEditorModal(procId = null) {            if(procId) { tempEditProc = JSON.parse(JSON.stringify(dbCatProcedures.find(x => x.id === procId))); tempEditProc.pricesChief = tempEditProc.pricesChief || []; document.getElementById('pe-modal-title').innerText = 'Редактирование: ' + tempEditProc.title; }            else { tempEditProc = { id: 'proc_' + Date.now(), categoryId: 'aesthetic', title: '', priceText: '', img: '', desc: '', howItWorks: [], problems: [], prices: [], pricesChief: [] }; document.getElementById('pe-modal-title').innerText = 'Новая процедура'; }            document.getElementById('pe-title').value = tempEditProc.title; document.getElementById('pe-category').value = tempEditProc.categoryId; document.getElementById('pe-priceText').value = tempEditProc.priceText; document.getElementById('pe-img').value = tempEditProc.img; document.getElementById('pe-desc').value = tempEditProc.desc;            peRenderSteps(); peRenderProblems(); peRenderPrices(); peRenderPricesChief();            const modal = document.getElementById('proc-editor-modal'); const content = document.getElementById('proc-editor-modal-content'); modal.classList.remove('opacity-0', 'pointer-events-none'); setTimeout(() => content.classList.remove('scale-95'), 10);        }        function closeProcEditorModal() { const modal = document.getElementById('proc-editor-modal'); const content = document.getElementById('proc-editor-modal-content'); content.classList.add('scale-95'); setTimeout(() => modal.classList.add('opacity-0', 'pointer-events-none'), 200); tempEditProc = null; }        function saveProcEditorModal() {            tempEditProc.title = document.getElementById('pe-title').value.trim(); tempEditProc.categoryId = document.getElementById('pe-category').value; tempEditProc.priceText = document.getElementById('pe-priceText').value; tempEditProc.img = formatImageUrl(document.getElementById('pe-img').value); tempEditProc.desc = document.getElementById('pe-desc').value; tempEditProc.pricesChief = tempEditProc.pricesChief || [];            if(!tempEditProc.title) return alert('Название обязательно!');            const idx = dbCatProcedures.findIndex(x => x.id === tempEditProc.id); if(idx > -1) dbCatProcedures[idx] = tempEditProc; else dbCatProcedures.unshift(tempEditProc);            persistData(); renderCatProcedures(); closeProcEditorModal(); showToast('Сохранено!');        }        function peRenderSteps() { document.getElementById('pe-steps-container').innerHTML = tempEditProc.howItWorks.map((item, i) => `<div class="flex gap-3 items-start bg-gray-50 p-4 rounded-xl border border-gray-100">
 <div class="flex-1 space-y-2">
 <input type="text" value="${item.q}" onkeyup="tempEditProc.howItWorks[${i}].q = this.value" class="w-full px-3 py-2 border rounded-lg outline-none focus:border-brand-600 text-sm" placeholder="Шаг (н-р: Консультация)">
-<textarea rows="2" onkeyup="tempEditProc.howItWorks[${i}].a = this.value" class="w-full px-3 py-2 border rounded-lg outline-none focus:border-brand-600 text-sm resize-none" placeholder="Описание этапа...">${item.a}</textarea>
+<textarea rows="2" data-rich="1" onkeyup="tempEditProc.howItWorks[${i}].a = this.value" class="w-full px-3 py-2 border rounded-lg outline-none focus:border-brand-600 text-sm resize-none" placeholder="Описание этапа...">${item.a}</textarea>
 </div>
 <button onclick="peRemoveStep(${i})" class="text-gray-400 hover:text-red-500 bg-white border border-gray-200 p-2 rounded-lg mt-1">
 <i data-lucide="trash" class="w-4 h-4">
@@ -1074,7 +1096,7 @@
 </div>`).join(''); lucide.createIcons(); }        function peAddStep() { tempEditProc.howItWorks.push({ q: '', a: '' }); peRenderSteps(); } function peRemoveStep(i) { tempEditProc.howItWorks.splice(i, 1); peRenderSteps(); }                function peRenderProblems() { document.getElementById('pe-problems-container').innerHTML = tempEditProc.problems.map((item, i) => `<div class="flex gap-3 items-start bg-gray-50 p-4 rounded-xl border border-gray-100">
 <div class="flex-1 space-y-2">
 <input type="text" value="${item.q}" onkeyup="tempEditProc.problems[${i}].q = this.value" class="w-full px-3 py-2 border rounded-lg outline-none focus:border-brand-600 text-sm" placeholder="Проблема (н-р: Птоз тканей)">
-<textarea rows="2" onkeyup="tempEditProc.problems[${i}].a = this.value" class="w-full px-3 py-2 border rounded-lg outline-none focus:border-brand-600 text-sm resize-none" placeholder="Решение...">${item.a}</textarea>
+<textarea rows="2" data-rich="1" onkeyup="tempEditProc.problems[${i}].a = this.value" class="w-full px-3 py-2 border rounded-lg outline-none focus:border-brand-600 text-sm resize-none" placeholder="Решение...">${item.a}</textarea>
 </div>
 <button onclick="peRemoveProblem(${i})" class="text-gray-400 hover:text-red-500 bg-white border border-gray-200 p-2 rounded-lg mt-1">
 <i data-lucide="trash" class="w-4 h-4">
@@ -1117,11 +1139,11 @@
 </div>
 <div class="sm:col-span-2">
 <label class="text-[10px] font-bold uppercase text-gray-500">Образование</label>
-<textarea id="spec-edu-${s.id}" class="w-full px-3 py-2 border rounded-lg text-sm resize-y outline-none focus:border-brand-600" rows="2">${s.edu}</textarea>
+<textarea id="spec-edu-${s.id}" data-rich="1" class="w-full px-3 py-2 border rounded-lg text-sm resize-y outline-none focus:border-brand-600" rows="2">${s.edu}</textarea>
 </div>
 <div class="sm:col-span-2">
 <label class="text-[10px] font-bold uppercase text-gray-500">О себе</label>
-<textarea id="spec-bio-${s.id}" class="w-full px-3 py-2 border rounded-lg text-sm resize-y outline-none focus:border-brand-600" rows="3">${s.bio}</textarea>
+<textarea id="spec-bio-${s.id}" data-rich="1" class="w-full px-3 py-2 border rounded-lg text-sm resize-y outline-none focus:border-brand-600" rows="3">${s.bio}</textarea>
 </div>
 </div>
 <div class="flex flex-row sm:flex-col gap-2 shrink-0 border-t sm:border-t-0 sm:border-l border-gray-100 pt-4 sm:pt-0 sm:pl-4">
@@ -1304,6 +1326,143 @@
         window.addAuthority = addAuthority;
         window.updateAuthority = updateAuthority;
         window.deleteAuthority = deleteAuthority;
+
+        // ====== Панель форматирования (Quill) ======
+        // Подключается ко всем textarea с атрибутом data-rich="1".
+        // Whitelist: жирный, курсив, подчёркнутый, зачёркнутый,
+        // подзаголовок (H3) и крупный текст (lead), 2 акцентных цвета,
+        // списки, ссылка, очистить. Никаких px / шрифтов / выравниваний.
+        const RICH_TOOLBAR = [
+            ['bold', 'italic', 'underline', 'strike'],
+            [{ 'header': [3, false] }],
+            [{ 'color': ['#2A2522', '#746258', '#b91c1c'] }],
+            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+            ['link'],
+            ['clean']
+        ];
+        function attachRichEditor(textarea) {
+            if (!textarea || textarea.dataset.richReady === '1') return;
+            if (typeof Quill === 'undefined') return;
+            textarea.dataset.richReady = '1';
+            const size = textarea.getAttribute('data-rich-size') || '';
+            const wrap = document.createElement('div');
+            wrap.className = 'rich-wrap' + (size === 'large' ? ' large' : '');
+            const editor = document.createElement('div');
+            wrap.appendChild(editor);
+            textarea.style.display = 'none';
+            textarea.parentNode.insertBefore(wrap, textarea);
+            // Если в textarea пришёл «голый» текст без HTML — оборачиваем в <p>
+            const initial = textarea.value || '';
+            const looksLikeHtml = /<\/?[a-z][\s\S]*>/i.test(initial);
+            const quill = new Quill(editor, {
+                theme: 'snow',
+                modules: {
+                    toolbar: RICH_TOOLBAR,
+                    clipboard: { matchVisual: false }
+                },
+                formats: ['bold', 'italic', 'underline', 'strike', 'header', 'list', 'link', 'color']
+            });
+            if (initial) {
+                if (looksLikeHtml) {
+                    quill.clipboard.dangerouslyPasteHTML(initial, 'silent');
+                } else {
+                    quill.setText(initial, 'silent');
+                }
+            }
+            const sync = () => {
+                const isEmpty = quill.getText().trim().length === 0;
+                textarea.value = isEmpty ? '' : quill.root.innerHTML;
+                textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                textarea.dispatchEvent(new Event('keyup', { bubbles: true }));
+                textarea.dispatchEvent(new Event('change', { bubbles: true }));
+            };
+            quill.on('text-change', sync);
+            // финальная синхронизация на закрытии модалок и т.п.
+            textarea._richQuill = quill;
+        }
+        function attachAllRichEditors(root) {
+            const scope = root || document;
+            const list = scope.querySelectorAll('textarea[data-rich="1"]');
+            list.forEach(t => {
+                if (t.dataset.richReady === '1' && t._richQuill) {
+                    // Перезагрузить контент в уже инициализированный редактор
+                    const v = t.value || '';
+                    const isHtml = /<\/?[a-z][\s\S]*>/i.test(v);
+                    if (isHtml) t._richQuill.clipboard.dangerouslyPasteHTML(v, 'silent');
+                    else if (v) t._richQuill.setText(v, 'silent');
+                    else t._richQuill.setText('', 'silent');
+                } else {
+                    attachRichEditor(t);
+                }
+            });
+        }
+
+        // Хелпер: безопасно вставить отформатированный HTML в превью на сайте/в админке.
+        // Сейчас не используется здесь, но оставлен для будущей логики предпросмотра.
+        window.attachRichEditor = attachRichEditor;
+        window.attachAllRichEditors = attachAllRichEditors;
+
+        // ===== Хуки: подключаем редактор после рендера =====
+        // Главная страница
+        (function(){
+            const orig = window.renderMainPageData;
+            if (typeof orig === 'function') {
+                window.renderMainPageData = function(){
+                    orig.apply(this, arguments);
+                    attachAllRichEditors(document.getElementById('section-mainpage'));
+                };
+            }
+        })();
+        // Подвал и юр. документы
+        (function(){
+            const orig = window.renderFooterData;
+            if (typeof orig === 'function') {
+                window.renderFooterData = function(){
+                    orig.apply(this, arguments);
+                    attachAllRichEditors(document.getElementById('section-footer'));
+                };
+            }
+        })();
+        // Модалка процедуры (pe-desc)
+        (function(){
+            const orig = window.openProcEditorModal;
+            if (typeof orig === 'function') {
+                window.openProcEditorModal = function(){
+                    orig.apply(this, arguments);
+                    setTimeout(() => attachAllRichEditors(document.getElementById('proc-editor-modal')), 30);
+                };
+            }
+        })();
+        // peRenderSteps / peRenderProblems — после ре-рендера контейнеров
+        (function(){
+            ['peRenderSteps', 'peRenderProblems'].forEach(name => {
+                const orig = window[name];
+                if (typeof orig === 'function') {
+                    window[name] = function(){
+                        orig.apply(this, arguments);
+                        attachAllRichEditors(document.getElementById('proc-editor-modal'));
+                    };
+                }
+            });
+        })();
+        // FAQ / отзывы / специалисты — после переключения в режим редактирования
+        (function(){
+            ['editFaq', 'editReview', 'editSpecialist'].forEach(name => {
+                const orig = window[name];
+                if (typeof orig === 'function') {
+                    window[name] = function(){
+                        orig.apply(this, arguments);
+                        // textareas уже есть в DOM (просто скрыты), переинициализируем безопасно
+                        attachAllRichEditors(document);
+                    };
+                }
+            });
+        })();
+        // Первичная инициализация после полной загрузки (для уже видимых textarea)
+        window.addEventListener('load', () => {
+            setTimeout(() => attachAllRichEditors(document), 200);
+        });
     </script>
+
 </body>
 </html>
