@@ -1462,6 +1462,67 @@
         window.addEventListener('load', () => {
             setTimeout(() => attachAllRichEditors(document), 200);
         });
+
+        // ===== Защита: «Сохранить» не должно уводить с текущей вкладки =====
+        // Любой save*-обработчик во время выполнения замораживает активную секцию.
+        // Если что-то внутри (рендер, ререндер Quill, побочный switchTab) попытается
+        // переключить вкладку — мы это игнорируем и возвращаем ту, что была до клика.
+        (function(){
+            let saveGuardActive = false;
+            let lockedTab = null;
+
+            function getCurrentTab(){
+                const btn = document.querySelector('.nav-btn.active[data-target]');
+                return btn ? btn.dataset.target : null;
+            }
+
+            // Перехватываем switchTab — во время save игнорируем любые вызовы
+            const origSwitch = window.switchTab;
+            if (typeof origSwitch === 'function') {
+                window.switchTab = function(tabId){
+                    if (saveGuardActive && tabId !== lockedTab) {
+                        return; // блокируем непрошеное переключение
+                    }
+                    return origSwitch.apply(this, arguments);
+                };
+            }
+
+            function wrapSave(name){
+                const orig = window[name];
+                if (typeof orig !== 'function' || orig.__stayWrapped) return;
+                const wrapped = function(){
+                    const prevGuard = saveGuardActive;
+                    const prevLocked = lockedTab;
+                    lockedTab = getCurrentTab();
+                    saveGuardActive = true;
+                    try {
+                        return orig.apply(this, arguments);
+                    } finally {
+                        // Если что-то всё же поменяло активную секцию — вернём.
+                        const now = getCurrentTab();
+                        if (lockedTab && now && now !== lockedTab) {
+                            try { origSwitch && origSwitch(lockedTab); } catch(_) {}
+                        }
+                        saveGuardActive = prevGuard;
+                        lockedTab = prevLocked;
+                    }
+                };
+                wrapped.__stayWrapped = true;
+                window[name] = wrapped;
+            }
+
+            function wrapAllSaves(){
+                Object.keys(window).forEach(k => {
+                    if (/^save[A-Z]/.test(k) && typeof window[k] === 'function') {
+                        wrapSave(k);
+                    }
+                });
+            }
+
+            // Оборачиваем сейчас и после полной загрузки (на случай поздних объявлений)
+            wrapAllSaves();
+            window.addEventListener('load', () => setTimeout(wrapAllSaves, 250));
+        })();
     </script>
 
 </body>
