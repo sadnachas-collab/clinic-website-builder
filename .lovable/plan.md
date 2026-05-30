@@ -1,37 +1,38 @@
-Подключаю раздел «Врачи» к базе по аналогии с услугами и прайс-листом.
+## Подключение раздела «Акции» к БД
 
-## Что меняется
+Сейчас акции хранятся в `dbMainPage.promos` (localStorage). Подключаем к таблице `promos` в Lovable Cloud по образцу врачей.
 
-1. **Загрузка из БД при входе в админку.** При старте читаю таблицу `specialists` (поля: имя, должность, описание, фото, порядок), заполняю `window.dbSpecialists` и перерисовываю список. Дефолтная "тестовая" запись из localStorage больше не используется.
+### Что меняется в `public/clinic-admin.html`
 
-2. **Маппинг полей.** Текущая UI-модель `{id, name, role, edu, bio, img}` ↔ таблица `specialists {id, name, position, description, photo_url, sort_order}`.
-   - `role` → `position`
-   - `img` → `photo_url`
-   - `edu` + `bio` объединяются в одно поле `description` (с разделителем `\n\n---\n\n`) и при загрузке разделяются обратно. Это позволит ничего не менять в форме UI и не плодить новые колонки. На сайте отображение биографии останется как есть.
+1. **`loadPromos()`** — новая функция:
+   - `sb.from('promos').select('*').order('sort_order').order('created_at', { ascending: false })`
+   - Маппинг БД → UI-модель: `{ id (UUID), title, badge: description?, desc: description, img: image_url }`.
+   - Поскольку в таблице нет отдельного поля `badge`, храним «бирку» в начале `description` в формате `[badge] desc` (split/join при чтении/записи). Так не трогаем схему БД.
+   - Обновляет `window.dbMainPage.promos` и перерисовывает: `renderPromos()` + `updateDashboardStats()`.
 
-3. **CRUD через Supabase.**
-   - «Добавить» — создаёт временную строку в UI с `tmpId`, после «Сохранить» делает `insert` и заменяет `tmpId` на UUID из базы.
-   - «Сохранить» для существующей строки — `update` по UUID.
-   - «Удалить» — `delete` по UUID.
-   - После успешного сохранения строка возвращается в view-mode (кнопки Сохранить/Отмена пропадают, появляются Редактировать/Удалить) — как уже сделано для услуг.
+2. **`addPromo`** — временный `tmpId` (строка), флаг `isNew`. Без записи в БД до «Сохранить».
 
-4. **Загрузка фото врача прямо из формы.** Рядом с полем «URL фото» добавляю кнопку «Загрузить фото» (input type=file). Файл уходит в Supabase Storage в bucket `photos` по пути `specialists/<timestamp>-<safeName>`, в поле URL подставляется публичная ссылка. Лимит 10 МБ, разрешены jpg/png/webp.
+3. **`savePromo(id)`** — определяет, UUID или временный:
+   - новый → `sb.from('promos').insert({ title, description: joinBadgeDesc(badge,desc), image_url, sort_order: 0, published: true }).select().single()` → подменяем id в массиве.
+   - существующий → `sb.from('promos').update({...}).eq('id', id)`.
 
-5. **Совместимость с существующим bridge-скриптом.** Использую `window.sb` (он уже инициализируется и имеет права админа), `var dbSpecialists` чтобы bridge-скрипт мог подменять данные. Локальный кеш в localStorage больше не первичный источник — он только перестраховка.
+4. **`deletePromo(id)`** — `sb.from('promos').delete().eq('id', id)` для UUID; для временного — просто из массива.
 
-## Технические детали
+5. **Загрузка фото**: рядом с полем «URL Обложки» — кнопка «Загрузить фото» по образцу врачей. Bucket `photos`, путь `promos/<timestamp>-<safeName>`, лимит 10 МБ, jpg/png/webp, `upsert: true`. После загрузки — public URL в `#promo-img-<id>`.
 
-- Файл: `public/clinic-admin.html` — секция `<script>` врачей (строки ~1310–1354) и bootstrap-блок (строки ~1700–1780).
-- Меняю `dbSpecialists` объявление с `let` на `var` (как уже сделано для services / priceFile).
-- Добавляю функции `loadSpecialists()` и `uploadSpecialistPhoto(id, file)` в bridge-блок и вызываю `loadSpecialists()` после `loadPriceFile()`.
-- `saveSpecialist` переписываю по образцу `saveRow`: проверка UUID, insert/update, замена id, перерисовка.
-- `addSpecialist` — id ставлю как `'new_' + Date.now()`.
-- `deleteSpecialist` — добавляю `await sb.from('specialists').delete().eq('id', id)` для UUID, для `new_*` просто убираю из массива.
-- RLS на `specialists` уже корректные (`is_admin(auth.uid())`), миграции не нужны. Bucket `photos` существует и публичный.
+6. **Bridge**: добавить `overridePromos()` в bridge-блок и вызывать его после `loadMainTexts()` (или параллельно с `loadServices/loadSpecialists`).
 
-## Проверка
+7. **Идентификаторы**: все `onclick` и `id` оборачиваем через `String(id)` для совместимости UUID/временных id (как сделано для врачей).
 
-- Открыть раздел «Специалисты» в админке: список загружается из базы.
-- Добавить нового врача с фото, сохранить → запись в БД, фото в Storage, публичная ссылка работает.
-- Отредактировать — изменения сохраняются, кнопки возвращаются в норму.
-- Удалить — пропадает и из UI, и из БД.
+### Проверка
+
+- Открыть «Главная → Акции»: список грузится из БД.
+- Добавить акцию, загрузить фото, сохранить → запись появляется в `promos`, фото в `photos/promos/...`.
+- Редактировать заголовок/описание/бирку → обновляется в БД.
+- Удалить → исчезает из БД.
+- Перезагрузка страницы → данные сохраняются (не из localStorage, а из БД).
+
+### Затронутые файлы
+- `public/clinic-admin.html`
+
+Реализую после подтверждения.
