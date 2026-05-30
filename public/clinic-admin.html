@@ -1403,6 +1403,19 @@
         window.deleteConsumerCategory = deleteConsumerCategory;
         window.addConsumerDocument = addConsumerDocument;
         window.renameConsumerDocument = renameConsumerDocument;
+        function saveAuthorities(){
+            // Снимаем фокус, чтобы успел сработать onchange у активного поля
+            if (document.activeElement && typeof document.activeElement.blur === 'function') document.activeElement.blur();
+            persistData();
+            showToast('Контролирующие органы сохранены');
+        }
+        function saveConsumerDocs(){
+            if (document.activeElement && typeof document.activeElement.blur === 'function') document.activeElement.blur();
+            persistData();
+            showToast('Документы сохранены');
+        }
+        window.saveAuthorities = saveAuthorities;
+        window.saveConsumerDocs = saveConsumerDocs;
         window.deleteConsumerDocument = deleteConsumerDocument;
         window.addAuthority = addAuthority;
         window.updateAuthority = updateAuthority;
