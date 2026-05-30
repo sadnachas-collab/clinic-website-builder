@@ -1767,10 +1767,12 @@
                     overrideServices();
                     overrideSpecialists();
                     overrideMainTexts();
+                    overridePromos();
                     await loadServices();
                     await loadPriceFile();
                     await loadSpecialists();
                     await loadMainTexts();
+                    await loadPromos();
                 }
             } catch(e){
                 console.error('[admin] bootstrap error', e);
@@ -2155,6 +2157,204 @@
                 } catch(e){
                     console.error(e);
                     notify('Ошибка сохранения: ' + errMsg(e));
+                }
+            };
+        }
+
+        // ===== АКЦИИ (promos) =====
+        function splitBadgeDesc(description){
+            const s = String(description == null ? '' : description);
+            const m = s.match(/^\s*\[([^\]]*)\]\s*([\s\S]*)$/);
+            if (m) return { badge: m[1] || '', desc: m[2] || '' };
+            return { badge: '', desc: s };
+        }
+        function joinBadgeDesc(badge, desc){
+            const b = String(badge == null ? '' : badge).trim();
+            const d = String(desc == null ? '' : desc);
+            return b ? ('[' + b + '] ' + d) : d;
+        }
+
+        async function loadPromos(){
+            const { data, error } = await sb
+                .from('promos')
+                .select('id,title,description,image_url,sort_order,created_at')
+                .order('sort_order', { ascending: true })
+                .order('created_at', { ascending: false });
+            if (error) { console.error(error); notify('Ошибка загрузки акций: '+errMsg(error)); return; }
+            const list = (data || []).map(function(r){
+                const bd = splitBadgeDesc(r.description);
+                return { id: r.id, title: r.title || '', badge: bd.badge, desc: bd.desc, img: r.image_url || '' };
+            });
+            try {
+                window.dbMainPage = window.dbMainPage || {};
+                window.dbMainPage.promos = list;
+                if (typeof dbMainPage !== 'undefined') dbMainPage.promos = list;
+            } catch(_){}
+            try { window.renderPromos && window.renderPromos(); } catch(e){ console.error(e); }
+            try { window.updateDashboardStats && window.updateDashboardStats(); } catch(_){}
+        }
+
+        function overridePromos(){
+            const UUID_RE3 = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            const esc = function(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+
+            window.renderPromos = function(){
+                const list = (window.dbMainPage && window.dbMainPage.promos) || [];
+                document.getElementById('admin-promos-list').innerHTML = list.map(function(p){
+                    const pid = String(p.id);
+                    return '<div id="promo-row-' + pid + '" class="flex items-center gap-4 p-4 border border-gray-200 rounded-2xl bg-white hover:bg-gray-50 group">'
+                    + '<img src="' + esc(p.img) + '" onerror="this.src=\'https://placehold.co/400x400/f3f4f6/a1a1aa?text=Нет+фото\'" class="w-16 h-16 rounded-xl object-cover shrink-0 bg-gray-100">'
+                    + '<div class="flex-1 min-w-0 view-mode">'
+                    +   '<p class="font-bold text-brand-900 truncate">' + esc(p.title) + (p.badge ? ' <span class="ml-1 text-[10px] uppercase tracking-widest text-brand-600">' + esc(p.badge) + '</span>' : '') + '</p>'
+                    +   '<p class="text-xs text-gray-500 truncate">' + esc(p.desc) + '</p>'
+                    + '</div>'
+                    + '<div class="flex-1 hidden edit-mode grid grid-cols-1 sm:grid-cols-2 gap-4">'
+                    +   '<div><label class="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Заголовок</label>'
+                    +     '<input type="text" id="promo-title-' + pid + '" value="' + esc(p.title) + '" class="w-full px-3 py-2 text-sm border rounded outline-none focus:border-brand-600"></div>'
+                    +   '<div><label class="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Бирка (напр. \'Подарок\')</label>'
+                    +     '<input type="text" id="promo-badge-' + pid + '" value="' + esc(p.badge) + '" class="w-full px-3 py-2 text-sm border rounded outline-none focus:border-brand-600"></div>'
+                    +   '<div class="sm:col-span-2"><label class="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Описание</label>'
+                    +     '<input type="text" id="promo-desc-' + pid + '" value="' + esc(p.desc) + '" class="w-full px-3 py-2 text-sm border rounded outline-none focus:border-brand-600"></div>'
+                    +   '<div class="sm:col-span-2"><label class="text-[10px] uppercase text-gray-500 font-bold mb-1 block">URL Обложки</label>'
+                    +     '<input type="text" id="promo-img-' + pid + '" value="' + esc(p.img) + '" class="w-full px-3 py-2 text-sm border rounded outline-none focus:border-brand-600">'
+                    +     '<div class="flex items-center gap-2 mt-2">'
+                    +       '<input type="file" id="promo-file-' + pid + '" accept="image/jpeg,image/png,image/webp" class="hidden" onchange="uploadPromoPhoto(\'' + pid + '\', this.files[0])">'
+                    +       '<button type="button" onclick="document.getElementById(\'promo-file-' + pid + '\').click()" class="px-3 py-1.5 bg-brand-50 text-brand-600 border border-brand-200 rounded-lg text-[11px] font-bold uppercase tracking-widest hover:bg-brand-100">Загрузить фото</button>'
+                    +       '<span id="promo-upload-status-' + pid + '" class="text-[11px] text-gray-500"></span>'
+                    +     '</div>'
+                    +   '</div>'
+                    + '</div>'
+                    + '<div class="flex flex-col gap-2 shrink-0">'
+                    +   '<button onclick="editPromo(\'' + pid + '\')" class="view-mode p-2 border rounded hover:text-brand-600"><i data-lucide="edit-3" class="w-5 h-5"></i></button>'
+                    +   '<button onclick="deletePromo(\'' + pid + '\')" class="view-mode p-2 border rounded hover:text-red-500"><i data-lucide="trash-2" class="w-5 h-5"></i></button>'
+                    +   '<button onclick="savePromo(\'' + pid + '\')" class="edit-mode hidden px-4 py-2 bg-green-600 text-white rounded text-xs font-bold uppercase">Сохранить</button>'
+                    +   '<button onclick="cancelEditPromo(\'' + pid + '\')" class="edit-mode hidden px-4 py-2 border rounded text-xs font-bold uppercase text-gray-600">Отмена</button>'
+                    + '</div>'
+                    + '</div>';
+                }).join('');
+                try { lucide.createIcons(); } catch(_){}
+            };
+
+            window.addPromo = function(){
+                if (window.isAddingPromo) return;
+                window.isAddingPromo = true;
+                const tmpId = 'new_' + Date.now();
+                window.dbMainPage = window.dbMainPage || {};
+                window.dbMainPage.promos = window.dbMainPage.promos || [];
+                window.dbMainPage.promos.unshift({ id: tmpId, title: '', badge: '', desc: '', img: '', isNew: true });
+                try { if (typeof dbMainPage !== 'undefined') dbMainPage.promos = window.dbMainPage.promos; } catch(_){}
+                window.renderPromos();
+                window.editPromo(tmpId);
+            };
+
+            window.editPromo = function(id){
+                const row = document.getElementById('promo-row-' + id);
+                if (!row) return;
+                row.querySelectorAll('.view-mode').forEach(function(el){ el.classList.add('hidden'); });
+                row.querySelectorAll('.edit-mode').forEach(function(el){ el.classList.remove('hidden'); });
+                row.classList.add('bg-brand-50/30', 'border-brand-200');
+            };
+
+            window.cancelEditPromo = function(id){
+                const list = (window.dbMainPage && window.dbMainPage.promos) || [];
+                const item = list.find(function(p){ return String(p.id) === String(id); });
+                if (item && item.isNew) {
+                    window.dbMainPage.promos = list.filter(function(p){ return String(p.id) !== String(id); });
+                    try { if (typeof dbMainPage !== 'undefined') dbMainPage.promos = window.dbMainPage.promos; } catch(_){}
+                }
+                window.isAddingPromo = false;
+                window.renderPromos();
+            };
+
+            window.savePromo = async function(id){
+                const titleEl = document.getElementById('promo-title-' + id);
+                const title = ((titleEl && titleEl.value) || '').trim();
+                if (!title) { notify('Введите заголовок!'); return; }
+                const badge = (document.getElementById('promo-badge-' + id) || {}).value || '';
+                const desc  = (document.getElementById('promo-desc-' + id)  || {}).value || '';
+                const img   = (document.getElementById('promo-img-' + id)   || {}).value || '';
+                const description = joinBadgeDesc(badge, desc);
+                const list = (window.dbMainPage && window.dbMainPage.promos) || [];
+                const item = list.find(function(p){ return String(p.id) === String(id); });
+                const isInsert = !item || item.isNew || !UUID_RE3.test(String(id));
+                try {
+                    if (isInsert) {
+                        const { data, error } = await sb
+                            .from('promos')
+                            .insert({ title: title, description: description, image_url: img, sort_order: 0, published: true })
+                            .select('id,title,description,image_url')
+                            .single();
+                        if (error) throw error;
+                        window.dbMainPage.promos = list.filter(function(p){ return String(p.id) !== String(id); });
+                        const bd = splitBadgeDesc(data.description);
+                        window.dbMainPage.promos.unshift({ id: data.id, title: data.title || '', badge: bd.badge, desc: bd.desc, img: data.image_url || '' });
+                    } else {
+                        const { error } = await sb
+                            .from('promos')
+                            .update({ title: title, description: description, image_url: img })
+                            .eq('id', id);
+                        if (error) throw error;
+                        item.title = title; item.badge = badge; item.desc = desc; item.img = img;
+                    }
+                    try { if (typeof dbMainPage !== 'undefined') dbMainPage.promos = window.dbMainPage.promos; } catch(_){}
+                    window.isAddingPromo = false;
+                    window.renderPromos();
+                    try { window.updateDashboardStats && window.updateDashboardStats(); } catch(_){}
+                    notify('Акция сохранена');
+                } catch(e){
+                    console.error(e);
+                    notify('Ошибка сохранения: ' + errMsg(e));
+                }
+            };
+
+            window.deletePromo = function(id){
+                const doDelete = async function(){
+                    const list = (window.dbMainPage && window.dbMainPage.promos) || [];
+                    const item = list.find(function(p){ return String(p.id) === String(id); });
+                    if (item && item.isNew) {
+                        window.dbMainPage.promos = list.filter(function(p){ return String(p.id) !== String(id); });
+                        try { if (typeof dbMainPage !== 'undefined') dbMainPage.promos = window.dbMainPage.promos; } catch(_){}
+                        window.renderPromos();
+                        return;
+                    }
+                    const { error } = await sb.from('promos').delete().eq('id', id);
+                    if (error) { notify('Ошибка удаления: '+errMsg(error)); return; }
+                    window.dbMainPage.promos = list.filter(function(p){ return String(p.id) !== String(id); });
+                    try { if (typeof dbMainPage !== 'undefined') dbMainPage.promos = window.dbMainPage.promos; } catch(_){}
+                    window.renderPromos();
+                    try { window.updateDashboardStats && window.updateDashboardStats(); } catch(_){}
+                    notify('Удалено');
+                };
+                if (window.customConfirm) {
+                    window.customConfirm('Удалить акцию?', { title: 'Удаление акции' }).then(function(ok){ if (ok) doDelete(); });
+                } else if (confirm('Удалить акцию?')) {
+                    doDelete();
+                }
+            };
+
+            window.uploadPromoPhoto = async function(id, file){
+                if (!file) return;
+                if (!sb) { notify('Нет подключения к БД'); return; }
+                const MAX = 10 * 1024 * 1024;
+                if (file.size > MAX) { notify('Файл больше 10 МБ'); return; }
+                if (!/^image\/(jpeg|png|webp)$/.test(file.type)) { notify('Только JPG, PNG или WEBP'); return; }
+                const status = document.getElementById('promo-upload-status-' + id);
+                if (status) status.textContent = 'Загрузка...';
+                try {
+                    const safe = (file.name || 'photo').replace(/[^a-zA-Z0-9._-]+/g, '_');
+                    const path = 'promos/' + Date.now() + '-' + safe;
+                    const { error: upErr } = await sb.storage.from('photos').upload(path, file, { upsert: true, contentType: file.type });
+                    if (upErr) throw upErr;
+                    const { data: pub } = sb.storage.from('photos').getPublicUrl(path);
+                    const url = pub && pub.publicUrl;
+                    const input = document.getElementById('promo-img-' + id);
+                    if (input) input.value = url || '';
+                    if (status) status.textContent = 'Готово';
+                    notify('Фото загружено');
+                } catch(e){
+                    console.error(e);
+                    if (status) status.textContent = '';
+                    notify('Ошибка загрузки: ' + errMsg(e));
                 }
             };
         }
