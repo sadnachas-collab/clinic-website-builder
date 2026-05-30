@@ -358,6 +358,18 @@
 <p class="text-sm text-gray-500 mb-6">Отзывы выводятся широкой сеткой на всю страницу. Рекомендуем держать кратное количество отзывов (например, 3 или 6).</p>
 <div id="admin-reviews-list" class="space-y-4">
 </div>
+<div class="mt-8 pt-8 border-t border-gray-200">
+<h3 class="text-sm font-bold text-brand-900 uppercase tracking-widest mb-1 flex items-center gap-2"><i data-lucide="link" class="w-4 h-4 text-brand-600"></i> Ссылки на внешние площадки</h3>
+<p class="text-xs text-gray-500 mb-4">Эти ссылки откроются по клику на кнопки «Яндекс Карты», «2GIS», «ПроДокторов» под блоком отзывов на сайте.</p>
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+<div><label class="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Яндекс Карты</label><input type="url" id="rev-link-yandex" placeholder="https://yandex.ru/maps/..." class="w-full px-3 py-2 text-sm border rounded outline-none focus:border-brand-600"></div>
+<div><label class="text-[10px] uppercase text-gray-500 font-bold mb-1 block">2GIS</label><input type="url" id="rev-link-gis" placeholder="https://2gis.ru/..." class="w-full px-3 py-2 text-sm border rounded outline-none focus:border-brand-600"></div>
+<div><label class="text-[10px] uppercase text-gray-500 font-bold mb-1 block">ПроДокторов</label><input type="url" id="rev-link-prodoctorov" placeholder="https://prodoctorov.ru/..." class="w-full px-3 py-2 text-sm border rounded outline-none focus:border-brand-600"></div>
+</div>
+<div class="flex justify-end mt-4">
+<button type="button" onclick="saveReviewLinks()" class="bg-green-600 text-white px-5 py-2 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-green-700 transition-colors">Сохранить ссылки</button>
+</div>
+</div>
 </div>
 </div>
 </div>
