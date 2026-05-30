@@ -99,6 +99,11 @@
 </i>
 <span>Подвал</span>
 </button>
+<button type="button" onclick="switchTab('consumer')" class="nav-btn flex items-center w-full gap-3 px-4 py-3 text-gray-500 hover:bg-brand-50 hover:text-brand-600 rounded-xl font-medium transition-colors" data-target="consumer">
+<i data-lucide="shield-check" class="w-5 h-5">
+</i>
+<span>Уголок потребителя</span>
+</button>
 </nav>
 <div class="p-4 border-t border-gray-100 flex flex-col gap-2">
 <button type="button" onclick="switchTab('settings')" class="nav-btn flex items-center w-full gap-3 px-4 py-3 text-gray-500 hover:bg-brand-50 hover:text-brand-600 rounded-xl font-medium transition-colors" data-target="settings">
@@ -552,6 +557,34 @@
 </div>
 </div>
 </div>
+<!-- ================== 6.5 СЕКЦИЯ УГОЛОК ПОТРЕБИТЕЛЯ ================== -->
+<div id="section-consumer" class="admin-section">
+<div class="max-w-5xl mx-auto space-y-8 pb-10">
+<div class="bg-white rounded-[1.5rem] shadow-sm border border-gray-100 p-8">
+<div class="flex flex-wrap gap-3 justify-between items-center mb-6 border-b border-gray-100 pb-4">
+<h2 class="text-xl font-bold text-brand-900 flex items-center gap-2">
+<i data-lucide="shield-check" class="w-6 h-6 text-brand-600"></i> Категории документов
+</h2>
+<button type="button" onclick="addConsumerCategory()" class="bg-brand-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-brand-800 transition-colors shadow-sm flex items-center gap-2">
+<i data-lucide="plus" class="w-4 h-4"></i> Добавить категорию
+</button>
+</div>
+<p class="text-sm text-gray-500 mb-6">Загруженные сюда документы автоматически появляются на сайте в разделе «Уголок потребителя». Максимальный размер файла — 4 МБ (PDF, DOC, JPG).</p>
+<div id="consumer-categories-list" class="space-y-5"></div>
+</div>
+<div class="bg-white rounded-[1.5rem] shadow-sm border border-gray-100 p-8">
+<div class="flex flex-wrap gap-3 justify-between items-center mb-6 border-b border-gray-100 pb-4">
+<h2 class="text-xl font-bold text-brand-900 flex items-center gap-2">
+<i data-lucide="building-2" class="w-6 h-6 text-brand-600"></i> Контролирующие органы
+</h2>
+<button type="button" onclick="addAuthority()" class="bg-brand-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-brand-800 transition-colors shadow-sm flex items-center gap-2">
+<i data-lucide="plus" class="w-4 h-4"></i> Добавить орган
+</button>
+</div>
+<div id="consumer-authorities-list" class="space-y-4"></div>
+</div>
+</div>
+</div>
 <!-- ================== 7. СЕКЦИЯ НАСТРОЙКИ (Доступ) ================== -->
 <div id="section-settings" class="admin-section">
 <div class="max-w-4xl mx-auto space-y-8 pb-10">
@@ -681,7 +714,22 @@
         const defaultAdmins = [            { id: 1, name: "Елена Вороненко", role: "Главный врач (Владелец)", login: "admin", pwd: "123456", isOwner: true },            { id: 2, name: "Анна Смирнова", role: "Менеджер", login: "anna", pwd: "123456", isOwner: false }        ];        const defaultMainPage = {            contacts: { phone: "8 (800) 000-00-00", schedule: "пн-вс 09:00-21:00", address: "г. Самара, ул. Мяги, 24А", vk: "https://vk.com/", tg: "https://t.me/", wa: "https://wa.me/" },            hero: { title: "Клиника\nкосметологии\nДоктора Вороненко", subtitle: "Лицензия № ЛО-XX-XX-XXXXXX" },            about: { title: "Мы не меняем черты лица, мы подчеркиваем вашу индивидуальность", text: "Продление молодости кожи и профессиональная забота о Вашем здоровье..." },            promos: [                { id: 1, title: "Скинбустер", badge: "Подарок", desc: "В подарок к процедуре RF-лифтинга", img: "https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&q=80&w=400" }            ],            reviews: [                { id: 1, name: "Мария С.", service: "Контурная пластика", date: "21 апреля", text: "Делала губы у Алины Игоревны. Очень переживала, что будет неестественно, но получилось идеально!" }            ],            interior: [                { id: 1, img: "https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&q=80&w=400" }            ],            docs: [                { id: 1, img: "https://images.unsplash.com/photo-1568228146922-3be9f3900223?auto=format&fit=crop&q=80&w=400" }            ],            faq: [                { id: 1, q: "Лечите ли вы акне?", a: "Да, мы специализируемся на комплексном лечении акне любой степени тяжести." }            ]        };        const defaultServices = [{ id: 1, name: "Контурная пластика губ", desc: "Novacutan F-Bio, 1 мл", price: "16 000" }];                const defaultSpecialists = [{            id: 1, name: "Вороненко Елена", role: "Главный врач",             edu: "СамГМУ (2008).", bio: "Основатель клиники, эксперт международного уровня.",             img: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=600"        }];        const defaultFooter = {            shortDesc: "Продление молодости кожи и профессиональная забота о Вашем здоровье по мировым стандартам.",            companyName: 'ООО "Эстетика"', ogrn: "ОГРН 1234567890123", license: "Лицензия № ЛО-XX-XX-XXXXXX от 01.01.2023",            copyright: "© 2026 Клиника Dr. VORONENKO. Все права защищены.", warning: "Имеются противопоказания. Необходима консультация специалиста.",            rknNotice: "", dpoName: "", dpoEmail: "", legalAddress: "", licenseIssuer: "",            policyText: "Настоящая Политика конфиденциальности...\n\n(Текст)", termsText: "Настоящее Пользовательское соглашение...\n\n(Текст)", consentText: "Согласие на обработку персональных данных...\n\n(Текст)"        };        const defaultCatCategories = [            { id: 'aesthetic', title: 'Эстетическая косметология', desc: 'Чистки, химические пилинги, уходовые программы', img: 'https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?auto=format&fit=crop&q=80&w=600' },            { id: 'hardware', title: 'Аппаратная косметология', desc: 'SMAS-лифтинг, микроигольчатый RF, BBL', img: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&q=80&w=600' },            { id: 'injection', title: 'Инъекционная косметология', desc: 'Контурная пластика, биоревитализация, мезотерапия', img: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=600' },            { id: 'botulinum', title: 'Ботулинотерапия', desc: 'Коррекция мимических морщин, гипергидроз', img: 'https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?auto=format&fit=crop&q=80&w=600' }        ];        const defaultCatProcedures = [            { id: 'proc_1', categoryId: 'injection', title: 'Контурная пластика губ', priceText: 'от 12 000 ₽', img: 'https://images.unsplash.com/photo-1588636402450-4ff6d877e8ea?auto=format&fit=crop&q=80&w=800', desc: 'Искусство контурной пластики.', howItWorks: [{q: 'Консультация', a: 'Осмотр'}], problems: [{q: 'Нехватка объема', a: 'Филлер'}], prices: [{name: 'Novacutan', vol: '1.0 мл', time: '60 минут', cost: '16 000 ₽'}] },            { id: 'proc_2', categoryId: 'hardware', title: 'SMAS-лифтинг', priceText: 'от 25 000 ₽', img: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&q=80&w=800', desc: 'Безоперационная подтяжка лица.', howItWorks: [{q: 'Разметка', a: 'Нанесение сетки на лицо'}], problems: [{q: 'Птоз (опущение) тканей', a: 'Лифтинг на уровне SMAS'}], prices: [{name: 'Лицо полностью', vol: '500 линий', time: '90 минут', cost: '45 000 ₽'}] }        ];        // Загрузка
         function cloneData(data){ return JSON.parse(JSON.stringify(data)); }        function readStoredData(key, fallback){            try {                const raw = localStorage.getItem(key);                if (!raw) return cloneData(fallback);                const parsed = JSON.parse(raw);                return parsed || cloneData(fallback);            } catch(e) {                try { localStorage.removeItem(key); } catch(_){}                return cloneData(fallback);            }        }        function readStoredArray(key, fallback){            const value = readStoredData(key, fallback);            return Array.isArray(value) && value.length ? value : cloneData(fallback);        }        let dbAdmins = readStoredArray('dbAdmins', defaultAdmins); if (!dbAdmins.some(a => a && a.login === 'admin')) { dbAdmins.unshift(cloneData(defaultAdmins[0])); } try { localStorage.setItem('dbAdmins', JSON.stringify(dbAdmins)); } catch(_){}                let dbMainPage = readStoredData('dbMainPage', defaultMainPage);        if (!dbMainPage) {            dbMainPage = cloneData(defaultMainPage);        } else {            // ПАТЧ: Восстановление недостающих полей для старых кэшей (исправляет ошибку в Safari)
             dbMainPage.contacts = dbMainPage.contacts || defaultMainPage.contacts;            dbMainPage.hero = dbMainPage.hero || defaultMainPage.hero;            dbMainPage.about = dbMainPage.about || defaultMainPage.about;            dbMainPage.promos = dbMainPage.promos || defaultMainPage.promos;            dbMainPage.reviews = dbMainPage.reviews || defaultMainPage.reviews;            dbMainPage.interior = dbMainPage.interior || defaultMainPage.interior;            dbMainPage.docs = dbMainPage.docs || defaultMainPage.docs;            dbMainPage.faq = dbMainPage.faq || defaultMainPage.faq;        }
-        let dbServices = readStoredArray('dbServices', defaultServices);        let dbSpecialists = readStoredArray('dbSpecialists', defaultSpecialists);        let dbFooter = readStoredData('dbFooter', defaultFooter);        let dbCatCategories = readStoredArray('dbCatCategories', defaultCatCategories);        let dbCatProcedures = readStoredArray('dbCatProcedures', defaultCatProcedures);        let dbPriceFile = readStoredData('dbPriceFile', { name: "price.pdf", size: "2.4 MB", exists: true });        function persistData() {            try { localStorage.setItem('dbAdmins', JSON.stringify(dbAdmins)); } catch(_){}            try { localStorage.setItem('dbMainPage', JSON.stringify(dbMainPage)); } catch(_){}            try { localStorage.setItem('dbServices', JSON.stringify(dbServices)); } catch(_){}            try { localStorage.setItem('dbSpecialists', JSON.stringify(dbSpecialists)); } catch(_){}            try { localStorage.setItem('dbFooter', JSON.stringify(dbFooter)); } catch(_){}            try { localStorage.setItem('dbCatCategories', JSON.stringify(dbCatCategories)); } catch(_){}            try { localStorage.setItem('dbCatProcedures', JSON.stringify(dbCatProcedures)); } catch(_){}            updateDashboardStats();         }        // --- АВТОРИЗАЦИЯ ---
+        let dbServices = readStoredArray('dbServices', defaultServices);        let dbSpecialists = readStoredArray('dbSpecialists', defaultSpecialists);        let dbFooter = readStoredData('dbFooter', defaultFooter);        let dbCatCategories = readStoredArray('dbCatCategories', defaultCatCategories);        let dbCatProcedures = readStoredArray('dbCatProcedures', defaultCatProcedures);        let dbPriceFile = readStoredData('dbPriceFile', { name: "price.pdf", size: "2.4 MB", exists: true });
+        const defaultConsumer = {
+            categories: [
+                { id: 'cat_licenses', title: 'Лицензии и реквизиты', icon: 'file-badge-2', documents: [] },
+                { id: 'cat_rights', title: 'Права и обязанности граждан', icon: 'scale', documents: [] },
+            ],
+            authorities: [
+                { id: 'auth_1', name: 'Министерство здравоохранения Самарской области', address: 'г. Самара, ул. Ленинская, 73', phone: '8 (846) 332-93-09' },
+                { id: 'auth_2', name: 'Территориальный орган Росздравнадзора', address: 'г. Самара, ул. Арцыбушевская, 13', phone: '8 (846) 333-20-87' },
+            ]
+        };
+        let dbConsumer = readStoredData('dbConsumer', defaultConsumer);
+        if (!dbConsumer || typeof dbConsumer !== 'object') dbConsumer = cloneData(defaultConsumer);
+        if (!Array.isArray(dbConsumer.categories)) dbConsumer.categories = cloneData(defaultConsumer.categories);
+        if (!Array.isArray(dbConsumer.authorities)) dbConsumer.authorities = cloneData(defaultConsumer.authorities);
+        function persistData() {            try { localStorage.setItem('dbAdmins', JSON.stringify(dbAdmins)); } catch(_){}            try { localStorage.setItem('dbMainPage', JSON.stringify(dbMainPage)); } catch(_){}            try { localStorage.setItem('dbServices', JSON.stringify(dbServices)); } catch(_){}            try { localStorage.setItem('dbSpecialists', JSON.stringify(dbSpecialists)); } catch(_){}            try { localStorage.setItem('dbFooter', JSON.stringify(dbFooter)); } catch(_){}            try { localStorage.setItem('dbCatCategories', JSON.stringify(dbCatCategories)); } catch(_){}            try { localStorage.setItem('dbCatProcedures', JSON.stringify(dbCatProcedures)); } catch(_){}            try { localStorage.setItem('dbConsumer', JSON.stringify(dbConsumer)); } catch(e){ console.error('dbConsumer save error', e); }            updateDashboardStats();         }        // --- АВТОРИЗАЦИЯ ---
         // --- БЕЗОПАСНАЯ РАБОТА С LOCALSTORAGE ---
         function lsGet(key){ try { return localStorage.getItem(key); } catch(_){ return null; } }
         function lsSet(key,val){ try { localStorage.setItem(key,val); } catch(_){} }
@@ -820,8 +868,8 @@
         });
 
         function initAllData() { renderAdmins(); renderMainPageData(); renderAboutPageData(); renderTable(); // Price list
-            renderPriceFile();            renderCatCategories();            renderCatProcedures();            renderSpecialists();            renderFooterData();            updateDashboardStats();        }        function updateDashboardStats() {            document.getElementById('stat-specialists').innerText = dbSpecialists.length;            document.getElementById('stat-services').innerText = dbCatProcedures.length || 0;            document.getElementById('stat-promos').innerText = dbMainPage.promos ? dbMainPage.promos.length : 0;        }        // --- НАВИГАЦИЯ ---
-        const titles = { 'dashboard': 'Обзор', 'mainpage': 'Редактирование Главной', 'about': 'О клинике', 'price': 'Прайс-лист', 'services': 'Каталог услуг', 'specialists': 'Специалисты', 'footer': 'Подвал', 'settings': 'Настройки' };        function toggleSidebar() {            const sidebar = document.getElementById('admin-sidebar');            const backdrop = document.getElementById('sidebar-backdrop');            if (!sidebar || !backdrop) return;            const isOpen = !sidebar.classList.contains('-translate-x-full');            if (isOpen) {                sidebar.classList.add('-translate-x-full');                backdrop.classList.add('opacity-0', 'pointer-events-none');            } else {                sidebar.classList.remove('-translate-x-full');                backdrop.classList.remove('opacity-0', 'pointer-events-none');            }        }        function switchTab(tabId) {            document.querySelector('main > div.overflow-y-auto').scrollTo(0, 0);            document.querySelectorAll('.nav-btn').forEach(btn => {                if(btn.dataset.target === tabId) {                    btn.classList.add('active', 'bg-brand-50', 'text-brand-600'); btn.classList.remove('text-gray-500');                } else {                    btn.classList.remove('active', 'bg-brand-50', 'text-brand-600'); btn.classList.add('text-gray-500');                }            });            document.getElementById('header-title').innerText = titles[tabId];            document.querySelectorAll('.admin-section').forEach(sec => sec.classList.remove('active'));            document.getElementById(`section-${tabId}`).classList.add('active');            /* На мобильном закрываем сайдбар после выбора раздела */            if (window.innerWidth < 1024) {                const sidebar = document.getElementById('admin-sidebar');                const backdrop = document.getElementById('sidebar-backdrop');                if (sidebar && !sidebar.classList.contains('-translate-x-full')) {                    sidebar.classList.add('-translate-x-full');                    backdrop.classList.add('opacity-0', 'pointer-events-none');                }            }        }        // --- УТИЛИТА TOAST ---
+            renderPriceFile();            renderCatCategories();            renderCatProcedures();            renderSpecialists();            renderFooterData();            renderConsumer();            updateDashboardStats();        }        function updateDashboardStats() {            document.getElementById('stat-specialists').innerText = dbSpecialists.length;            document.getElementById('stat-services').innerText = dbCatProcedures.length || 0;            document.getElementById('stat-promos').innerText = dbMainPage.promos ? dbMainPage.promos.length : 0;        }        // --- НАВИГАЦИЯ ---
+        const titles = { 'dashboard': 'Обзор', 'mainpage': 'Редактирование Главной', 'about': 'О клинике', 'price': 'Прайс-лист', 'services': 'Каталог услуг', 'specialists': 'Специалисты', 'footer': 'Подвал', 'consumer': 'Уголок потребителя', 'settings': 'Настройки' };        function toggleSidebar() {            const sidebar = document.getElementById('admin-sidebar');            const backdrop = document.getElementById('sidebar-backdrop');            if (!sidebar || !backdrop) return;            const isOpen = !sidebar.classList.contains('-translate-x-full');            if (isOpen) {                sidebar.classList.add('-translate-x-full');                backdrop.classList.add('opacity-0', 'pointer-events-none');            } else {                sidebar.classList.remove('-translate-x-full');                backdrop.classList.remove('opacity-0', 'pointer-events-none');            }        }        function switchTab(tabId) {            document.querySelector('main > div.overflow-y-auto').scrollTo(0, 0);            document.querySelectorAll('.nav-btn').forEach(btn => {                if(btn.dataset.target === tabId) {                    btn.classList.add('active', 'bg-brand-50', 'text-brand-600'); btn.classList.remove('text-gray-500');                } else {                    btn.classList.remove('active', 'bg-brand-50', 'text-brand-600'); btn.classList.add('text-gray-500');                }            });            document.getElementById('header-title').innerText = titles[tabId];            document.querySelectorAll('.admin-section').forEach(sec => sec.classList.remove('active'));            document.getElementById(`section-${tabId}`).classList.add('active');            /* На мобильном закрываем сайдбар после выбора раздела */            if (window.innerWidth < 1024) {                const sidebar = document.getElementById('admin-sidebar');                const backdrop = document.getElementById('sidebar-backdrop');                if (sidebar && !sidebar.classList.contains('-translate-x-full')) {                    sidebar.classList.add('-translate-x-full');                    backdrop.classList.add('opacity-0', 'pointer-events-none');                }            }        }        // --- УТИЛИТА TOAST ---
         function showToast(msg) {            const toast = document.getElementById('toast');            document.getElementById('toast-msg').innerText = msg;            toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-[-10px]');            setTimeout(() => toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-[-10px]'), 3000);        }        // --- РАЗДЕЛ: ГЛАВНАЯ СТРАНИЦА ---
         function renderMainPageData() {            document.getElementById('mp-phone').value = dbMainPage.contacts.phone; document.getElementById('mp-schedule').value = dbMainPage.contacts.schedule; document.getElementById('mp-address').value = dbMainPage.contacts.address;            document.getElementById('mp-vk').value = dbMainPage.contacts.vk; document.getElementById('mp-tg').value = dbMainPage.contacts.tg; document.getElementById('mp-wa').value = dbMainPage.contacts.wa;            document.getElementById('mp-hero-title').value = dbMainPage.hero.title; document.getElementById('mp-about-title').value = dbMainPage.about.title; document.getElementById('mp-about-text').value = dbMainPage.about.text;            renderInterior(); // Перенесено из О клинике
             renderPromos();             renderReviews();        }        function saveBasicSettings() {            dbMainPage.contacts = { phone: document.getElementById('mp-phone').value, schedule: document.getElementById('mp-schedule').value, address: document.getElementById('mp-address').value, vk: document.getElementById('mp-vk').value, tg: document.getElementById('mp-tg').value, wa: document.getElementById('mp-wa').value };            dbMainPage.hero.title = document.getElementById('mp-hero-title').value; dbMainPage.about.title = document.getElementById('mp-about-title').value; dbMainPage.about.text = document.getElementById('mp-about-text').value;            persistData(); showToast('Настройки сохранены');        }        function renderPromos() {            document.getElementById('admin-promos-list').innerHTML = dbMainPage.promos.map(p => `                <div id="promo-row-${p.id}" class="flex items-center gap-4 p-4 border border-gray-200 rounded-2xl bg-white hover:bg-gray-50 group">
@@ -1127,6 +1175,132 @@
 <button onclick="saveAdmin(${a.id})" class="px-6 py-3 bg-green-600 text-white rounded-xl text-xs uppercase tracking-widest font-bold shadow-md hover:bg-green-700 transition-colors">Сохранить</button>
 </div>
 </div>
-</div>`).join(''); lucide.createIcons();        }        function addAdmin() { if(isAddingAdmin) return; isAddingAdmin = true; const newId = Date.now(); dbAdmins.push({ id: newId, name: "", role: "Менеджер", login: "", pwd: "", isOwner: false, isNew: true }); renderAdmins(); editAdmin(newId); }        function editAdmin(id) { const row = document.getElementById(`admin-row-${id}`); row.querySelectorAll('.view-mode').forEach(el => el.classList.add('hidden')); row.querySelectorAll('.edit-mode').forEach(el => el.classList.remove('hidden')); }        function saveAdmin(id) {             const n = document.getElementById(`adm-name-${id}`).value.trim(); const r = document.getElementById(`adm-role-${id}`).value.trim(); const l = document.getElementById(`adm-login-${id}`).value.trim(); const p = document.getElementById(`adm-pwd-${id}`).value.trim();             if(!n || !l || !p) return showToast('Заполните обязательные поля!');             if(p.length < 5) return showToast('Пароль минимум 5 символов!');             if(dbAdmins.find(a => a.login === l && a.id !== id)) return showToast('Логин занят!');             const idx = dbAdmins.findIndex(a => a.id === id);             if(idx > -1) { dbAdmins[idx].name = n; dbAdmins[idx].role = r; dbAdmins[idx].login = l; dbAdmins[idx].pwd = p; delete dbAdmins[idx].isNew; }             isAddingAdmin = false; persistData(); renderAdmins();             const cid = localStorage.getItem('loggedInAdminId') || sessionStorage.getItem('loggedInAdminId');             if(cid === id.toString()) updateHeaderUser(dbAdmins[idx]);             showToast('Сохранено');         }        function cancelEditAdmin(id) { const idx = dbAdmins.findIndex(a => a.id === id); if(idx > -1 && dbAdmins[idx].isNew) dbAdmins.splice(idx, 1); isAddingAdmin = false; renderAdmins(); }        function deleteAdmin(id) { const u = dbAdmins.find(a => a.id === id); if(u && u.isOwner) return showToast('Нельзя удалить владельца!'); if(confirm('Закрыть доступ?')) { dbAdmins = dbAdmins.filter(a => a.id !== id); persistData(); renderAdmins(); } }    </script>
+</div>`).join(''); lucide.createIcons();        }        function addAdmin() { if(isAddingAdmin) return; isAddingAdmin = true; const newId = Date.now(); dbAdmins.push({ id: newId, name: "", role: "Менеджер", login: "", pwd: "", isOwner: false, isNew: true }); renderAdmins(); editAdmin(newId); }        function editAdmin(id) { const row = document.getElementById(`admin-row-${id}`); row.querySelectorAll('.view-mode').forEach(el => el.classList.add('hidden')); row.querySelectorAll('.edit-mode').forEach(el => el.classList.remove('hidden')); }        function saveAdmin(id) {             const n = document.getElementById(`adm-name-${id}`).value.trim(); const r = document.getElementById(`adm-role-${id}`).value.trim(); const l = document.getElementById(`adm-login-${id}`).value.trim(); const p = document.getElementById(`adm-pwd-${id}`).value.trim();             if(!n || !l || !p) return showToast('Заполните обязательные поля!');             if(p.length < 5) return showToast('Пароль минимум 5 символов!');             if(dbAdmins.find(a => a.login === l && a.id !== id)) return showToast('Логин занят!');             const idx = dbAdmins.findIndex(a => a.id === id);             if(idx > -1) { dbAdmins[idx].name = n; dbAdmins[idx].role = r; dbAdmins[idx].login = l; dbAdmins[idx].pwd = p; delete dbAdmins[idx].isNew; }             isAddingAdmin = false; persistData(); renderAdmins();             const cid = localStorage.getItem('loggedInAdminId') || sessionStorage.getItem('loggedInAdminId');             if(cid === id.toString()) updateHeaderUser(dbAdmins[idx]);             showToast('Сохранено');         }        function cancelEditAdmin(id) { const idx = dbAdmins.findIndex(a => a.id === id); if(idx > -1 && dbAdmins[idx].isNew) dbAdmins.splice(idx, 1); isAddingAdmin = false; renderAdmins(); }        function deleteAdmin(id) { const u = dbAdmins.find(a => a.id === id); if(u && u.isOwner) return showToast('Нельзя удалить владельца!'); if(confirm('Закрыть доступ?')) { dbAdmins = dbAdmins.filter(a => a.id !== id); persistData(); renderAdmins(); } }
+
+        // --- РАЗДЕЛ: УГОЛОК ПОТРЕБИТЕЛЯ ---
+        function escapeHtml(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+        function formatBytes(b){ if(!b) return '—'; if(b < 1024) return b + ' Б'; if(b < 1024*1024) return (b/1024).toFixed(1) + ' КБ'; return (b/(1024*1024)).toFixed(2) + ' МБ'; }
+        function renderConsumer(){
+            const list = document.getElementById('consumer-categories-list');
+            if(!list) return;
+            if(!dbConsumer.categories.length){
+                list.innerHTML = '<p class="text-sm text-gray-400 italic">Категорий пока нет. Нажмите «Добавить категорию».</p>';
+            } else {
+                list.innerHTML = dbConsumer.categories.map(cat => `
+                    <div class="border border-gray-200 rounded-2xl bg-gray-50/50 overflow-hidden">
+                        <div class="p-4 md:p-5 flex flex-wrap gap-3 items-center bg-white border-b border-gray-100">
+                            <i data-lucide="${escapeHtml(cat.icon || 'folder')}" class="w-5 h-5 text-brand-600 flex-shrink-0"></i>
+                            <input type="text" value="${escapeHtml(cat.title)}" onchange="renameConsumerCategory('${cat.id}', this.value)" class="flex-1 min-w-[200px] px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:border-brand-600 focus:bg-white outline-none font-semibold text-brand-900">
+                            <button type="button" onclick="deleteConsumerCategory('${cat.id}')" class="text-red-500 hover:bg-red-50 p-2 rounded-lg" title="Удалить категорию"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        </div>
+                        <div class="p-4 md:p-5 space-y-3">
+                            ${(cat.documents && cat.documents.length) ? cat.documents.map(doc => `
+                                <div class="flex flex-wrap gap-3 items-center p-3 bg-white border border-gray-200 rounded-xl">
+                                    <i data-lucide="file-text" class="w-5 h-5 text-brand-600 flex-shrink-0"></i>
+                                    <input type="text" value="${escapeHtml(doc.name)}" placeholder="Название документа" onchange="renameConsumerDocument('${cat.id}','${doc.id}', this.value)" class="flex-1 min-w-[180px] px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:border-brand-600 focus:bg-white outline-none text-sm">
+                                    <span class="text-xs text-gray-400 truncate max-w-[160px]" title="${escapeHtml(doc.fileName || '')}">${escapeHtml(doc.fileName || 'нет файла')} · ${escapeHtml(doc.fileSize || '')}</span>
+                                    ${doc.dataUrl ? `<a href="${doc.dataUrl}" download="${escapeHtml(doc.fileName || 'document')}" class="text-brand-600 hover:bg-brand-50 p-2 rounded-lg" title="Скачать"><i data-lucide="download" class="w-4 h-4"></i></a>` : ''}
+                                    <button type="button" onclick="deleteConsumerDocument('${cat.id}','${doc.id}')" class="text-red-500 hover:bg-red-50 p-2 rounded-lg" title="Удалить"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                </div>
+                            `).join('') : '<p class="text-xs text-gray-400 italic">В этой категории пока нет документов.</p>'}
+                            <div class="flex flex-wrap gap-3 items-center pt-2">
+                                <label class="inline-flex items-center gap-2 cursor-pointer bg-brand-600 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-brand-800 transition-colors shadow-sm">
+                                    <i data-lucide="upload" class="w-4 h-4"></i> Загрузить документ
+                                    <input type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" class="hidden" onchange="addConsumerDocument('${cat.id}', this)">
+                                </label>
+                                <span class="text-xs text-gray-400">PDF / DOC / JPG · до 4 МБ</span>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            const auth = document.getElementById('consumer-authorities-list');
+            if(auth){
+                if(!dbConsumer.authorities.length){
+                    auth.innerHTML = '<p class="text-sm text-gray-400 italic">Контролирующих органов пока нет.</p>';
+                } else {
+                    auth.innerHTML = dbConsumer.authorities.map(a => `
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center p-4 border border-gray-200 rounded-2xl bg-white">
+                            <input type="text" value="${escapeHtml(a.name)}" onchange="updateAuthority('${a.id}','name', this.value)" placeholder="Название органа" class="md:col-span-4 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:border-brand-600 focus:bg-white outline-none text-sm">
+                            <input type="text" value="${escapeHtml(a.address)}" onchange="updateAuthority('${a.id}','address', this.value)" placeholder="Адрес" class="md:col-span-4 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:border-brand-600 focus:bg-white outline-none text-sm">
+                            <input type="text" value="${escapeHtml(a.phone)}" onchange="updateAuthority('${a.id}','phone', this.value)" placeholder="Телефон" class="md:col-span-3 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:border-brand-600 focus:bg-white outline-none text-sm">
+                            <button type="button" onclick="deleteAuthority('${a.id}')" class="md:col-span-1 text-red-500 hover:bg-red-50 p-2 rounded-lg justify-self-end" title="Удалить"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        </div>
+                    `).join('');
+                }
+            }
+            try { lucide.createIcons(); } catch(_){}
+        }
+        function addConsumerCategory(){
+            const title = prompt('Название новой категории:', 'Новая категория');
+            if(!title) return;
+            dbConsumer.categories.push({ id: 'cat_' + Date.now(), title: title.trim(), icon: 'folder', documents: [] });
+            persistData(); renderConsumer(); showToast('Категория добавлена');
+        }
+        function renameConsumerCategory(catId, value){
+            const c = dbConsumer.categories.find(x => x.id === catId);
+            if(!c) return; c.title = String(value || '').trim() || c.title;
+            persistData();
+        }
+        function deleteConsumerCategory(catId){
+            const c = dbConsumer.categories.find(x => x.id === catId);
+            if(!c) return;
+            if(!confirm('Удалить категорию «' + c.title + '» со всеми документами?')) return;
+            dbConsumer.categories = dbConsumer.categories.filter(x => x.id !== catId);
+            persistData(); renderConsumer(); showToast('Категория удалена');
+        }
+        function addConsumerDocument(catId, input){
+            const f = input && input.files && input.files[0];
+            if(!f) return;
+            if(f.size > 4 * 1024 * 1024){ showToast('Файл больше 4 МБ. Сожмите или разделите.'); input.value=''; return; }
+            const reader = new FileReader();
+            reader.onload = function(ev){
+                const cat = dbConsumer.categories.find(x => x.id === catId);
+                if(!cat) return;
+                cat.documents = cat.documents || [];
+                cat.documents.push({ id: 'doc_' + Date.now(), name: f.name.replace(/\.[^.]+$/, ''), fileName: f.name, fileSize: formatBytes(f.size), dataUrl: ev.target.result });
+                try { persistData(); renderConsumer(); showToast('Документ загружен'); }
+                catch(e){ showToast('Не удалось сохранить (превышен размер хранилища)'); cat.documents.pop(); }
+                input.value = '';
+            };
+            reader.onerror = function(){ showToast('Ошибка чтения файла'); input.value = ''; };
+            reader.readAsDataURL(f);
+        }
+        function renameConsumerDocument(catId, docId, value){
+            const cat = dbConsumer.categories.find(x => x.id === catId); if(!cat) return;
+            const d = (cat.documents || []).find(x => x.id === docId); if(!d) return;
+            d.name = String(value || '').trim() || d.name;
+            persistData();
+        }
+        function deleteConsumerDocument(catId, docId){
+            const cat = dbConsumer.categories.find(x => x.id === catId); if(!cat) return;
+            if(!confirm('Удалить документ?')) return;
+            cat.documents = (cat.documents || []).filter(x => x.id !== docId);
+            persistData(); renderConsumer(); showToast('Документ удалён');
+        }
+        function addAuthority(){
+            dbConsumer.authorities.push({ id: 'auth_' + Date.now(), name: '', address: '', phone: '' });
+            persistData(); renderConsumer();
+        }
+        function updateAuthority(id, field, value){
+            const a = dbConsumer.authorities.find(x => x.id === id); if(!a) return;
+            a[field] = String(value || '').trim();
+            persistData();
+        }
+        function deleteAuthority(id){
+            if(!confirm('Удалить орган?')) return;
+            dbConsumer.authorities = dbConsumer.authorities.filter(x => x.id !== id);
+            persistData(); renderConsumer(); showToast('Удалено');
+        }
+        window.addConsumerCategory = addConsumerCategory;
+        window.renameConsumerCategory = renameConsumerCategory;
+        window.deleteConsumerCategory = deleteConsumerCategory;
+        window.addConsumerDocument = addConsumerDocument;
+        window.renameConsumerDocument = renameConsumerDocument;
+        window.deleteConsumerDocument = deleteConsumerDocument;
+        window.addAuthority = addAuthority;
+        window.updateAuthority = updateAuthority;
+        window.deleteAuthority = deleteAuthority;
+    </script>
 </body>
 </html>
