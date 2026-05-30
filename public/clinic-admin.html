@@ -1788,6 +1788,8 @@
                     await loadPromos();
                     await loadReviews();
                     await loadReviewLinks();
+                    overrideFaq();
+                    await loadFaq();
                 }
             } catch(e){
                 console.error('[admin] bootstrap error', e);
@@ -2635,6 +2637,162 @@
                 notify('Ошибка сохранения: ' + errMsg(e));
             }
         };
+
+        // ============= FAQ (faq) =============
+        const UUID_RE_F = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+        async function loadFaq(){
+            const { data, error } = await sb
+                .from('faq')
+                .select('id,question,answer,published,sort_order,created_at')
+                .order('sort_order', { ascending: true })
+                .order('created_at', { ascending: false });
+            if (error) { console.error(error); notify('Ошибка загрузки FAQ: '+errMsg(error)); return; }
+            const list = (data || []).map(function(f){
+                return { id: f.id, q: f.question || '', a: f.answer || '', published: f.published !== false };
+            });
+            try {
+                window.dbMainPage = window.dbMainPage || {};
+                window.dbMainPage.faq = list;
+                if (typeof dbMainPage !== 'undefined') dbMainPage.faq = list;
+            } catch(_){}
+            try { window.renderFaq && window.renderFaq(); } catch(e){ console.error(e); }
+            try { window.updateDashboardStats && window.updateDashboardStats(); } catch(_){}
+        }
+        window.loadFaq = loadFaq;
+
+        function overrideFaq(){
+            const esc = function(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+
+            window.renderFaq = function(){
+                const list = (window.dbMainPage && window.dbMainPage.faq) || [];
+                const host = document.getElementById('admin-faq-list');
+                if (!host) return;
+                host.innerHTML = list.map(function(f){
+                    const fid = String(f.id);
+                    return '<div id="faq-row-' + fid + '" class="flex flex-col gap-2 p-4 border border-gray-200 rounded-2xl bg-white hover:bg-gray-50 transition-colors group">'
+                    + '<div class="flex justify-between items-start gap-3 view-mode">'
+                    +   '<div class="min-w-0 flex-1">'
+                    +     '<p class="font-bold text-brand-900">' + esc(f.q) + '</p>'
+                    +     '<div class="text-sm text-gray-600 mt-1 line-clamp-2">' + (f.a || '') + '</div>'
+                    +   '</div>'
+                    +   '<div class="flex gap-2 shrink-0">'
+                    +     '<button type="button" onclick="editFaq(\'' + fid + '\')" class="text-gray-400 hover:text-brand-600 bg-white p-2 rounded-lg border border-gray-200 shadow-sm transition-colors" title="Настроить"><i data-lucide="edit-3" class="w-4 h-4"></i></button>'
+                    +     '<button type="button" onclick="deleteFaq(\'' + fid + '\')" class="text-gray-400 hover:text-red-500 bg-white p-2 rounded-lg border border-gray-200 shadow-sm transition-colors" title="Удалить"><i data-lucide="trash-2" class="w-4 h-4"></i></button>'
+                    +   '</div>'
+                    + '</div>'
+                    + '<div class="hidden edit-mode flex-col gap-3 mt-2 border-t pt-4">'
+                    +   '<div><label class="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Вопрос</label>'
+                    +     '<input type="text" id="faq-q-' + fid + '" value="' + esc(f.q) + '" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:border-brand-600 outline-none" placeholder="Вопрос"></div>'
+                    +   '<div><label class="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Ответ</label>'
+                    +     '<textarea id="faq-a-' + fid + '" data-rich="1" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:border-brand-600 outline-none resize-y" rows="3" placeholder="Подробный ответ...">' + (f.a || '') + '</textarea></div>'
+                    +   '<div class="flex justify-end gap-2">'
+                    +     '<button type="button" onclick="cancelEditFaq(\'' + fid + '\')" class="px-5 py-2.5 border border-gray-200 text-gray-600 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-gray-50 transition-colors">Отмена</button>'
+                    +     '<button type="button" onclick="saveFaq(\'' + fid + '\')" class="px-5 py-2.5 bg-green-600 text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-green-700 transition-colors shadow-sm">Сохранить</button>'
+                    +   '</div>'
+                    + '</div>'
+                    + '</div>';
+                }).join('');
+                try { lucide.createIcons(); } catch(_){}
+                try { window.attachAllRichEditors && window.attachAllRichEditors(host); } catch(_){}
+            };
+
+            window.addFaq = function(){
+                if (window.isAddingFaq) return;
+                window.isAddingFaq = true;
+                const tmpId = 'new_' + Date.now();
+                window.dbMainPage = window.dbMainPage || {};
+                window.dbMainPage.faq = window.dbMainPage.faq || [];
+                window.dbMainPage.faq.unshift({ id: tmpId, q: '', a: '', isNew: true });
+                try { if (typeof dbMainPage !== 'undefined') dbMainPage.faq = window.dbMainPage.faq; } catch(_){}
+                window.renderFaq();
+                window.editFaq(tmpId);
+            };
+
+            window.editFaq = function(id){
+                const row = document.getElementById('faq-row-' + id);
+                if (!row) return;
+                row.querySelectorAll('.view-mode').forEach(function(el){ el.classList.add('hidden'); });
+                row.querySelectorAll('.edit-mode').forEach(function(el){ el.classList.remove('hidden'); el.classList.add('flex'); });
+                row.classList.remove('hover:bg-gray-50');
+                row.classList.add('bg-brand-50/30', 'border-brand-200');
+                try { window.attachAllRichEditors && window.attachAllRichEditors(row); } catch(_){}
+                const firstInput = row.querySelector('.edit-mode input[type="text"]');
+                if (firstInput) firstInput.focus();
+            };
+
+            window.cancelEditFaq = function(id){
+                const list = (window.dbMainPage && window.dbMainPage.faq) || [];
+                const item = list.find(function(p){ return String(p.id) === String(id); });
+                if (item && item.isNew) {
+                    window.dbMainPage.faq = list.filter(function(p){ return String(p.id) !== String(id); });
+                    try { if (typeof dbMainPage !== 'undefined') dbMainPage.faq = window.dbMainPage.faq; } catch(_){}
+                }
+                window.isAddingFaq = false;
+                window.renderFaq();
+            };
+
+            window.saveFaq = async function(id){
+                const qEl = document.getElementById('faq-q-' + id);
+                const aEl = document.getElementById('faq-a-' + id);
+                const q = ((qEl && qEl.value) || '').trim();
+                const a = ((aEl && aEl.value) || '').trim();
+                if (!q || !a) { notify('Пожалуйста, заполните вопрос и ответ!'); return; }
+                const list = (window.dbMainPage && window.dbMainPage.faq) || [];
+                const item = list.find(function(p){ return String(p.id) === String(id); });
+                const isInsert = !item || item.isNew || !UUID_RE_F.test(String(id));
+                try {
+                    if (isInsert) {
+                        const { data, error } = await sb
+                            .from('faq')
+                            .insert({ question: q, answer: a, published: true, sort_order: 0 })
+                            .select('id,question,answer,published')
+                            .single();
+                        if (error) throw error;
+                        window.dbMainPage.faq = list.filter(function(p){ return String(p.id) !== String(id); });
+                        window.dbMainPage.faq.unshift({ id: data.id, q: data.question || '', a: data.answer || '', published: data.published !== false });
+                    } else {
+                        const { error } = await sb.from('faq').update({ question: q, answer: a }).eq('id', id);
+                        if (error) throw error;
+                        item.q = q; item.a = a;
+                    }
+                    try { if (typeof dbMainPage !== 'undefined') dbMainPage.faq = window.dbMainPage.faq; } catch(_){}
+                    window.isAddingFaq = false;
+                    window.renderFaq();
+                    try { window.updateDashboardStats && window.updateDashboardStats(); } catch(_){}
+                    notify('Вопрос сохранен');
+                } catch(e){
+                    console.error(e);
+                    notify('Ошибка сохранения: ' + errMsg(e));
+                }
+            };
+
+            window.deleteFaq = function(id){
+                const doDelete = async function(){
+                    const list = (window.dbMainPage && window.dbMainPage.faq) || [];
+                    const item = list.find(function(p){ return String(p.id) === String(id); });
+                    if (item && item.isNew) {
+                        window.dbMainPage.faq = list.filter(function(p){ return String(p.id) !== String(id); });
+                        try { if (typeof dbMainPage !== 'undefined') dbMainPage.faq = window.dbMainPage.faq; } catch(_){}
+                        window.renderFaq();
+                        return;
+                    }
+                    const { error } = await sb.from('faq').delete().eq('id', id);
+                    if (error) { notify('Ошибка удаления: '+errMsg(error)); return; }
+                    window.dbMainPage.faq = list.filter(function(p){ return String(p.id) !== String(id); });
+                    try { if (typeof dbMainPage !== 'undefined') dbMainPage.faq = window.dbMainPage.faq; } catch(_){}
+                    window.renderFaq();
+                    try { window.updateDashboardStats && window.updateDashboardStats(); } catch(_){}
+                    notify('Удалено');
+                };
+                if (window.customConfirm) {
+                    window.customConfirm('Удалить вопрос?', { title: 'Удаление вопроса' }).then(function(ok){ if (ok) doDelete(); });
+                } else if (confirm('Удалить вопрос?')) {
+                    doDelete();
+                }
+            };
+        }
+        window.overrideFaq = overrideFaq;
     })();
     </script>
 
