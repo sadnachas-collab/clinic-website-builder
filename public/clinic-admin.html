@@ -1768,11 +1768,13 @@
                     overrideSpecialists();
                     overrideMainTexts();
                     overridePromos();
+                    overrideReviews();
                     await loadServices();
                     await loadPriceFile();
                     await loadSpecialists();
                     await loadMainTexts();
                     await loadPromos();
+                    await loadReviews();
                 }
             } catch(e){
                 console.error('[admin] bootstrap error', e);
@@ -2354,7 +2356,195 @@
                 } catch(e){
                     console.error(e);
                     if (status) status.textContent = '';
-                    notify('Ошибка загрузки: ' + errMsg(e));
+                notify('Ошибка загрузки: ' + errMsg(e));
+                }
+            };
+        }
+
+        function splitServiceText(text){
+            const s = String(text == null ? '' : text);
+            const m = s.match(/^\[([^\]]+)\]\s*([\s\S]*)$/);
+            if (m) return { service: m[1].trim(), text: m[2] };
+            return { service: '', text: s };
+        }
+        function joinServiceText(service, text){
+            const sv = String(service == null ? '' : service).trim();
+            const tx = String(text == null ? '' : text);
+            return sv ? ('[' + sv + '] ' + tx) : tx;
+        }
+        function fmtReviewDate(iso){
+            if (!iso) return '';
+            try {
+                const d = new Date(iso);
+                if (isNaN(d.getTime())) return '';
+                return new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long' }).format(d);
+            } catch(_) { return ''; }
+        }
+
+        async function loadReviews(){
+            const { data, error } = await sb
+                .from('reviews')
+                .select('id,author_name,text,rating,review_date,published,sort_order,created_at')
+                .order('sort_order', { ascending: true })
+                .order('created_at', { ascending: false });
+            if (error) { console.error(error); notify('Ошибка загрузки отзывов: '+errMsg(error)); return; }
+            const list = (data || []).map(function(r){
+                const st = splitServiceText(r.text);
+                return {
+                    id: r.id,
+                    name: r.author_name || '',
+                    service: st.service,
+                    text: st.text,
+                    date: r.review_date || '',
+                    rating: r.rating == null ? 5 : r.rating,
+                    published: r.published !== false
+                };
+            });
+            try {
+                window.dbMainPage = window.dbMainPage || {};
+                window.dbMainPage.reviews = list;
+                if (typeof dbMainPage !== 'undefined') dbMainPage.reviews = list;
+            } catch(_){}
+            try { window.renderReviews && window.renderReviews(); } catch(e){ console.error(e); }
+            try { window.updateDashboardStats && window.updateDashboardStats(); } catch(_){}
+        }
+
+        function overrideReviews(){
+            const UUID_RE_R = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            const esc = function(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+
+            window.renderReviews = function(){
+                const list = (window.dbMainPage && window.dbMainPage.reviews) || [];
+                document.getElementById('admin-reviews-list').innerHTML = list.map(function(r){
+                    const rid = String(r.id);
+                    const dateLabel = fmtReviewDate(r.date);
+                    return '<div id="review-row-' + rid + '" class="flex flex-col gap-2 p-4 border border-gray-200 rounded-2xl bg-white hover:bg-gray-50 group">'
+                    + '<div class="flex justify-between items-center view-mode">'
+                    +   '<div class="min-w-0">'
+                    +     '<p class="font-bold text-brand-900 truncate">' + esc(r.name) + (r.service ? ' <span class="ml-1 text-[10px] uppercase tracking-widest text-brand-600">' + esc(r.service) + '</span>' : '') + '</p>'
+                    +     (dateLabel ? '<p class="text-[11px] text-gray-400">' + esc(dateLabel) + '</p>' : '')
+                    +   '</div>'
+                    +   '<div class="flex gap-2 shrink-0">'
+                    +     '<button onclick="editReview(\'' + rid + '\')" class="text-gray-400 hover:text-brand-600"><i data-lucide="edit-3" class="w-4 h-4"></i></button>'
+                    +     '<button onclick="deleteReview(\'' + rid + '\')" class="text-gray-400 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>'
+                    +   '</div>'
+                    + '</div>'
+                    + '<p class="text-sm text-gray-600 view-mode line-clamp-2">"' + esc(r.text) + '"</p>'
+                    + '<div class="hidden edit-mode grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2 border-t pt-4">'
+                    +   '<div><label class="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Имя</label>'
+                    +     '<input type="text" id="rev-name-' + rid + '" value="' + esc(r.name) + '" class="w-full px-3 py-2 text-sm border rounded outline-none focus:border-brand-600"></div>'
+                    +   '<div><label class="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Услуга</label>'
+                    +     '<input type="text" id="rev-svc-' + rid + '" value="' + esc(r.service) + '" class="w-full px-3 py-2 text-sm border rounded outline-none focus:border-brand-600"></div>'
+                    +   '<div><label class="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Дата</label>'
+                    +     '<input type="date" id="rev-date-' + rid + '" value="' + esc(r.date) + '" class="w-full px-3 py-2 text-sm border rounded outline-none focus:border-brand-600"></div>'
+                    +   '<div><label class="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Рейтинг (1-5)</label>'
+                    +     '<input type="number" min="1" max="5" id="rev-rating-' + rid + '" value="' + esc(r.rating == null ? 5 : r.rating) + '" class="w-full px-3 py-2 text-sm border rounded outline-none focus:border-brand-600"></div>'
+                    +   '<div class="sm:col-span-2"><label class="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Текст отзыва</label>'
+                    +     '<textarea id="rev-text-' + rid + '" class="w-full px-3 py-2 text-sm border rounded outline-none focus:border-brand-600" rows="3">' + esc(r.text) + '</textarea></div>'
+                    +   '<div class="sm:col-span-2 flex justify-end gap-2">'
+                    +     '<button onclick="cancelEditReview(\'' + rid + '\')" class="px-4 py-2 border rounded text-xs font-bold uppercase text-gray-600">Отмена</button>'
+                    +     '<button onclick="saveReview(\'' + rid + '\')" class="bg-green-600 text-white px-4 py-2 rounded text-xs font-bold uppercase">Сохранить</button>'
+                    +   '</div>'
+                    + '</div>'
+                    + '</div>';
+                }).join('');
+                try { lucide.createIcons(); } catch(_){}
+            };
+
+            window.addReview = function(){
+                if (window.isAddingReview) return;
+                window.isAddingReview = true;
+                const tmpId = 'new_' + Date.now();
+                window.dbMainPage = window.dbMainPage || {};
+                window.dbMainPage.reviews = window.dbMainPage.reviews || [];
+                window.dbMainPage.reviews.unshift({ id: tmpId, name: '', service: '', text: '', date: '', rating: 5, isNew: true });
+                try { if (typeof dbMainPage !== 'undefined') dbMainPage.reviews = window.dbMainPage.reviews; } catch(_){}
+                window.renderReviews();
+                window.editReview(tmpId);
+            };
+
+            window.editReview = function(id){
+                const row = document.getElementById('review-row-' + id);
+                if (!row) return;
+                row.querySelectorAll('.view-mode').forEach(function(el){ el.classList.add('hidden'); });
+                row.querySelectorAll('.edit-mode').forEach(function(el){ el.classList.remove('hidden'); });
+                row.classList.add('bg-brand-50/30', 'border-brand-200');
+            };
+
+            window.cancelEditReview = function(id){
+                const list = (window.dbMainPage && window.dbMainPage.reviews) || [];
+                const item = list.find(function(p){ return String(p.id) === String(id); });
+                if (item && item.isNew) {
+                    window.dbMainPage.reviews = list.filter(function(p){ return String(p.id) !== String(id); });
+                    try { if (typeof dbMainPage !== 'undefined') dbMainPage.reviews = window.dbMainPage.reviews; } catch(_){}
+                }
+                window.isAddingReview = false;
+                window.renderReviews();
+            };
+
+            window.saveReview = async function(id){
+                const nameEl = document.getElementById('rev-name-' + id);
+                const name = ((nameEl && nameEl.value) || '').trim();
+                if (!name) { notify('Введите имя!'); return; }
+                const service = (document.getElementById('rev-svc-' + id) || {}).value || '';
+                const text = (document.getElementById('rev-text-' + id) || {}).value || '';
+                const date = (document.getElementById('rev-date-' + id) || {}).value || '';
+                const ratingRaw = parseInt((document.getElementById('rev-rating-' + id) || {}).value || '5', 10);
+                const rating = (isNaN(ratingRaw) ? 5 : Math.max(1, Math.min(5, ratingRaw)));
+                const fullText = joinServiceText(service, text);
+                const list = (window.dbMainPage && window.dbMainPage.reviews) || [];
+                const item = list.find(function(p){ return String(p.id) === String(id); });
+                const isInsert = !item || item.isNew || !UUID_RE_R.test(String(id));
+                const payload = { author_name: name, text: fullText, rating: rating, review_date: date || null };
+                try {
+                    if (isInsert) {
+                        const { data, error } = await sb
+                            .from('reviews')
+                            .insert(Object.assign({}, payload, { published: true, sort_order: 0 }))
+                            .select('id,author_name,text,rating,review_date')
+                            .single();
+                        if (error) throw error;
+                        window.dbMainPage.reviews = list.filter(function(p){ return String(p.id) !== String(id); });
+                        const st = splitServiceText(data.text);
+                        window.dbMainPage.reviews.unshift({ id: data.id, name: data.author_name || '', service: st.service, text: st.text, date: data.review_date || '', rating: data.rating == null ? 5 : data.rating });
+                    } else {
+                        const { error } = await sb.from('reviews').update(payload).eq('id', id);
+                        if (error) throw error;
+                        item.name = name; item.service = service; item.text = text; item.date = date; item.rating = rating;
+                    }
+                    try { if (typeof dbMainPage !== 'undefined') dbMainPage.reviews = window.dbMainPage.reviews; } catch(_){}
+                    window.isAddingReview = false;
+                    window.renderReviews();
+                    try { window.updateDashboardStats && window.updateDashboardStats(); } catch(_){}
+                    notify('Отзыв сохранен');
+                } catch(e){
+                    console.error(e);
+                    notify('Ошибка сохранения: ' + errMsg(e));
+                }
+            };
+
+            window.deleteReview = function(id){
+                const doDelete = async function(){
+                    const list = (window.dbMainPage && window.dbMainPage.reviews) || [];
+                    const item = list.find(function(p){ return String(p.id) === String(id); });
+                    if (item && item.isNew) {
+                        window.dbMainPage.reviews = list.filter(function(p){ return String(p.id) !== String(id); });
+                        try { if (typeof dbMainPage !== 'undefined') dbMainPage.reviews = window.dbMainPage.reviews; } catch(_){}
+                        window.renderReviews();
+                        return;
+                    }
+                    const { error } = await sb.from('reviews').delete().eq('id', id);
+                    if (error) { notify('Ошибка удаления: '+errMsg(error)); return; }
+                    window.dbMainPage.reviews = list.filter(function(p){ return String(p.id) !== String(id); });
+                    try { if (typeof dbMainPage !== 'undefined') dbMainPage.reviews = window.dbMainPage.reviews; } catch(_){}
+                    window.renderReviews();
+                    try { window.updateDashboardStats && window.updateDashboardStats(); } catch(_){}
+                    notify('Удалено');
+                };
+                if (window.customConfirm) {
+                    window.customConfirm('Удалить отзыв?', { title: 'Удаление отзыва' }).then(function(ok){ if (ok) doDelete(); });
+                } else if (confirm('Удалить отзыв?')) {
+                    doDelete();
                 }
             };
         }
