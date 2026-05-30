@@ -1439,9 +1439,11 @@
             persistData();
         }
         function deleteAuthority(id){
-            if(!confirm('Удалить орган?')) return;
-            dbConsumer.authorities = dbConsumer.authorities.filter(x => x.id !== id);
-            persistData(); renderConsumer(); showToast('Удалено');
+            customConfirm('Удалить орган?', { title: 'Удаление органа' }).then(function(ok){
+                if(!ok) return;
+                dbConsumer.authorities = dbConsumer.authorities.filter(x => x.id !== id);
+                persistData(); renderConsumer(); showToast('Удалено');
+            });
         }
         window.addConsumerCategory = addConsumerCategory;
         window.renameConsumerCategory = renameConsumerCategory;
