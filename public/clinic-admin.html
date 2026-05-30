@@ -1752,6 +1752,22 @@
             try { window.updateDashboardStats && window.updateDashboardStats(); } catch(_){}
         }
 
+        async function loadPriceFile(){
+            const { data, error } = await window.sb
+                .from('price_files')
+                .select('id,title,file_url,file_name,created_at')
+                .order('created_at', { ascending: false })
+                .limit(1);
+            if (error) { console.error(error); return; }
+            const row = (data || [])[0];
+            if (row && row.file_url) {
+                window.dbPriceFile = { name: row.file_name || row.title || 'Прайс-лист', size: '', exists: true, url: row.file_url };
+            } else {
+                window.dbPriceFile = { name: '', size: '', exists: false };
+            }
+            try { window.renderPriceFile && window.renderPriceFile(); } catch(e){ console.error(e); }
+        }
+
         function overrideServices(){
             // Добавить новую строку (с временным id)
             window.addService = function(){
