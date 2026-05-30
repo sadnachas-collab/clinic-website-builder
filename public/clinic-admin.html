@@ -1788,6 +1788,8 @@
                     await loadPromos();
                     await loadReviews();
                     await loadReviewLinks();
+                    overrideFaq();
+                    await loadFaq();
                 }
             } catch(e){
                 console.error('[admin] bootstrap error', e);
