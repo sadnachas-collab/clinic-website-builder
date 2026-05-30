@@ -1,45 +1,43 @@
-## План: подключить «Отзывы» к таблице `reviews`
+## План: предпросмотр отзыва + ссылки на внешние площадки
 
-### Маппинг полей (UI ↔ БД)
+### 1. Кнопка «Предпросмотр» отзыва в админке
 
-| UI               | БД (`reviews`)        | Примечание |
-|------------------|------------------------|------------|
-| `id`             | `id` (UUID)            | для новых — временный `tmpId` (строка/число), флаг `isNew` |
-| `name`           | `author_name`          | обязательное |
-| `text`           | `text`                 | обязательное |
-| `service`        | `text` (префикс `[service] ...`) | в БД нет отдельного поля; храним так же, как `badge` в акциях (split/join при чтении/записи) |
-| `date` (строка типа «21 апреля») | `review_date` (DATE) | в админке заменим на `<input type="date">`; при отображении на сайте форматируем по-русски |
-| —                | `rating`               | пока не редактируем, по умолчанию `5` при insert |
-| —                | `published`            | по умолчанию `true` |
-| —                | `sort_order`           | `0` для новых |
+В админке (`public/clinic-admin.html`) в карточке отзыва (внутри `window.renderReviews` в bridge-блоке) добавить в `view-mode` справа кнопку с иконкой «глаз» (`lucide="eye"`) рядом с «edit-3» и «trash-2». Для новых (`isNew`) отзывов кнопку не показывать — только после сохранения.
 
-### Изменения в `public/clinic-admin.html`
+**`previewReview(id)`** — открывает модалку (новая `<div id="review-preview-modal">`, по образцу `customConfirm`), внутри — карточка отзыва **в точности** с фронтовой вёрсткой из `public/clinic-site.html` (lines 715–741): кремовый фон, иконка `quote`, ⭐ из `r.rating`, текст в кавычках, `r.name` + `r.service` под чертой. Текст «как у клиента», кнопка «Закрыть».
 
-1. **`loadReviews()`** — новая async-функция, `sb.from('reviews').select('*').order('sort_order').order('created_at', { ascending: false })`. Маппинг БД → UI: распарсить `text` на `service` (если начинается с `[...]`) и сам текст. Обновляет `window.dbMainPage.reviews`, вызывает `renderReviews()` + `updateDashboardStats()`.
+### 2. Ссылки Яндекс / 2GIS / ПроДокторов
 
-2. **`overrideReviews()`** — апсерт `page_content` с ключом `reviews_cache` (по аналогии с promos), `persistData`.
+#### Хранение
 
-3. **Bridge-блок (≈строка 1770–1775)** — добавить `overrideReviews()` и `await loadReviews()` рядом с promos.
+В таблице `page_content` новый ключ `review_links`, value JSON:
+```json
+{ "yandex": "https://...", "gis": "https://...", "prodoctorov": "https://..." }
+```
+Миграции не нужно — `page_content` уже есть.
 
-4. **`addReview`** — оставить как есть (временный id, `isNew: true`), без записи в БД до «Сохранить».
+#### Админка (`public/clinic-admin.html`)
 
-5. **`saveReview(id)`** — определить, UUID или временный:
-   - новый → `sb.from('reviews').insert({ author_name, text: '[service] ...'.trim(), review_date, rating: 5, published: true, sort_order: 0 }).select().single()`, заменить `id` в массиве на UUID;
-   - существующий → `sb.from('reviews').update({...}).eq('id', id)`.
-   После — `overrideReviews()` (без полного релоада), `renderReviews()`.
+В секции «Главная → Отзывы» (под списком отзывов, перед `addReview`) — новый блок «Ссылки на внешние площадки» с тремя полями:
+- Яндекс Карты — `https://...`
+- 2GIS — `https://...`
+- ПроДокторов — `https://...`
 
-6. **`deleteReview(id)`** — для UUID `sb.from('reviews').delete().eq('id', id)`, для временного — просто из массива. Затем `overrideReviews()`.
+Кнопка «Сохранить ссылки» → `sb.from('page_content').upsert({ key: 'review_links', value: {...} }, { onConflict: 'key' })`. Загрузка — в `loadReviews()` (или новой `loadReviewLinks()` в bridge), значения подставляются в инпуты.
 
-7. **Форма редактирования отзыва (внутри `renderReviews`)** — поле «Дата» заменить с `<input type="text">` на `<input type="date" id="rev-date-${id}">`; добавить чтение значения в `saveReview`. На карточке («view-mode») показывать дату в формате «21 апреля» (через `Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long' })`).
+#### Фронт (`public/clinic-site.html`)
 
-8. **`String(id)`** в `onclick` и `id` атрибутах — для совместимости UUID и временных id.
+Три `<button onclick="showToast(...)">` (lines 745–753) заменить на `<a id="rev-link-yandex|gis|prodoctorov" href="#" target="_blank" rel="noopener noreferrer">…</a>`. Кнопка скрыта (`hidden`), пока ссылка не загружена. В скрипте сайта, который читает `page_content` (там же, где грузятся другие тексты главной), добавить чтение ключа `review_links` и проставить `href` + снять `hidden` для непустых.
+
+Если на сайте ещё нет рантайм-загрузчика `page_content` — добавить минимальный fetch при загрузке страницы (через тот же `supabase-js`/anon, как в админке) только для этого ключа.
 
 ### Проверка
 
-1. Открыть админ → «Главная» → «Отзывы»: список грузится из БД.
-2. Добавить отзыв → Сохранить → перезагрузить страницу → отзыв остался (из БД, не из localStorage).
-3. Редактирование, удаление, дата — корректно сохраняются/отображаются.
+1. Админ → Главная → Отзывы → у сохранённого отзыва видна иконка «глаз» → клик открывает модалку с фронт-вёрсткой.
+2. Под отзывами — три поля ссылок, ввод → «Сохранить» → перезагрузка → ссылки сохранились.
+3. Открыть сайт → кнопки «Яндекс Карты / 2GIS / ПроДокторов» ведут на сохранённые URL в новой вкладке.
 
-### Файл
+### Файлы
 
 - `public/clinic-admin.html`
+- `public/clinic-site.html`
