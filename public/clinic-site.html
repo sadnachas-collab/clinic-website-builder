@@ -742,15 +742,15 @@
 </div>
 <!-- Внешние ссылки на отзывы -->
 <div class="mt-12 lg:mt-16 flex flex-wrap justify-center gap-4">
-<button onclick="showToast('Переход на Яндекс Карты...')" class="flex items-center gap-3 px-8 py-4 bg-white border border-[#D0C0B1]/40 rounded-full shadow-sm hover:shadow-md hover:border-[#746258] active:scale-95 transition-all group">
+<a id="rev-link-yandex" href="#" target="_blank" rel="noopener noreferrer" hidden class="flex items-center gap-3 px-8 py-4 bg-white border border-[#D0C0B1]/40 rounded-full shadow-sm hover:shadow-md hover:border-[#746258] active:scale-95 transition-all group">
 <span class="text-xs uppercase tracking-widest font-bold text-[#2A2522] group-hover:text-[#746258] transition-colors">Яндекс Карты</span>
-</button>
-<button onclick="showToast('Переход на 2GIS...')" class="flex items-center gap-3 px-8 py-4 bg-white border border-[#D0C0B1]/40 rounded-full shadow-sm hover:shadow-md hover:border-[#746258] active:scale-95 transition-all group">
+</a>
+<a id="rev-link-gis" href="#" target="_blank" rel="noopener noreferrer" hidden class="flex items-center gap-3 px-8 py-4 bg-white border border-[#D0C0B1]/40 rounded-full shadow-sm hover:shadow-md hover:border-[#746258] active:scale-95 transition-all group">
 <span class="text-xs uppercase tracking-widest font-bold text-[#2A2522] group-hover:text-[#746258] transition-colors">2GIS</span>
-</button>
-<button onclick="showToast('Переход на ПроДокторов...')" class="flex items-center gap-3 px-8 py-4 bg-white border border-[#D0C0B1]/40 rounded-full shadow-sm hover:shadow-md hover:border-[#746258] active:scale-95 transition-all group">
+</a>
+<a id="rev-link-prodoctorov" href="#" target="_blank" rel="noopener noreferrer" hidden class="flex items-center gap-3 px-8 py-4 bg-white border border-[#D0C0B1]/40 rounded-full shadow-sm hover:shadow-md hover:border-[#746258] active:scale-95 transition-all group">
 <span class="text-xs uppercase tracking-widest font-bold text-[#2A2522] group-hover:text-[#746258] transition-colors">ПроДокторов</span>
-</button>
+</a>
 </div>
 </div>
 </section>
@@ -1411,7 +1411,17 @@
             host.innerHTML = catsHtml + authHtml;
             updateIcons();
         }
-        document.addEventListener("DOMContentLoaded", () => {            updateIcons();            initHomeCategories();            initHeroSlider(); initCookieBanner(); renderConsumerView();
+        function initReviewLinks() {
+            let links = {};
+            try { links = JSON.parse(localStorage.getItem('reviewLinks') || '{}') || {}; } catch(_) {}
+            const map = { yandex: 'rev-link-yandex', gis: 'rev-link-gis', prodoctorov: 'rev-link-prodoctorov' };
+            Object.keys(map).forEach(function(k){
+                const el = document.getElementById(map[k]);
+                const url = (links[k] || '').trim();
+                if (el && url) { el.href = url; el.hidden = false; }
+            });
+        }
+        document.addEventListener("DOMContentLoaded", () => {            updateIcons();            initHomeCategories();            initHeroSlider(); initCookieBanner(); renderConsumerView(); initReviewLinks();
         });
     </script>
 </body>

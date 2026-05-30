@@ -358,6 +358,18 @@
 <p class="text-sm text-gray-500 mb-6">Отзывы выводятся широкой сеткой на всю страницу. Рекомендуем держать кратное количество отзывов (например, 3 или 6).</p>
 <div id="admin-reviews-list" class="space-y-4">
 </div>
+<div class="mt-8 pt-8 border-t border-gray-200">
+<h3 class="text-sm font-bold text-brand-900 uppercase tracking-widest mb-1 flex items-center gap-2"><i data-lucide="link" class="w-4 h-4 text-brand-600"></i> Ссылки на внешние площадки</h3>
+<p class="text-xs text-gray-500 mb-4">Эти ссылки откроются по клику на кнопки «Яндекс Карты», «2GIS», «ПроДокторов» под блоком отзывов на сайте.</p>
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+<div><label class="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Яндекс Карты</label><input type="url" id="rev-link-yandex" placeholder="https://yandex.ru/maps/..." class="w-full px-3 py-2 text-sm border rounded outline-none focus:border-brand-600"></div>
+<div><label class="text-[10px] uppercase text-gray-500 font-bold mb-1 block">2GIS</label><input type="url" id="rev-link-gis" placeholder="https://2gis.ru/..." class="w-full px-3 py-2 text-sm border rounded outline-none focus:border-brand-600"></div>
+<div><label class="text-[10px] uppercase text-gray-500 font-bold mb-1 block">ПроДокторов</label><input type="url" id="rev-link-prodoctorov" placeholder="https://prodoctorov.ru/..." class="w-full px-3 py-2 text-sm border rounded outline-none focus:border-brand-600"></div>
+</div>
+<div class="flex justify-end mt-4">
+<button type="button" onclick="saveReviewLinks()" class="bg-green-600 text-white px-5 py-2 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-green-700 transition-colors">Сохранить ссылки</button>
+</div>
+</div>
 </div>
 </div>
 </div>
@@ -1775,6 +1787,7 @@
                     await loadMainTexts();
                     await loadPromos();
                     await loadReviews();
+                    await loadReviewLinks();
                 }
             } catch(e){
                 console.error('[admin] bootstrap error', e);
@@ -2425,6 +2438,7 @@
                     +     (dateLabel ? '<p class="text-[11px] text-gray-400">' + esc(dateLabel) + '</p>' : '')
                     +   '</div>'
                     +   '<div class="flex gap-2 shrink-0">'
+                    +     (r.isNew ? '' : '<button onclick="previewReview(\'' + rid + '\')" title="Предпросмотр" class="text-gray-400 hover:text-brand-600"><i data-lucide="eye" class="w-4 h-4"></i></button>')
                     +     '<button onclick="editReview(\'' + rid + '\')" class="text-gray-400 hover:text-brand-600"><i data-lucide="edit-3" class="w-4 h-4"></i></button>'
                     +     '<button onclick="deleteReview(\'' + rid + '\')" class="text-gray-400 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>'
                     +   '</div>'
@@ -2548,6 +2562,79 @@
                 }
             };
         }
+
+        // ============= Превью отзыва =============
+        function previewReview(id){
+            const list = (window.dbMainPage && window.dbMainPage.reviews) || [];
+            const r = list.find(function(x){ return String(x.id) === String(id); });
+            if (!r) return;
+            const esc = function(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+            const rating = Math.max(1, Math.min(5, parseInt(r.rating, 10) || 5));
+            let stars = '';
+            for (let i = 0; i < rating; i++) stars += '<i data-lucide="star" class="w-4 h-4 fill-current"></i>';
+            const modal = document.createElement('div');
+            modal.id = 'review-preview-modal';
+            modal.className = 'fixed inset-0 z-[10000] bg-black/50 flex items-center justify-center p-4';
+            modal.innerHTML =
+                '<div class="bg-[#FDFBF9] rounded-2xl max-w-md w-full p-6 relative shadow-2xl">'
+                + '<button onclick="document.getElementById(\'review-preview-modal\').remove()" class="absolute top-3 right-3 text-gray-400 hover:text-gray-800"><i data-lucide="x" class="w-5 h-5"></i></button>'
+                + '<p class="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-4">Так отзыв будет выглядеть на сайте</p>'
+                + '<div class="bg-white p-8 rounded-[2.5rem] border border-[#D0C0B1]/40 relative flex flex-col">'
+                +   '<div class="flex gap-1 mb-6 text-[#D0C0B1]">' + stars + '</div>'
+                +   '<p class="text-gray-600 font-light text-[15px] leading-relaxed mb-8 italic relative z-10 flex-grow">"' + esc(r.text) + '"</p>'
+                +   '<div class="pt-6 border-t border-[#D0C0B1]/30 flex justify-between items-end mt-auto">'
+                +     '<div>'
+                +       '<p class="font-medium text-[#2A2522]">' + esc(r.name) + '</p>'
+                +       (r.service ? '<p class="text-[11px] text-[#746258] mt-1.5 uppercase tracking-widest font-semibold">' + esc(r.service) + '</p>' : '')
+                +     '</div>'
+                +   '</div>'
+                +   '<i data-lucide="quote" class="absolute top-8 right-8 w-12 h-12 text-[#D0C0B1] opacity-[0.12] pointer-events-none"></i>'
+                + '</div>'
+                + '<div class="flex justify-end mt-6"><button onclick="document.getElementById(\'review-preview-modal\').remove()" class="px-4 py-2 bg-brand-600 text-white rounded-lg text-xs font-bold uppercase tracking-widest">Закрыть</button></div>'
+                + '</div>';
+            modal.addEventListener('click', function(e){ if (e.target === modal) modal.remove(); });
+            document.body.appendChild(modal);
+            try { lucide.createIcons(); } catch(_){}
+        }
+        window.previewReview = previewReview;
+
+        // ============= Ссылки на внешние площадки =============
+        async function loadReviewLinks(){
+            const { data, error } = await sb
+                .from('page_content')
+                .select('value')
+                .eq('key', 'review_links')
+                .maybeSingle();
+            if (error) { console.error(error); return; }
+            const v = (data && data.value) || {};
+            const yEl = document.getElementById('rev-link-yandex');
+            const gEl = document.getElementById('rev-link-gis');
+            const pEl = document.getElementById('rev-link-prodoctorov');
+            if (yEl) yEl.value = v.yandex || '';
+            if (gEl) gEl.value = v.gis || '';
+            if (pEl) pEl.value = v.prodoctorov || '';
+            try { localStorage.setItem('reviewLinks', JSON.stringify({ yandex: v.yandex || '', gis: v.gis || '', prodoctorov: v.prodoctorov || '' })); } catch(_){}
+        }
+        window.loadReviewLinks = loadReviewLinks;
+
+        window.saveReviewLinks = async function(){
+            const payload = {
+                yandex: (document.getElementById('rev-link-yandex') || {}).value || '',
+                gis: (document.getElementById('rev-link-gis') || {}).value || '',
+                prodoctorov: (document.getElementById('rev-link-prodoctorov') || {}).value || ''
+            };
+            try {
+                const { error } = await sb
+                    .from('page_content')
+                    .upsert({ key: 'review_links', value: payload }, { onConflict: 'key' });
+                if (error) throw error;
+                try { localStorage.setItem('reviewLinks', JSON.stringify(payload)); } catch(_){}
+                notify('Ссылки сохранены');
+            } catch(e){
+                console.error(e);
+                notify('Ошибка сохранения: ' + errMsg(e));
+            }
+        };
     })();
     </script>
 
