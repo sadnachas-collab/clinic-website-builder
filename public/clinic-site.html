@@ -220,43 +220,89 @@
 </div>
 </div>
 </header>
+<style>
+  /* Резервный ГОСТ-режим (если внешний BVI недоступен) */
+  body.a11y-mode { background:#fff !important; color:#000 !important; filter:none !important; }
+  body.a11y-mode * { background-image:none !important; box-shadow:none !important; text-shadow:none !important; letter-spacing:normal !important; }
+  body.a11y-mode :not(i):not(svg):not(img) { color:#000 !important; background-color:#fff !important; border-color:#000 !important; font-family: Arial, sans-serif !important; }
+  body.a11y-mode h1, body.a11y-mode h2, body.a11y-mode h3 { font-size: 2rem !important; line-height:1.3 !important; }
+  body.a11y-mode p, body.a11y-mode span, body.a11y-mode a, body.a11y-mode button, body.a11y-mode li { font-size: 1.25rem !important; line-height:1.6 !important; }
+  body.a11y-mode a { text-decoration: underline !important; }
+  body.a11y-mode img:not(.a11y-keep) { opacity:0.4 !important; }
+  #a11y-exit { position: fixed; top: 12px; right: 12px; z-index: 9999; background:#000; color:#fff !important; padding:10px 16px; font-size:16px; border:2px solid #fff; cursor:pointer; }
+</style>
 <script>
 document.addEventListener("DOMContentLoaded", () => {
-  // Инициализация плагина для слабовидящих (BVI, ГОСТ Р 52872-2019)
-  let bviReady = false;
-  const initBvi = (attempts = 0) => {
+  let bviInstance = null;
+  const initBvi = () => {
+    if (bviInstance) return true;
     if (typeof isvek !== 'undefined' && isvek.Bvi) {
       try {
-        window.bviInstance = new isvek.Bvi({ target: '.bvi-open', fontSize: 24, theme: 'white' });
-        bviReady = true;
-        console.log('[BVI] инициализирован');
-      } catch (err) {
-        console.warn('[BVI] ошибка инициализации:', err);
-      }
-    } else if (attempts < 6) {
-      setTimeout(() => initBvi(attempts + 1), 500);
-    } else {
-      console.warn('[BVI] скрипт не загрузился за 3 сек');
+        bviInstance = new isvek.Bvi({ target: '.bvi-open-ignore', fontSize: 24, theme: 'white' });
+        window.bviInstance = bviInstance;
+        return true;
+      } catch (err) { console.warn('[BVI] init error:', err); }
     }
+    return false;
   };
-  initBvi();
 
-  // Fallback: если BVI не подхватил клик — пробуем дёрнуть вручную или показать тост
-  document.querySelectorAll('.bvi-open').forEach(el => {
-    el.addEventListener('click', (e) => {
-      if (bviReady) return; // BVI сам обработает
-      e.preventDefault();
+  // Резервный режим доступности
+  function enableA11yFallback() {
+    if (document.body.classList.contains('a11y-mode')) return;
+    document.body.classList.add('a11y-mode');
+    if (!document.getElementById('a11y-exit')) {
+      const btn = document.createElement('button');
+      btn.id = 'a11y-exit';
+      btn.type = 'button';
+      btn.textContent = 'Обычная версия';
+      btn.onclick = () => { document.body.classList.remove('a11y-mode'); btn.remove(); };
+      document.body.appendChild(btn);
+    }
+  }
+
+  function openBvi() {
+    // Пытаемся инициализировать и открыть панель BVI
+    const ready = initBvi();
+    if (ready && bviInstance) {
       try {
-        if (window.bviInstance && typeof window.bviInstance.bviOn === 'function') {
-          window.bviInstance.bviOn();
-          return;
-        }
-      } catch (_) {}
-      if (typeof showToast === 'function') {
-        showToast('Версия для слабовидящих временно недоступна. Используйте Ctrl + «+» для увеличения шрифта.');
+        if (typeof bviInstance.bviOn === 'function') { bviInstance.bviOn(); return true; }
+        if (typeof bviInstance.bvi === 'function') { bviInstance.bvi(); return true; }
+      } catch (err) { console.warn('[BVI] open error:', err); }
+    }
+    // Прямой запуск через DOM-флаг плагина
+    try {
+      if (typeof isvek !== 'undefined' && isvek.Bvi) {
+        document.documentElement.classList.add('bvi-active');
+        return true;
       }
-    });
-  });
+    } catch (_) {}
+    return false;
+  }
+
+  function handleClick(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    // Закрыть мобильное меню, если открыто
+    const menu = document.getElementById('mobile-menu');
+    if (menu && !menu.classList.contains('hidden') && typeof toggleMobileMenu === 'function') {
+      try { toggleMobileMenu(); } catch(_) {}
+    }
+    if (!openBvi()) {
+      // CDN не загрузился — включаем резервный ГОСТ-режим
+      enableA11yFallback();
+      if (typeof showToast === 'function') showToast('Включён режим для слабовидящих (резервный).');
+    }
+  }
+
+  // Делегирование клика — работает и для динамически перестраиваемых элементов
+  document.addEventListener('click', (e) => {
+    const trigger = e.target.closest('.bvi-open');
+    if (trigger) handleClick(e);
+  }, true);
+
+  // Предварительная инициализация (не критична)
+  setTimeout(initBvi, 300);
+  setTimeout(initBvi, 1200);
 });
 </script>
 <!-- ========================================================================= -->
