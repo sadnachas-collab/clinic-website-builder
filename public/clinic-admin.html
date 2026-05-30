@@ -877,11 +877,12 @@
             return doLogin();
         };
 
-        window.handleLogout = function(){
-            lsDel('loggedInAdminId');
-            ssDel('loggedInAdminId');
-            location.reload();
+        window.requestLogout = function(){
+            try { window.parent && window.parent.postMessage({ type: 'admin-logout' }, '*'); } catch(_){}
+            setTimeout(function(){ try { window.location.href = '/logout'; } catch(_){} }, 400);
         };
+        // Совместимость со старым кодом
+        window.handleLogout = window.requestLogout;
 
         function togglePasswordVisibility(){
             const pwdInput=document.getElementById('admin-pwd');
