@@ -16,9 +16,7 @@
 <!-- Иконки Lucide -->
 <script src="https://unpkg.com/lucide@latest">
 </script>
-<!-- Плагин для слабовидящих (BVI - ГОСТ РФ), пин-версия с npm -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bvi@1.0.2/dist/css/bvi.min.css">
-<script src="https://cdn.jsdelivr.net/npm/bvi@1.0.2/dist/js/bvi.min.js"></script>
+<!-- Версия для слабовидящих реализована встроенно ниже (ГОСТ Р 52872) -->
 <!-- Настройки Tailwind -->
 <script>    tailwind.config = {        theme: {            extend: {                fontFamily: {                    sans: ['Montserrat', 'sans-serif'],                    serif: ['Playfair Display', 'serif'],                }            }        }    }</script>
 <!-- Глобальные стили -->
@@ -231,79 +229,202 @@
   body.a11y-mode img:not(.a11y-keep) { opacity:0.4 !important; }
   #a11y-exit { position: fixed; top: 12px; right: 12px; z-index: 9999; background:#000; color:#fff !important; padding:10px 16px; font-size:16px; border:2px solid #fff; cursor:pointer; }
 </style>
+<!-- Панель управления режимом для слабовидящих -->
+<div id="a11y-panel" class="hidden fixed top-0 left-0 right-0 z-[9998] bg-black text-white border-b-4 border-white shadow-2xl">
+  <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-[15px]" style="font-family: Arial, sans-serif;">
+    <span class="font-bold uppercase tracking-wider">Версия для слабовидящих</span>
+
+    <div class="flex items-center gap-2">
+      <span>Размер шрифта:</span>
+      <button type="button" data-a11y-font="normal" class="a11y-btn px-3 py-1 border-2 border-white bg-black hover:bg-white hover:text-black">A</button>
+      <button type="button" data-a11y-font="large" class="a11y-btn px-3 py-1 border-2 border-white bg-black hover:bg-white hover:text-black text-lg">A+</button>
+      <button type="button" data-a11y-font="xlarge" class="a11y-btn px-3 py-1 border-2 border-white bg-black hover:bg-white hover:text-black text-xl">A++</button>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <span>Цвет:</span>
+      <button type="button" data-a11y-theme="white" class="a11y-btn px-3 py-1 border-2 border-white bg-white text-black">Ч/Б</button>
+      <button type="button" data-a11y-theme="black" class="a11y-btn px-3 py-1 border-2 border-white bg-black text-white">Б/Ч</button>
+      <button type="button" data-a11y-theme="blue" class="a11y-btn px-3 py-1 border-2 border-[#9DD1FF] bg-[#9DD1FF] text-[#063462]">Синий</button>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <span>Изображения:</span>
+      <button type="button" data-a11y-images="on" class="a11y-btn px-3 py-1 border-2 border-white bg-black hover:bg-white hover:text-black">Вкл</button>
+      <button type="button" data-a11y-images="off" class="a11y-btn px-3 py-1 border-2 border-white bg-black hover:bg-white hover:text-black">Выкл</button>
+    </div>
+
+    <button type="button" id="a11y-exit" class="ml-auto px-4 py-2 bg-white text-black font-bold border-2 border-white hover:bg-black hover:text-white">Обычная версия</button>
+  </div>
+</div>
+
+<style>
+  /* === Режим для слабовидящих (ГОСТ Р 52872) === */
+  body.a11y-mode { padding-top: 90px !important; }
+  body.a11y-mode #navbar,
+  body.a11y-mode .bvi-no-styles { display: none !important; }
+
+  /* Базовая зачистка декора */
+  body.a11y-mode * {
+    background-image: none !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border-radius: 0 !important;
+    transition: none !important;
+    animation: none !important;
+    letter-spacing: normal !important;
+    font-family: Arial, Verdana, sans-serif !important;
+  }
+  body.a11y-mode a { text-decoration: underline !important; }
+  body.a11y-mode button, body.a11y-mode a { outline: 1px solid currentColor !important; }
+
+  /* Размеры шрифта */
+  body.a11y-mode.a11y-font-normal { font-size: 18px !important; line-height: 1.6 !important; }
+  body.a11y-mode.a11y-font-large  { font-size: 22px !important; line-height: 1.7 !important; }
+  body.a11y-mode.a11y-font-xlarge { font-size: 28px !important; line-height: 1.8 !important; }
+  body.a11y-mode h1 { font-size: 2em !important; }
+  body.a11y-mode h2 { font-size: 1.7em !important; }
+  body.a11y-mode h3 { font-size: 1.4em !important; }
+
+  /* Тема: чёрный текст на белом */
+  body.a11y-mode.a11y-theme-white,
+  body.a11y-mode.a11y-theme-white * {
+    background-color: #fff !important;
+    color: #000 !important;
+    border-color: #000 !important;
+    fill: #000 !important;
+    stroke: #000 !important;
+  }
+  /* Тема: белый текст на чёрном */
+  body.a11y-mode.a11y-theme-black,
+  body.a11y-mode.a11y-theme-black * {
+    background-color: #000 !important;
+    color: #fff !important;
+    border-color: #fff !important;
+    fill: #fff !important;
+    stroke: #fff !important;
+  }
+  /* Тема: тёмно-синий текст на голубом */
+  body.a11y-mode.a11y-theme-blue,
+  body.a11y-mode.a11y-theme-blue * {
+    background-color: #9DD1FF !important;
+    color: #063462 !important;
+    border-color: #063462 !important;
+    fill: #063462 !important;
+    stroke: #063462 !important;
+  }
+
+  /* Панель управления всегда контрастная */
+  body.a11y-mode #a11y-panel,
+  body.a11y-mode #a11y-panel * {
+    background-color: #000 !important;
+    color: #fff !important;
+    border-color: #fff !important;
+    font-family: Arial, sans-serif !important;
+  }
+  body.a11y-mode #a11y-panel [data-a11y-theme="white"] { background-color: #fff !important; color: #000 !important; }
+  body.a11y-mode #a11y-panel [data-a11y-theme="blue"]  { background-color: #9DD1FF !important; color: #063462 !important; border-color: #9DD1FF !important; }
+  body.a11y-mode #a11y-panel .a11y-btn.active { outline: 3px solid #FFD500 !important; outline-offset: 2px !important; }
+
+  /* Отключение изображений */
+  body.a11y-mode.a11y-no-images img,
+  body.a11y-mode.a11y-no-images video,
+  body.a11y-mode.a11y-no-images svg:not(#a11y-panel svg) {
+    display: none !important;
+  }
+</style>
+
 <script>
-document.addEventListener("DOMContentLoaded", () => {
-  let bviInstance = null;
-  const initBvi = () => {
-    if (bviInstance) return true;
-    if (typeof isvek !== 'undefined' && isvek.Bvi) {
-      try {
-        bviInstance = new isvek.Bvi({ target: '.bvi-open-ignore', fontSize: 24, theme: 'white' });
-        window.bviInstance = bviInstance;
-        return true;
-      } catch (err) { console.warn('[BVI] init error:', err); }
-    }
-    return false;
-  };
+(function () {
+  var STORAGE_KEY = 'a11y-mode-settings';
+  var defaults = { enabled: false, font: 'large', theme: 'white', images: 'on' };
 
-  // Резервный режим доступности
-  function enableA11yFallback() {
-    if (document.body.classList.contains('a11y-mode')) return;
-    document.body.classList.add('a11y-mode');
-    if (!document.getElementById('a11y-exit')) {
-      const btn = document.createElement('button');
-      btn.id = 'a11y-exit';
-      btn.type = 'button';
-      btn.textContent = 'Обычная версия';
-      btn.onclick = () => { document.body.classList.remove('a11y-mode'); btn.remove(); };
-      document.body.appendChild(btn);
-    }
-  }
-
-  function openBvi() {
-    // Пытаемся инициализировать и открыть панель BVI
-    const ready = initBvi();
-    if (ready && bviInstance) {
-      try {
-        if (typeof bviInstance.bviOn === 'function') { bviInstance.bviOn(); return true; }
-        if (typeof bviInstance.bvi === 'function') { bviInstance.bvi(); return true; }
-      } catch (err) { console.warn('[BVI] open error:', err); }
-    }
-    // Прямой запуск через DOM-флаг плагина
+  function loadSettings() {
     try {
-      if (typeof isvek !== 'undefined' && isvek.Bvi) {
-        document.documentElement.classList.add('bvi-active');
-        return true;
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return Object.assign({}, defaults);
+      return Object.assign({}, defaults, JSON.parse(raw));
+    } catch (e) { return Object.assign({}, defaults); }
+  }
+  function saveSettings(s) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch (e) {}
+  }
+
+  var state = loadSettings();
+
+  function apply() {
+    var body = document.body;
+    if (!body) return;
+    body.classList.toggle('a11y-mode', !!state.enabled);
+    ['a11y-font-normal','a11y-font-large','a11y-font-xlarge'].forEach(function(c){ body.classList.remove(c); });
+    ['a11y-theme-white','a11y-theme-black','a11y-theme-blue'].forEach(function(c){ body.classList.remove(c); });
+    body.classList.remove('a11y-no-images');
+
+    if (state.enabled) {
+      body.classList.add('a11y-font-' + state.font);
+      body.classList.add('a11y-theme-' + state.theme);
+      if (state.images === 'off') body.classList.add('a11y-no-images');
+    }
+
+    var panel = document.getElementById('a11y-panel');
+    if (panel) {
+      panel.classList.toggle('hidden', !state.enabled);
+      panel.querySelectorAll('.a11y-btn').forEach(function (btn) {
+        btn.classList.remove('active');
+      });
+      var sel = panel.querySelector('[data-a11y-font="'+state.font+'"]');
+      if (sel) sel.classList.add('active');
+      sel = panel.querySelector('[data-a11y-theme="'+state.theme+'"]');
+      if (sel) sel.classList.add('active');
+      sel = panel.querySelector('[data-a11y-images="'+state.images+'"]');
+      if (sel) sel.classList.add('active');
+    }
+  }
+
+  function enable() { state.enabled = true; saveSettings(state); apply(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+  function disable() { state.enabled = false; saveSettings(state); apply(); }
+  function toggle() { state.enabled ? disable() : enable(); }
+
+  // Делегирование клика на любую кнопку .bvi-open
+  document.addEventListener('click', function (e) {
+    var trigger = e.target.closest && e.target.closest('.bvi-open');
+    if (trigger) {
+      e.preventDefault();
+      e.stopPropagation();
+      var menu = document.getElementById('mobile-menu');
+      if (menu && !menu.classList.contains('hidden') && typeof toggleMobileMenu === 'function') {
+        try { toggleMobileMenu(); } catch (_) {}
       }
-    } catch (_) {}
-    return false;
-  }
-
-  function handleClick(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    // Закрыть мобильное меню, если открыто
-    const menu = document.getElementById('mobile-menu');
-    if (menu && !menu.classList.contains('hidden') && typeof toggleMobileMenu === 'function') {
-      try { toggleMobileMenu(); } catch(_) {}
+      toggle();
+      return;
     }
-    if (!openBvi()) {
-      // CDN не загрузился — включаем резервный ГОСТ-режим
-      enableA11yFallback();
-      if (typeof showToast === 'function') showToast('Включён режим для слабовидящих (резервный).');
-    }
-  }
 
-  // Делегирование клика — работает и для динамически перестраиваемых элементов
-  document.addEventListener('click', (e) => {
-    const trigger = e.target.closest('.bvi-open');
-    if (trigger) handleClick(e);
+    var ctl = e.target.closest && e.target.closest('#a11y-panel [data-a11y-font], #a11y-panel [data-a11y-theme], #a11y-panel [data-a11y-images]');
+    if (ctl) {
+      e.preventDefault();
+      if (ctl.dataset.a11yFont)   state.font   = ctl.dataset.a11yFont;
+      if (ctl.dataset.a11yTheme)  state.theme  = ctl.dataset.a11yTheme;
+      if (ctl.dataset.a11yImages) state.images = ctl.dataset.a11yImages;
+      saveSettings(state); apply();
+      return;
+    }
+
+    if (e.target.closest && e.target.closest('#a11y-exit')) {
+      e.preventDefault();
+      disable();
+    }
   }, true);
 
-  // Предварительная инициализация (не критична)
-  setTimeout(initBvi, 300);
-  setTimeout(initBvi, 1200);
-});
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', apply);
+  } else {
+    apply();
+  }
+
+  window.a11yMode = { enable: enable, disable: disable, toggle: toggle };
+})();
 </script>
 <!-- ========================================================================= -->
 <!-- ================= УРОВЕНЬ 1: ГЛАВНАЯ СТРАНИЦА ============================ -->
