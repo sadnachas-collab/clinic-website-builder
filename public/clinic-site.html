@@ -1058,16 +1058,26 @@
 <li>
 <button onclick="openModal('terms-modal')" class="hover:text-[#746258] underline decoration-gray-300 transition-colors text-left">Пользовательское соглашение</button>
 </li>
+<li>
+<button onclick="openModal('consent-modal')" class="hover:text-[#746258] underline decoration-gray-300 transition-colors text-left">Согласие на обработку ПДн</button>
+</li>
+<li>
+<button onclick="resetCookieConsent()" class="hover:text-[#746258] underline decoration-gray-300 transition-colors text-left">Настройки cookies</button>
+</li>
 <li class="mt-8 pt-6 border-t border-[#D0C0B1]/40">
 <span class="block text-xs mb-1.5 text-gray-500">Лицензия № ЛО-XX-XX-XXXXXX от XX.XX.20XX</span>
-<span class="block text-xs text-gray-500">ООО "Эстетика" ОГРН XXXXXXXXXXXXX</span>
+<span class="block text-xs mb-1.5 text-gray-500">ООО "Эстетика" ОГРН XXXXXXXXXXXXX</span>
+<span class="block text-xs text-gray-500">Уведомление в реестре операторов ПДн (РКН): № XX-XX-XXXXXX</span>
 </li>
 </ul>
 </div>
 </div>
 <div class="border-t border-[#D0C0B1]/40 pt-8 flex flex-col md:flex-row justify-between items-center gap-6 text-[11px] text-gray-400 font-semibold tracking-widest uppercase">
 <p>© 2026 Клиника Dr. VORONENKO. Все права защищены.</p>
-<p class="text-center border border-[#D0C0B1]/40 px-6 py-3 rounded-md bg-white/50 backdrop-blur-sm text-gray-500">                    Имеются противопоказания. Необходима консультация специалиста.                </p>
+<div class="flex items-center gap-4">
+<span class="inline-flex items-center justify-center w-10 h-10 border-2 border-[#D0C0B1]/60 rounded-md text-[#746258] font-bold text-xs bg-white/50" title="Возрастная категория 18+">18+</span>
+<p class="text-center border border-[#D0C0B1]/40 px-6 py-3 rounded-md bg-white/50 backdrop-blur-sm text-gray-500">Имеются противопоказания. Необходима консультация специалиста.</p>
+</div>
 </div>
 </div>
 </footer>
