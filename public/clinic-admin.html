@@ -410,6 +410,7 @@
 </div>
 <div class="flex gap-2 shrink-0 mt-2 sm:mt-0">
 <input type="file" id="price-file-upload" class="hidden" onchange="handleFileUpload(event)">
+<button type="button" id="price-file-view-btn" onclick="viewPriceFile()" class="bg-white border border-gray-200 text-brand-600 px-3 py-2 rounded-xl text-xs font-bold hover:bg-gray-50 transition-colors shadow-sm disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5" title="Просмотр"><i data-lucide="eye" class="w-4 h-4"></i>Просмотр</button>
 <button type="button" onclick="document.getElementById('price-file-upload').click()" class="bg-white border border-gray-200 text-brand-900 px-4 py-2 rounded-xl text-xs font-bold hover:bg-gray-50 transition-colors shadow-sm">Загрузить новый</button>
 <button type="button" onclick="deletePriceFile()" class="bg-white border border-red-200 text-red-500 px-4 py-2 rounded-xl text-xs font-bold hover:bg-red-50 transition-colors shadow-sm">Удалить</button>
 </div>
@@ -984,8 +985,12 @@
 </div>
 </div>`).join(''); lucide.createIcons();        }                let isAddingReview = false;        function addReview() { if(isAddingReview) return; isAddingReview = true; const newId = Date.now(); dbMainPage.reviews.unshift({ id: newId, name: "", service: "", text: "", isNew: true }); renderReviews(); editReview(newId); }        function editReview(id) { const row = document.getElementById(`review-row-${id}`); row.querySelectorAll('.view-mode').forEach(el => el.classList.add('hidden')); row.querySelectorAll('.edit-mode').forEach(el => el.classList.remove('hidden')); row.classList.add('bg-brand-50/30', 'border-brand-200'); }        function saveReview(id) {             const r = dbMainPage.reviews.find(x => x.id === id);             if(r) {                 const name = document.getElementById(`rev-name-${id}`).value.trim();                if(!name) return showToast('Введите имя!');                r.name = name; r.service = document.getElementById(`rev-svc-${id}`).value; r.text = document.getElementById(`rev-text-${id}`).value;                 delete r.isNew; isAddingReview = false; persistData(); renderReviews(); showToast('Отзыв сохранен');             }         }        function cancelEditReview(id) { const idx = dbMainPage.reviews.findIndex(x => x.id === id); if(idx > -1 && dbMainPage.reviews[idx].isNew) dbMainPage.reviews.splice(idx, 1); isAddingReview = false; renderReviews(); }        function deleteReview(id) { if(confirm('Удалить?')) { dbMainPage.reviews = dbMainPage.reviews.filter(x => x.id !== id); persistData(); renderReviews(); } }        function renderInterior() {            document.getElementById('admin-interior-list').innerHTML = dbMainPage.interior.map(i => `                <div class="relative group aspect-square rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
 <img src="${i.img}" onerror="this.src='https://placehold.co/600x600/f3f4f6/a1a1aa?text=Ошибка+загрузки'" class="w-full h-full object-cover">
-<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-<button onclick="deleteInterior(${i.id})" class="bg-red-500 text-white p-2 rounded-full hover:bg-red-600">
+<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
+<button onclick="openImagePreview('${i.img}')" class="bg-white text-brand-700 p-2 rounded-full hover:bg-gray-100" title="Просмотр">
+<i data-lucide="eye" class="w-5 h-5">
+</i>
+</button>
+<button onclick="deleteInterior(${i.id})" class="bg-red-500 text-white p-2 rounded-full hover:bg-red-600" title="Удалить">
 <i data-lucide="trash-2" class="w-5 h-5">
 </i>
 </button>
@@ -993,8 +998,12 @@
 </div>`).join(''); lucide.createIcons();        }        function addInteriorImg() {             const url = prompt('Вставьте прямую ссылку на фото (URL).\nПоддерживаются ссылки из ВКонтакте, фотохостингов и Google Диска:');             if(url) {                 dbMainPage.interior.push({ id: Date.now(), img: formatImageUrl(url) });                 persistData(); renderInterior(); showToast('Добавлено');             }         }        function deleteInterior(id) { if(confirm('Удалить?')) { dbMainPage.interior = dbMainPage.interior.filter(x => x.id !== id); persistData(); renderInterior(); } }        // --- РАЗДЕЛ: О КЛИНИКЕ ---
         function renderAboutPageData() { renderDocs(); renderFaq(); }        function renderDocs() {            document.getElementById('admin-docs-list').innerHTML = dbMainPage.docs.map(d => `                <div class="relative group aspect-[1/1.3] rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
 <img src="${d.img}" onerror="this.src='https://placehold.co/400x520/f3f4f6/a1a1aa?text=Ошибка+загрузки'" class="w-full h-full object-cover">
-<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-<button onclick="deleteDoc(${d.id})" class="bg-red-500 text-white p-2 rounded-full hover:bg-red-600">
+<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
+<button onclick="openImagePreview('${d.img}')" class="bg-white text-brand-700 p-2 rounded-full hover:bg-gray-100" title="Просмотр">
+<i data-lucide="eye" class="w-5 h-5">
+</i>
+</button>
+<button onclick="deleteDoc(${d.id})" class="bg-red-500 text-white p-2 rounded-full hover:bg-red-600" title="Удалить">
 <i data-lucide="trash-2" class="w-5 h-5">
 </i>
 </button>
@@ -1054,7 +1063,53 @@
 <button onclick="saveRow(${srv.id})" class="edit-mode hidden px-4 py-2 bg-green-600 text-white rounded-lg text-xs font-bold uppercase tracking-widest">Сохранить</button>
 <button onclick="cancelEditRow(${srv.id})" class="edit-mode hidden ml-1 px-4 py-2 bg-white border border-gray-200 text-gray-600 rounded-lg text-xs font-bold uppercase tracking-widest">Отмена</button>
 </td>
-</tr>`).join(''); lucide.createIcons();        }        function addService() { if(isAddingNewService) return; isAddingNewService = true; const newId = Date.now(); dbServices.unshift({ id: newId, name: "", desc: "", price: "", isNew: true }); renderTable(); editRow(newId); }        function editRow(id) { const row = document.getElementById(`row-${id}`); row.querySelectorAll('.view-mode').forEach(el => el.classList.add('hidden')); row.querySelectorAll('.edit-mode').forEach(el => el.classList.remove('hidden')); row.classList.add('bg-brand-50/30'); }        function saveRow(id) { const row = document.getElementById(`row-${id}`); const inputs = row.querySelectorAll('.edit-mode[type="text"]'); const idx = dbServices.findIndex(s => s.id === id); if(idx !== -1) { const name = inputs[0].value.trim(); if(!name) return showToast('Введите название!'); dbServices[idx].name = name; dbServices[idx].desc = inputs[1].value; dbServices[idx].price = inputs[2].value; delete dbServices[idx].isNew; } isAddingNewService = false; persistData(); renderTable(); showToast('Услуга сохранена'); }        function cancelEditRow(id) { const idx = dbServices.findIndex(s => s.id === id); if(idx !== -1 && dbServices[idx].isNew) dbServices.splice(idx, 1); isAddingNewService = false; renderTable(); }        function deleteRow(id) { if(confirm('Удалить?')) { dbServices = dbServices.filter(s => s.id !== id); persistData(); renderTable(); } }        function renderPriceFile() { const n = document.getElementById('price-file-name'); const s = document.getElementById('price-file-size'); if(dbPriceFile.exists) { n.innerText = dbPriceFile.name; s.innerText = dbPriceFile.size; n.classList.remove('text-gray-400'); } else { n.innerText = "Нет файла"; s.innerText = "—"; n.classList.add('text-gray-400'); } }        function handleFileUpload(e) { const f = e.target.files[0]; if(!f) return; dbPriceFile = { name: f.name, size: (f.size/(1024*1024)).toFixed(2)+" MB", exists: true }; localStorage.setItem('dbPriceFile', JSON.stringify(dbPriceFile)); renderPriceFile(); showToast('Загружено'); }        function deletePriceFile() { if(!dbPriceFile.exists) return; if(confirm('Удалить?')) { dbPriceFile = { name: "", size: "", exists: false }; localStorage.setItem('dbPriceFile', JSON.stringify(dbPriceFile)); renderPriceFile(); showToast('Удалено'); document.getElementById('price-file-upload').value = ''; } }        // --- РАЗДЕЛ: УСЛУГИ (КАТАЛОГ И ДЕТАЛЬНЫЕ) ---
+</tr>`).join(''); lucide.createIcons();        }        function addService() { if(isAddingNewService) return; isAddingNewService = true; const newId = Date.now(); dbServices.unshift({ id: newId, name: "", desc: "", price: "", isNew: true }); renderTable(); editRow(newId); }        function editRow(id) { const row = document.getElementById(`row-${id}`); row.querySelectorAll('.view-mode').forEach(el => el.classList.add('hidden')); row.querySelectorAll('.edit-mode').forEach(el => el.classList.remove('hidden')); row.classList.add('bg-brand-50/30'); }        function saveRow(id) { const row = document.getElementById(`row-${id}`); const inputs = row.querySelectorAll('.edit-mode[type="text"]'); const idx = dbServices.findIndex(s => s.id === id); if(idx !== -1) { const name = inputs[0].value.trim(); if(!name) return showToast('Введите название!'); dbServices[idx].name = name; dbServices[idx].desc = inputs[1].value; dbServices[idx].price = inputs[2].value; delete dbServices[idx].isNew; } isAddingNewService = false; persistData(); renderTable(); showToast('Услуга сохранена'); }        function cancelEditRow(id) { const idx = dbServices.findIndex(s => s.id === id); if(idx !== -1 && dbServices[idx].isNew) dbServices.splice(idx, 1); isAddingNewService = false; renderTable(); }        function deleteRow(id) { if(confirm('Удалить?')) { dbServices = dbServices.filter(s => s.id !== id); persistData(); renderTable(); } }
+        function renderPriceFile() {
+            const n = document.getElementById('price-file-name');
+            const s = document.getElementById('price-file-size');
+            const v = document.getElementById('price-file-view-btn');
+            if(dbPriceFile.exists) { n.innerText = dbPriceFile.name; s.innerText = dbPriceFile.size; n.classList.remove('text-gray-400'); }
+            else { n.innerText = "Нет файла"; s.innerText = "—"; n.classList.add('text-gray-400'); }
+            if(v) v.disabled = !dbPriceFile.exists;
+        }
+        function handleFileUpload(e) {
+            const f = e.target.files[0]; if(!f) return;
+            if(f.size > 4 * 1024 * 1024) { showToast('Файл слишком большой (макс. 4 МБ)'); e.target.value=''; return; }
+            const reader = new FileReader();
+            reader.onload = ev => {
+                dbPriceFile = { name: f.name, size: (f.size/(1024*1024)).toFixed(2)+" MB", exists: true, dataUrl: ev.target.result, mime: f.type };
+                try { localStorage.setItem('dbPriceFile', JSON.stringify(dbPriceFile)); }
+                catch(err) { showToast('Не удалось сохранить — переполнено локальное хранилище'); return; }
+                renderPriceFile(); showToast('Загружено');
+            };
+            reader.readAsDataURL(f);
+        }
+        function viewPriceFile() {
+            if(!dbPriceFile.exists) return;
+            if(!dbPriceFile.dataUrl) { showToast('Файл не загружен. Нажмите «Загрузить новый», чтобы добавить.'); return; }
+            const w = window.open(); if(!w) { showToast('Браузер заблокировал открытие вкладки'); return; }
+            const name = dbPriceFile.name || 'file';
+            w.document.write(`<title>${name}</title><body style="margin:0"><iframe src="${dbPriceFile.dataUrl}" style="border:0;width:100vw;height:100vh"></iframe></body>`);
+        }
+        function deletePriceFile() { if(!dbPriceFile.exists) return; if(confirm('Удалить?')) { dbPriceFile = { name: "", size: "", exists: false }; localStorage.setItem('dbPriceFile', JSON.stringify(dbPriceFile)); renderPriceFile(); showToast('Удалено'); document.getElementById('price-file-upload').value = ''; } }
+        // --- ЛАЙТБОКС ДЛЯ ПРОСМОТРА ИЗОБРАЖЕНИЙ ---
+        function openImagePreview(url) {
+            if(!url) { showToast('Нет изображения'); return; }
+            let ov = document.getElementById('admin-image-preview');
+            if(!ov) {
+                ov = document.createElement('div');
+                ov.id = 'admin-image-preview';
+                ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;z-index:9999;cursor:zoom-out;padding:24px;';
+                ov.innerHTML = '<img style="max-width:92vw;max-height:92vh;object-fit:contain;border-radius:8px;box-shadow:0 12px 40px rgba(0,0,0,.5)"><button type="button" style="position:absolute;top:16px;right:16px;background:#fff;border:none;width:40px;height:40px;border-radius:9999px;font-size:24px;cursor:pointer;line-height:1;">×</button>';
+                document.body.appendChild(ov);
+                const close = () => { ov.style.display='none'; };
+                ov.addEventListener('click', e => { if(e.target === ov || e.target.tagName === 'BUTTON') close(); });
+                document.addEventListener('keydown', e => { if(e.key === 'Escape' && ov.style.display !== 'none') close(); });
+            }
+            ov.querySelector('img').src = url;
+            ov.style.display = 'flex';
+        }
+        // --- РАЗДЕЛ: УСЛУГИ (КАТАЛОГ И ДЕТАЛЬНЫЕ) ---
         function renderCatCategories() {            document.getElementById('admin-cat-list').innerHTML = dbCatCategories.map(c => `                <div id="cat-row-${c.id}" class="flex gap-4 p-4 border border-gray-200 rounded-2xl bg-white hover:bg-gray-50 group">
 <img src="${c.img}" onerror="this.src='https://placehold.co/400x400/f3f4f6/a1a1aa?text=Ошибка+загрузки'" class="w-20 h-20 rounded-xl object-cover bg-gray-100 border border-gray-200">
 <div class="flex-1 view-mode">
@@ -1131,7 +1186,7 @@
 </button>
 </div>`).join(''); lucide.createIcons(); }        function peAddPrice() { tempEditProc.prices.push({ name: '', vol: '', time: '', cost: '' }); peRenderPrices(); } function peRemovePrice(i) { tempEditProc.prices.splice(i, 1); peRenderPrices(); }        function peRenderPricesChief() { tempEditProc.pricesChief = tempEditProc.pricesChief || []; document.getElementById('pe-prices-chief-container').innerHTML = tempEditProc.pricesChief.map((item, i) => `<div class="flex gap-3 items-start bg-gray-50 p-4 rounded-xl border border-gray-100"><div class="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"><input type="text" value="${item.name}" onkeyup="tempEditProc.pricesChief[${i}].name = this.value" class="w-full px-3 py-2 border rounded-lg outline-none focus:border-brand-600 text-sm" placeholder="Название (Препарат)"><input type="text" value="${item.vol}" onkeyup="tempEditProc.pricesChief[${i}].vol = this.value" class="w-full px-3 py-2 border rounded-lg outline-none focus:border-brand-600 text-sm" placeholder="Объем (1 мл)"><input type="text" value="${item.time}" onkeyup="tempEditProc.pricesChief[${i}].time = this.value" class="w-full px-3 py-2 border rounded-lg outline-none focus:border-brand-600 text-sm" placeholder="Время (60 мин)"><input type="text" value="${item.cost}" onkeyup="tempEditProc.pricesChief[${i}].cost = this.value" class="w-full px-3 py-2 border rounded-lg outline-none focus:border-brand-600 text-sm font-bold font-serif text-brand-600" placeholder="Цена (10 000 ₽)"></div><button onclick="peRemovePriceChief(${i})" class="text-gray-400 hover:text-red-500 bg-white border border-gray-200 p-2 rounded-lg"><i data-lucide="trash" class="w-4 h-4"></i></button></div>`).join(''); lucide.createIcons(); }        function peAddPriceChief() { tempEditProc.pricesChief = tempEditProc.pricesChief || []; tempEditProc.pricesChief.push({ name: '', vol: '', time: '', cost: '' }); peRenderPricesChief(); } function peRemovePriceChief(i) { tempEditProc.pricesChief.splice(i, 1); peRenderPricesChief(); }        // --- РАЗДЕЛ: СПЕЦИАЛИСТЫ ---
         let isAddingSpecialist = false;        function renderSpecialists() {            document.getElementById('admin-specialists-list').innerHTML = dbSpecialists.map(s => `                <div id="spec-row-${s.id}" class="flex flex-col sm:flex-row gap-6 p-6 border border-gray-200 rounded-[1.5rem] bg-white hover:bg-gray-50 group transition-all">
-<img src="${s.img}" onerror="this.src='https://placehold.co/600x600/f3f4f6/a1a1aa?text=Ошибка+загрузки'" class="w-24 h-24 sm:w-32 sm:h-32 rounded-full object-cover shrink-0 shadow-sm bg-gray-100 border-4 border-white">
+<img src="${s.img}" onerror="this.src='https://placehold.co/600x600/f3f4f6/a1a1aa?text=Ошибка+загрузки'" onclick="openImagePreview('${s.img}')" title="Просмотр фото" class="w-24 h-24 sm:w-32 sm:h-32 rounded-full object-cover shrink-0 shadow-sm bg-gray-100 border-4 border-white cursor-zoom-in hover:opacity-90 transition-opacity">
 <div class="flex-1 view-mode">
 <p class="text-2xl font-serif font-bold text-brand-900">${s.name}</p>
 <p class="text-[10px] text-brand-600 mb-4 uppercase tracking-widest font-bold">${s.role}</p>
