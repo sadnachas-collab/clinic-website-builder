@@ -1131,21 +1131,27 @@
         }
         async function handleFileUpload(e) {
             const f = e.target.files[0]; if(!f) return;
-            if(!window.sb) { showToast('Нет подключения к БД'); e.target.value=''; return; }
+            if(!window.sb) { showToast('Нет подключения к БД, попробуйте перезагрузить страницу'); e.target.value=''; return; }
             if(f.size > 20 * 1024 * 1024) { showToast('Файл слишком большой (макс. 20 МБ)'); e.target.value=''; return; }
             try {
+                showToast('Загрузка файла…');
                 const safe = (f.name || 'price').replace(/[^a-zA-Z0-9._-]+/g,'_');
                 const path = 'price/' + Date.now() + '-' + safe;
                 const { error: upErr } = await window.sb.storage.from('documents').upload(path, f, { upsert: true, contentType: f.type || 'application/octet-stream' });
                 if(upErr) throw upErr;
                 const { data: pub } = window.sb.storage.from('documents').getPublicUrl(path);
                 const url = pub && pub.publicUrl;
-                // Один актуальный прайс — чистим прежние
-                await window.sb.from('price_files').delete().not('id','is',null);
-                const { error: insErr } = await window.sb.from('price_files').insert({ title: 'Прайс-лист', file_url: url, file_name: f.name });
+                // Сначала создаём новую запись — если упадёт, старый прайс не пропадёт
+                const { data: inserted, error: insErr } = await window.sb
+                    .from('price_files')
+                    .insert({ title: 'Прайс-лист', file_url: url, file_name: f.name })
+                    .select('id')
+                    .single();
                 if(insErr) throw insErr;
-                dbPriceFile = { name: f.name, size: (f.size/(1024*1024)).toFixed(2)+' MB', exists: true, url: url, mime: f.type };
-                renderPriceFile(); showToast('Загружено');
+                // Только после успешного insert чистим остальные записи
+                await window.sb.from('price_files').delete().neq('id', inserted.id);
+                window.dbPriceFile = { name: f.name, size: (f.size/(1024*1024)).toFixed(2)+' MB', exists: true, url: url, mime: f.type };
+                renderPriceFile(); showToast('Файл загружен');
             } catch(err) {
                 console.error(err); showToast('Ошибка загрузки: ' + (err && err.message ? err.message : err));
             } finally {
