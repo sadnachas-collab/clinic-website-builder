@@ -1,43 +1,37 @@
-## План: предпросмотр отзыва + ссылки на внешние площадки
+## План: подключить FAQ к базе
 
-### 1. Кнопка «Предпросмотр» отзыва в админке
+Таблица `faq` уже есть в Supabase: `id (uuid)`, `question`, `answer`, `published`, `sort_order`, `created_at`. RLS: public read, admin write — то что нужно. Миграции не требуются.
 
-В админке (`public/clinic-admin.html`) в карточке отзыва (внутри `window.renderReviews` в bridge-блоке) добавить в `view-mode` справа кнопку с иконкой «глаз» (`lucide="eye"`) рядом с «edit-3» и «trash-2». Для новых (`isNew`) отзывов кнопку не показывать — только после сохранения.
+По образцу уже работающего bridge для отзывов (`loadReviews` / `overrideReviews` / `saveReview` / `deleteReview` в `public/clinic-admin.html`) добавить аналогичный мост для FAQ.
 
-**`previewReview(id)`** — открывает модалку (новая `<div id="review-preview-modal">`, по образцу `customConfirm`), внутри — карточка отзыва **в точности** с фронтовой вёрсткой из `public/clinic-site.html` (lines 715–741): кремовый фон, иконка `quote`, ⭐ из `r.rating`, текст в кавычках, `r.name` + `r.service` под чертой. Текст «как у клиента», кнопка «Закрыть».
+### Изменения в `public/clinic-admin.html`
 
-### 2. Ссылки Яндекс / 2GIS / ПроДокторов
+1. **`loadFaq()`** — `sb.from('faq').select('*').order('sort_order').order('created_at')`, маппинг записей в формат фронта `{ id, q: question, a: answer, published }`, запись в `window.dbMainPage.faq`, вызов `renderFaq()` и `updateDashboardStats()` (если он учитывает faq).
 
-#### Хранение
+2. **`overrideReviews`-аналог `overrideFaq()`** — обновляет `window.dbMainPage.faq` и пишет в `localStorage` через существующий `persistData` (без записи в БД — БД пишется только из save/delete).
 
-В таблице `page_content` новый ключ `review_links`, value JSON:
-```json
-{ "yandex": "https://...", "gis": "https://...", "prodoctorov": "https://..." }
-```
-Миграции не нужно — `page_content` уже есть.
+3. **Переопределение CRUD-функций FAQ** (`addFaq`, `saveFaq`, `cancelEditFaq`, `deleteFaq`) в bridge-блоке:
+   - `addFaq` — временный `tmpId` (строка), `isNew: true`, в БД не пишет до «Сохранить».
+   - `saveFaq(id)` — определяет, UUID или временный id:
+     - новый → `sb.from('faq').insert({ question, answer, published: true, sort_order: 0 }).select().single()`, заменить tmpId на полученный uuid;
+     - существующий → `sb.from('faq').update({ question, answer }).eq('id', id)`.
+     - после успешного запроса — `overrideFaq()` + `renderFaq()`.
+   - `deleteFaq(id)` — для UUID `sb.from('faq').delete().eq('id', id)`, для временного — просто splice. Подтверждение через `customConfirm`.
 
-#### Админка (`public/clinic-admin.html`)
+4. **`String(id)`** в `onclick` и `id`-атрибутах внутри `renderFaq` — для совместимости UUID и временных id (как сделано для reviews).
 
-В секции «Главная → Отзывы» (под списком отзывов, перед `addReview`) — новый блок «Ссылки на внешние площадки» с тремя полями:
-- Яндекс Карты — `https://...`
-- 2GIS — `https://...`
-- ПроДокторов — `https://...`
+5. **Bootstrap** — добавить `await loadFaq()` в существующий bootstrap-блок рядом с `await loadReviews()` / `await loadReviewLinks()`.
 
-Кнопка «Сохранить ссылки» → `sb.from('page_content').upsert({ key: 'review_links', value: {...} }, { onConflict: 'key' })`. Загрузка — в `loadReviews()` (или новой `loadReviewLinks()` в bridge), значения подставляются в инпуты.
+### Фронт (`public/clinic-site.html`)
 
-#### Фронт (`public/clinic-site.html`)
-
-Три `<button onclick="showToast(...)">` (lines 745–753) заменить на `<a id="rev-link-yandex|gis|prodoctorov" href="#" target="_blank" rel="noopener noreferrer">…</a>`. Кнопка скрыта (`hidden`), пока ссылка не загружена. В скрипте сайта, который читает `page_content` (там же, где грузятся другие тексты главной), добавить чтение ключа `review_links` и проставить `href` + снять `hidden` для непустых.
-
-Если на сайте ещё нет рантайм-загрузчика `page_content` — добавить минимальный fetch при загрузке страницы (через тот же `supabase-js`/anon, как в админке) только для этого ключа.
+Не трогаем — сайт уже читает FAQ из своего собственного списка/данных. (Если выяснится, что фронт читает faq только из захардкоженного массива, отдельным шагом можно подключить чтение из БД, но это вне текущей задачи.)
 
 ### Проверка
 
-1. Админ → Главная → Отзывы → у сохранённого отзыва видна иконка «глаз» → клик открывает модалку с фронт-вёрсткой.
-2. Под отзывами — три поля ссылок, ввод → «Сохранить» → перезагрузка → ссылки сохранились.
-3. Открыть сайт → кнопки «Яндекс Карты / 2GIS / ПроДокторов» ведут на сохранённые URL в новой вкладке.
+1. Админ → Главная → FAQ → добавить вопрос → перезагрузить → остался.
+2. Редактировать существующий вопрос → перезагрузить → изменения сохранились.
+3. Удалить вопрос → перезагрузить → удалён.
 
 ### Файлы
 
 - `public/clinic-admin.html`
-- `public/clinic-site.html`
