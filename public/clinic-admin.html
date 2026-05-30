@@ -1765,8 +1765,10 @@
                 if (!ready) {
                     ready = true;
                     overrideServices();
+                    overrideSpecialists();
                     await loadServices();
                     await loadPriceFile();
+                    await loadSpecialists();
                 }
             } catch(e){
                 console.error('[admin] bootstrap error', e);
