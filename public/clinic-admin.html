@@ -1423,9 +1423,11 @@
         }
         function deleteConsumerDocument(catId, docId){
             const cat = dbConsumer.categories.find(x => x.id === catId); if(!cat) return;
-            if(!confirm('Удалить документ?')) return;
-            cat.documents = (cat.documents || []).filter(x => x.id !== docId);
-            persistData(); renderConsumer(); showToast('Документ удалён');
+            customConfirm('Удалить документ?').then(function(ok){
+                if(!ok) return;
+                cat.documents = (cat.documents || []).filter(x => x.id !== docId);
+                persistData(); renderConsumer(); showToast('Документ удалён');
+            });
         }
         function addAuthority(){
             dbConsumer.authorities.push({ id: 'auth_' + Date.now(), name: '', address: '', phone: '' });
