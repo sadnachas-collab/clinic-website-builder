@@ -1326,6 +1326,131 @@
         window.addAuthority = addAuthority;
         window.updateAuthority = updateAuthority;
         window.deleteAuthority = deleteAuthority;
+
+        // ====== Панель форматирования (Quill) ======
+        // Подключается ко всем textarea с атрибутом data-rich="1".
+        // Whitelist: жирный, курсив, подчёркнутый, зачёркнутый,
+        // подзаголовок (H3) и крупный текст (lead), 2 акцентных цвета,
+        // списки, ссылка, очистить. Никаких px / шрифтов / выравниваний.
+        const RICH_TOOLBAR = [
+            ['bold', 'italic', 'underline', 'strike'],
+            [{ 'header': [3, false] }],
+            [{ 'color': ['#2A2522', '#746258', '#b91c1c'] }],
+            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+            ['link'],
+            ['clean']
+        ];
+        function attachRichEditor(textarea) {
+            if (!textarea || textarea.dataset.richReady === '1') return;
+            if (typeof Quill === 'undefined') return;
+            textarea.dataset.richReady = '1';
+            const size = textarea.getAttribute('data-rich-size') || '';
+            const wrap = document.createElement('div');
+            wrap.className = 'rich-wrap' + (size === 'large' ? ' large' : '');
+            const editor = document.createElement('div');
+            wrap.appendChild(editor);
+            textarea.style.display = 'none';
+            textarea.parentNode.insertBefore(wrap, textarea);
+            // Если в textarea пришёл «голый» текст без HTML — оборачиваем в <p>
+            const initial = textarea.value || '';
+            const looksLikeHtml = /<\/?[a-z][\s\S]*>/i.test(initial);
+            const quill = new Quill(editor, {
+                theme: 'snow',
+                modules: {
+                    toolbar: RICH_TOOLBAR,
+                    clipboard: { matchVisual: false }
+                },
+                formats: ['bold', 'italic', 'underline', 'strike', 'header', 'list', 'link', 'color']
+            });
+            if (initial) {
+                if (looksLikeHtml) {
+                    quill.clipboard.dangerouslyPasteHTML(initial, 'silent');
+                } else {
+                    quill.setText(initial, 'silent');
+                }
+            }
+            const sync = () => {
+                const isEmpty = quill.getText().trim().length === 0;
+                textarea.value = isEmpty ? '' : quill.root.innerHTML;
+                textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                textarea.dispatchEvent(new Event('keyup', { bubbles: true }));
+                textarea.dispatchEvent(new Event('change', { bubbles: true }));
+            };
+            quill.on('text-change', sync);
+            // финальная синхронизация на закрытии модалок и т.п.
+            textarea._richQuill = quill;
+        }
+        function attachAllRichEditors(root) {
+            const scope = root || document;
+            const list = scope.querySelectorAll('textarea[data-rich="1"]');
+            list.forEach(attachRichEditor);
+        }
+        // Хелпер: безопасно вставить отформатированный HTML в превью на сайте/в админке.
+        // Сейчас не используется здесь, но оставлен для будущей логики предпросмотра.
+        window.attachRichEditor = attachRichEditor;
+        window.attachAllRichEditors = attachAllRichEditors;
+
+        // ===== Хуки: подключаем редактор после рендера =====
+        // Главная страница
+        (function(){
+            const orig = window.renderMainPageData;
+            if (typeof orig === 'function') {
+                window.renderMainPageData = function(){
+                    orig.apply(this, arguments);
+                    attachAllRichEditors(document.getElementById('section-mainpage'));
+                };
+            }
+        })();
+        // Подвал и юр. документы
+        (function(){
+            const orig = window.renderFooterData;
+            if (typeof orig === 'function') {
+                window.renderFooterData = function(){
+                    orig.apply(this, arguments);
+                    attachAllRichEditors(document.getElementById('section-footer'));
+                };
+            }
+        })();
+        // Модалка процедуры (pe-desc)
+        (function(){
+            const orig = window.openProcEditorModal;
+            if (typeof orig === 'function') {
+                window.openProcEditorModal = function(){
+                    orig.apply(this, arguments);
+                    setTimeout(() => attachAllRichEditors(document.getElementById('proc-editor-modal')), 30);
+                };
+            }
+        })();
+        // peRenderSteps / peRenderProblems — после ре-рендера контейнеров
+        (function(){
+            ['peRenderSteps', 'peRenderProblems'].forEach(name => {
+                const orig = window[name];
+                if (typeof orig === 'function') {
+                    window[name] = function(){
+                        orig.apply(this, arguments);
+                        attachAllRichEditors(document.getElementById('proc-editor-modal'));
+                    };
+                }
+            });
+        })();
+        // FAQ / отзывы / специалисты — после переключения в режим редактирования
+        (function(){
+            ['editFaq', 'editReview', 'editSpecialist'].forEach(name => {
+                const orig = window[name];
+                if (typeof orig === 'function') {
+                    window[name] = function(){
+                        orig.apply(this, arguments);
+                        // textareas уже есть в DOM (просто скрыты), переинициализируем безопасно
+                        attachAllRichEditors(document);
+                    };
+                }
+            });
+        })();
+        // Первичная инициализация после полной загрузки (для уже видимых textarea)
+        window.addEventListener('load', () => {
+            setTimeout(() => attachAllRichEditors(document), 200);
+        });
     </script>
+
 </body>
 </html>
