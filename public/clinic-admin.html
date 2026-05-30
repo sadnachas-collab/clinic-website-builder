@@ -1383,8 +1383,20 @@
         function attachAllRichEditors(root) {
             const scope = root || document;
             const list = scope.querySelectorAll('textarea[data-rich="1"]');
-            list.forEach(attachRichEditor);
+            list.forEach(t => {
+                if (t.dataset.richReady === '1' && t._richQuill) {
+                    // Перезагрузить контент в уже инициализированный редактор
+                    const v = t.value || '';
+                    const isHtml = /<\/?[a-z][\s\S]*>/i.test(v);
+                    if (isHtml) t._richQuill.clipboard.dangerouslyPasteHTML(v, 'silent');
+                    else if (v) t._richQuill.setText(v, 'silent');
+                    else t._richQuill.setText('', 'silent');
+                } else {
+                    attachRichEditor(t);
+                }
+            });
         }
+
         // Хелпер: безопасно вставить отформатированный HTML в превью на сайте/в админке.
         // Сейчас не используется здесь, но оставлен для будущей логики предпросмотра.
         window.attachRichEditor = attachRichEditor;
