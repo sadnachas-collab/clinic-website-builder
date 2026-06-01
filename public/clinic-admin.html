@@ -1794,6 +1794,8 @@
                     await loadFaq();
                     overrideInterior();
                     await loadInterior();
+                    overrideDocs();
+                    await loadDocs();
                 }
             } catch(e){
                 console.error('[admin] bootstrap error', e);
