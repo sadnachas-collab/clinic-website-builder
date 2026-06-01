@@ -1790,6 +1790,8 @@
                     await loadReviewLinks();
                     overrideFaq();
                     await loadFaq();
+                    overrideInterior();
+                    await loadInterior();
                 }
             } catch(e){
                 console.error('[admin] bootstrap error', e);
@@ -2830,6 +2832,80 @@
             };
         }
         window.overrideFaq = overrideFaq;
+
+        // ===== ИНТЕРЬЕР (interior_photos) =====
+        async function loadInterior(){
+            const { data, error } = await sb
+                .from('interior_photos')
+                .select('id,image_url,caption,sort_order,created_at')
+                .order('sort_order', { ascending: true })
+                .order('created_at', { ascending: false });
+            if (error) { console.error(error); notify('Ошибка загрузки интерьера: '+errMsg(error)); return; }
+            const list = (data || []).map(function(r){
+                return { id: r.id, img: r.image_url, caption: r.caption || '', sort_order: r.sort_order || 0 };
+            });
+            window.dbMainPage = window.dbMainPage || {};
+            window.dbMainPage.interior = list;
+            try { window.renderInterior && window.renderInterior(); } catch(e){ console.error(e); }
+        }
+
+        function overrideInterior(){
+            window.renderInterior = function(){
+                const el = document.getElementById('admin-interior-list');
+                if (!el) return;
+                const list = (window.dbMainPage && window.dbMainPage.interior) || [];
+                el.innerHTML = list.map(function(i){
+                    const sid = String(i.id);
+                    const img = String(i.img || '').replace(/"/g, '&quot;');
+                    return '<div class="relative group aspect-square rounded-xl overflow-hidden border border-gray-200 bg-gray-50">'
+                        +   '<img src="'+img+'" onerror="this.src=\'https://placehold.co/600x600/f3f4f6/a1a1aa?text=Ошибка+загрузки\'" class="w-full h-full object-cover">'
+                        +   '<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">'
+                        +     '<button onclick="openImagePreview(\''+img+'\')" class="bg-white text-brand-700 p-2 rounded-full hover:bg-gray-100" title="Просмотр"><i data-lucide="eye" class="w-5 h-5"></i></button>'
+                        +     '<button onclick="deleteInterior(\''+sid+'\')" class="bg-red-500 text-white p-2 rounded-full hover:bg-red-600" title="Удалить"><i data-lucide="trash-2" class="w-5 h-5"></i></button>'
+                        +   '</div>'
+                        + '</div>';
+                }).join('');
+                try { lucide.createIcons(); } catch(_){}
+            };
+
+            window.addInteriorImg = async function(){
+                const url = prompt('Вставьте прямую ссылку на фото (URL).\nПоддерживаются ссылки из ВКонтакте, фотохостингов и Google Диска:');
+                if (!url) return;
+                const finalUrl = (typeof formatImageUrl === 'function') ? formatImageUrl(url) : url;
+                try {
+                    const { data, error } = await sb
+                        .from('interior_photos')
+                        .insert({ image_url: finalUrl, sort_order: 0 })
+                        .select('id,image_url,caption,sort_order')
+                        .single();
+                    if (error) throw error;
+                    window.dbMainPage = window.dbMainPage || {};
+                    window.dbMainPage.interior = window.dbMainPage.interior || [];
+                    window.dbMainPage.interior.push({ id: data.id, img: data.image_url, caption: data.caption || '', sort_order: data.sort_order || 0 });
+                    window.renderInterior();
+                    notify('Добавлено');
+                } catch(e){
+                    console.error(e);
+                    notify('Ошибка добавления: '+errMsg(e));
+                }
+            };
+
+            window.deleteInterior = async function(id){
+                const ok = await (typeof customConfirm === 'function' ? customConfirm('Удалить изображение?') : Promise.resolve(confirm('Удалить изображение?')));
+                if (!ok) return;
+                try {
+                    const { error } = await sb.from('interior_photos').delete().eq('id', id);
+                    if (error) throw error;
+                    window.dbMainPage.interior = (window.dbMainPage.interior || []).filter(function(x){ return String(x.id) !== String(id); });
+                    window.renderInterior();
+                    notify('Удалено');
+                } catch(e){
+                    console.error(e);
+                    notify('Ошибка удаления: '+errMsg(e));
+                }
+            };
+        }
+        window.overrideInterior = overrideInterior;
     })();
     </script>
 
