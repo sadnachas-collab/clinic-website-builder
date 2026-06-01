@@ -383,9 +383,10 @@
 <h2 class="text-xl font-bold text-brand-900 flex items-center gap-2">
 <i data-lucide="file-badge" class="w-6 h-6 text-brand-600">
 </i> Документы и лицензии                                </h2>
-<button type="button" onclick="addDocImg()" class="bg-brand-50 text-brand-600 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-brand-200 transition-colors flex items-center gap-1 border border-brand-200/50">
+<label for="doc-file-input" class="cursor-pointer bg-brand-50 text-brand-600 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-brand-200 transition-colors flex items-center gap-1 border border-brand-200/50">
 <i data-lucide="plus" class="w-4 h-4">
-</i> Добавить документ                                </button>
+</i> Добавить документ                                </label>
+<input type="file" id="doc-file-input" accept="image/*,application/pdf" class="hidden" onchange="if(this.files[0]){handleDocUpload(this.files[0]);} this.value='';">
 </div>
 <p class="text-sm text-gray-500 mb-6">Сюда загружаются сканы лицензий, дипломов и сертификатов клиники.</p>
 <div id="admin-docs-list" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -1793,6 +1794,8 @@
                     await loadFaq();
                     overrideInterior();
                     await loadInterior();
+                    overrideDocs();
+                    await loadDocs();
                 }
             } catch(e){
                 console.error('[admin] bootstrap error', e);
@@ -2928,6 +2931,111 @@
             };
         }
         window.overrideInterior = overrideInterior;
+
+        // ===== ДОКУМЕНТЫ КЛИНИКИ (clinic_documents) =====
+        async function loadDocs(){
+            const { data, error } = await sb
+                .from('clinic_documents')
+                .select('id,title,file_url,category,sort_order,created_at')
+                .order('sort_order', { ascending: true })
+                .order('created_at', { ascending: false });
+            if (error) { console.error(error); notify('Ошибка загрузки документов: '+errMsg(error)); return; }
+            const list = (data || []).map(function(r){
+                return { id: r.id, img: r.file_url, title: r.title || '', sort_order: r.sort_order || 0 };
+            });
+            window.dbMainPage = window.dbMainPage || {};
+            window.dbMainPage.docs = list;
+            try { if (typeof dbMainPage !== 'undefined') dbMainPage.docs = list; } catch(_){}
+            try { window.renderDocs && window.renderDocs(); } catch(e){ console.error(e); }
+        }
+
+        function overrideDocs(){
+            window.renderDocs = function(){
+                const el = document.getElementById('admin-docs-list');
+                if (!el) return;
+                const list = (window.dbMainPage && window.dbMainPage.docs) || [];
+                el.innerHTML = list.map(function(d){
+                    const sid = String(d.id);
+                    const img = String(d.img || '').replace(/"/g, '&quot;');
+                    const isPdf = /\.pdf($|\?)/i.test(img);
+                    const preview = isPdf
+                        ? '<div class="w-full h-full flex flex-col items-center justify-center bg-gray-100 text-gray-500 gap-2"><i data-lucide="file-text" class="w-12 h-12"></i><span class="text-xs font-semibold uppercase tracking-widest">PDF</span></div>'
+                        : '<img src="'+img+'" onerror="this.src=\'https://placehold.co/400x520/f3f4f6/a1a1aa?text=Ошибка+загрузки\'" class="w-full h-full object-cover">';
+                    const openBtn = isPdf
+                        ? '<a href="'+img+'" target="_blank" rel="noopener" class="bg-white text-brand-700 p-2 rounded-full hover:bg-gray-100" title="Открыть"><i data-lucide="external-link" class="w-5 h-5"></i></a>'
+                        : '<button onclick="openImagePreview(\''+img+'\')" class="bg-white text-brand-700 p-2 rounded-full hover:bg-gray-100" title="Просмотр"><i data-lucide="eye" class="w-5 h-5"></i></button>';
+                    return '<div class="relative group aspect-[1/1.3] rounded-xl overflow-hidden border border-gray-200 bg-gray-50">'
+                        +   preview
+                        +   '<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">'
+                        +     openBtn
+                        +     '<button onclick="deleteDoc(\''+sid+'\')" class="bg-red-500 text-white p-2 rounded-full hover:bg-red-600" title="Удалить"><i data-lucide="trash-2" class="w-5 h-5"></i></button>'
+                        +   '</div>'
+                        + '</div>';
+                }).join('');
+                try { lucide.createIcons(); } catch(_){}
+            };
+
+            window.addDocImg = function(){
+                const inp = document.getElementById('doc-file-input');
+                if (inp) inp.click();
+            };
+
+            window.handleDocUpload = async function(file){
+                if (!file) return;
+                const okType = (file.type && (file.type.startsWith('image/') || file.type === 'application/pdf'));
+                if (!okType) { notify('Можно загружать изображения или PDF'); return; }
+                if (file.size > 10 * 1024 * 1024) { notify('Файл больше 10 МБ — слишком тяжёлый'); return; }
+                const extMatch = (file.name || '').match(/\.([a-zA-Z0-9]+)$/);
+                const ext = (extMatch ? extMatch[1] : (file.type === 'application/pdf' ? 'pdf' : 'jpg')).toLowerCase();
+                const rand = Math.random().toString(36).slice(2, 8);
+                const path = 'clinic-docs/' + Date.now() + '-' + rand + '.' + ext;
+                notify('Загрузка документа…');
+                try {
+                    const up = await sb.storage.from('photos').upload(path, file, { cacheControl: '3600', upsert: false, contentType: file.type });
+                    if (up.error) throw up.error;
+                    const pub = sb.storage.from('photos').getPublicUrl(path);
+                    const publicUrl = pub && pub.data && pub.data.publicUrl;
+                    if (!publicUrl) throw new Error('Не удалось получить ссылку на файл');
+                    try {
+                        const { data, error } = await sb
+                            .from('clinic_documents')
+                            .insert({ title: file.name, file_url: publicUrl, sort_order: 0 })
+                            .select('id,title,file_url,sort_order')
+                            .single();
+                        if (error) throw error;
+                        window.dbMainPage = window.dbMainPage || {};
+                        window.dbMainPage.docs = window.dbMainPage.docs || [];
+                        window.dbMainPage.docs.push({ id: data.id, img: data.file_url, title: data.title || '', sort_order: data.sort_order || 0 });
+                        try { if (typeof dbMainPage !== 'undefined') dbMainPage.docs = window.dbMainPage.docs; } catch(_){}
+                        window.renderDocs();
+                        notify('Добавлено');
+                    } catch(dbErr){
+                        try { await sb.storage.from('photos').remove([path]); } catch(_){}
+                        throw dbErr;
+                    }
+                } catch(e){
+                    console.error(e);
+                    notify('Ошибка загрузки: '+errMsg(e));
+                }
+            };
+
+            window.deleteDoc = async function(id){
+                const ok = await (typeof customConfirm === 'function' ? customConfirm('Удалить документ?') : Promise.resolve(confirm('Удалить документ?')));
+                if (!ok) return;
+                try {
+                    const { error } = await sb.from('clinic_documents').delete().eq('id', id);
+                    if (error) throw error;
+                    window.dbMainPage.docs = (window.dbMainPage.docs || []).filter(function(x){ return String(x.id) !== String(id); });
+                    try { if (typeof dbMainPage !== 'undefined') dbMainPage.docs = window.dbMainPage.docs; } catch(_){}
+                    window.renderDocs();
+                    notify('Удалено');
+                } catch(e){
+                    console.error(e);
+                    notify('Ошибка удаления: '+errMsg(e));
+                }
+            };
+        }
+        window.overrideDocs = overrideDocs;
     })();
     </script>
 
