@@ -324,9 +324,10 @@
 <h2 class="text-xl font-bold text-brand-900 flex items-center gap-2">
 <i data-lucide="image" class="w-6 h-6 text-brand-600">
 </i> Фотографии интерьера (Главный слайдер)                                </h2>
-<button type="button" onclick="addInteriorImg()" class="bg-brand-50 text-brand-600 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-brand-200 transition-colors flex items-center gap-1 border border-brand-200/50">
-<i data-lucide="plus" class="w-4 h-4">
-</i> Добавить фото                                </button>
+<label for="interior-file-input" class="cursor-pointer bg-brand-50 text-brand-600 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-brand-200 transition-colors flex items-center gap-1 border border-brand-200/50">
+<i data-lucide="plus" class="w-4 h-4"></i> Добавить фото
+</label>
+<input type="file" id="interior-file-input" accept="image/*" class="hidden" onchange="if(this.files[0]){handleInteriorUpload(this.files[0]);} this.value='';">
 </div>
 <p class="text-sm text-gray-500 mb-6">Эти фотографии будут плавно сменяться на самом первом экране сайта (в главном слайдере).</p>
 <div id="admin-interior-list" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -2868,25 +2869,46 @@
                 try { lucide.createIcons(); } catch(_){}
             };
 
-            window.addInteriorImg = async function(){
-                const url = prompt('Вставьте прямую ссылку на фото (URL).\nПоддерживаются ссылки из ВКонтакте, фотохостингов и Google Диска:');
-                if (!url) return;
-                const finalUrl = (typeof formatImageUrl === 'function') ? formatImageUrl(url) : url;
+            window.addInteriorImg = function(){
+                const inp = document.getElementById('interior-file-input');
+                if (inp) inp.click();
+            };
+
+            window.handleInteriorUpload = async function(file){
+                if (!file) return;
+                if (!file.type || !file.type.startsWith('image/')) { notify('Можно загружать только изображения'); return; }
+                if (file.size > 10 * 1024 * 1024) { notify('Файл больше 10 МБ — слишком тяжёлый'); return; }
+                const extMatch = (file.name || '').match(/\.([a-zA-Z0-9]+)$/);
+                const ext = (extMatch ? extMatch[1] : 'jpg').toLowerCase();
+                const rand = Math.random().toString(36).slice(2, 8);
+                const path = 'interior/' + Date.now() + '-' + rand + '.' + ext;
+                notify('Загрузка фото…');
                 try {
-                    const { data, error } = await sb
-                        .from('interior_photos')
-                        .insert({ image_url: finalUrl, sort_order: 0 })
-                        .select('id,image_url,caption,sort_order')
-                        .single();
-                    if (error) throw error;
-                    window.dbMainPage = window.dbMainPage || {};
-                    window.dbMainPage.interior = window.dbMainPage.interior || [];
-                    window.dbMainPage.interior.push({ id: data.id, img: data.image_url, caption: data.caption || '', sort_order: data.sort_order || 0 });
-                    window.renderInterior();
-                    notify('Добавлено');
+                    const up = await sb.storage.from('photos').upload(path, file, { cacheControl: '3600', upsert: false, contentType: file.type });
+                    if (up.error) throw up.error;
+                    const pub = sb.storage.from('photos').getPublicUrl(path);
+                    const publicUrl = pub && pub.data && pub.data.publicUrl;
+                    if (!publicUrl) throw new Error('Не удалось получить ссылку на файл');
+                    try {
+                        const { data, error } = await sb
+                            .from('interior_photos')
+                            .insert({ image_url: publicUrl, sort_order: 0 })
+                            .select('id,image_url,caption,sort_order')
+                            .single();
+                        if (error) throw error;
+                        window.dbMainPage = window.dbMainPage || {};
+                        window.dbMainPage.interior = window.dbMainPage.interior || [];
+                        window.dbMainPage.interior.push({ id: data.id, img: data.image_url, caption: data.caption || '', sort_order: data.sort_order || 0 });
+                        window.renderInterior();
+                        notify('Добавлено');
+                    } catch(dbErr){
+                        // откат: удаляем осиротевший файл
+                        try { await sb.storage.from('photos').remove([path]); } catch(_){}
+                        throw dbErr;
+                    }
                 } catch(e){
                     console.error(e);
-                    notify('Ошибка добавления: '+errMsg(e));
+                    notify('Ошибка загрузки: '+errMsg(e));
                 }
             };
 

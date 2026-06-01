@@ -1,28 +1,38 @@
-## План: подключить «Интерьер клиники» к БД
+## План: загрузка фото интерьера с компьютера
 
-Таблица `interior_photos` уже есть (`id`, `image_url`, `caption`, `sort_order`, `created_at`), RLS правильный — миграции не нужны.
+Заменяем `prompt(URL)` на загрузку файла → Lovable Cloud Storage (бакет `photos`) → запись публичной ссылки в `interior_photos.image_url`.
 
-Сейчас раздел работает через `dbMainPage.interior` и `localStorage`. Подключаем по тому же мосту, что и для FAQ/отзывов, в `public/clinic-admin.html`.
+Бакет `photos` уже публичный, RLS позволяет админам `INSERT/SELECT/UPDATE/DELETE`. Миграции не нужны.
 
 ### Изменения в `public/clinic-admin.html`
 
-1. **`loadInterior()`** — `sb.from('interior_photos').select('id,image_url,caption,sort_order,created_at').order('sort_order').order('created_at')`. Маппинг в формат фронта `{ id, img: image_url, caption, sort_order }`. Запись в `window.dbMainPage.interior`, вызов `renderInterior()`.
+1. **Разметка раздела «Интерьер»** (~строка 327): кнопку `onclick="addInteriorImg()"` заменить на `<label for="interior-file-input">` с теми же стилями + скрытый `<input type="file" id="interior-file-input" accept="image/*" onchange="handleInteriorUpload(this.files[0]); this.value='';">`.
 
-2. **`overrideInterior()`** — переопределяет:
-   - `window.renderInterior` — та же разметка, что сейчас (картинка + ховер с «глаз»/«корзина»), но `id` приводим к строке (`String(i.id)`) в `onclick` для совместимости с UUID.
-   - `window.addInteriorImg` — `prompt` URL → `sb.from('interior_photos').insert({ image_url: formatImageUrl(url), sort_order: 0 }).select('id,image_url').single()` → добавить в `dbMainPage.interior` и `renderInterior()`. Ошибки через `notify`.
-   - `window.deleteInterior(id)` — `customConfirm` → `sb.from('interior_photos').delete().eq('id', id)` → удалить из массива и `renderInterior()`.
+2. **`handleInteriorUpload(file)`** (внутри `overrideInterior`):
+   - Валидация: `file.type` начинается с `image/`; размер ≤ 10 MB.
+   - Toast «Загрузка…».
+   - Путь: `interior/<Date.now()>-<rand>.<ext>`.
+   - `sb.storage.from('photos').upload(path, file, { cacheControl: '3600', upsert: false })`.
+   - `getPublicUrl(path)` → ссылка.
+   - `sb.from('interior_photos').insert({ image_url, sort_order: 0 }).select().single()` → push в `dbMainPage.interior`, `renderInterior()`, `notify('Добавлено')`.
+   - Если БД упала после успешного upload — `storage.remove([path])` (best-effort).
 
-3. **Bootstrap** — добавить `overrideInterior();` и `await loadInterior();` рядом с остальными `load*` в `DOMContentLoaded`.
+3. **`addInteriorImg`** оставляем для обратной совместимости — теперь просто кликает по скрытому инпуту.
 
-### Фронт
+4. Экспорт `window.handleInteriorUpload`.
 
-`public/clinic-site.html` пока продолжает использовать свой собственный список интерьера — не трогаем (как договорились для FAQ). Если позже понадобится — подключим отдельным шагом.
+### Не трогаем
+
+- Фронт `clinic-site.html`.
+- Удаление файла в Storage при `deleteInterior` — потом отдельным шагом.
+- Другие разделы (документы клиники, аватары, уголок потребителя) — этот же паттерн, но переделаем отдельными шагами.
 
 ### Проверка
 
-1. Админ → Главная → блок «Интерьер» → добавить фото по URL → перезагрузить → осталось.
-2. Удалить фото → перезагрузить → удалено.
+1. Админ → Главная → Интерьер → выбрать `.jpg` → toast «Добавлено», фото в сетке.
+2. Перезагрузить страницу → фото осталось.
+3. Файл лежит в бакете `photos/interior/`.
+4. Файл >10 MB → toast с ошибкой.
 
 ### Файлы
 
