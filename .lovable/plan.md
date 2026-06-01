@@ -1,22 +1,28 @@
-## План: кнопка предпросмотра FAQ
+## План: подключить «Интерьер клиники» к БД
 
-По образцу `previewReview` для отзывов добавить `previewFaq` в `public/clinic-admin.html`.
+Таблица `interior_photos` уже есть (`id`, `image_url`, `caption`, `sort_order`, `created_at`), RLS правильный — миграции не нужны.
+
+Сейчас раздел работает через `dbMainPage.interior` и `localStorage`. Подключаем по тому же мосту, что и для FAQ/отзывов, в `public/clinic-admin.html`.
 
 ### Изменения в `public/clinic-admin.html`
 
-1. **`renderFaq` (внутри `overrideFaq`)** — в блоке кнопок (рядом с «Настроить» и «Удалить») добавить кнопку «Предпросмотр» (иконка `eye`), показывается только для уже сохранённых вопросов (не для `isNew`):
-   ```
-   <button onclick="previewFaq('<id>')" title="Предпросмотр" class="text-gray-400 hover:text-brand-600 bg-white p-2 rounded-lg border border-gray-200 shadow-sm"><i data-lucide="eye" class="w-4 h-4"></i></button>
-   ```
+1. **`loadInterior()`** — `sb.from('interior_photos').select('id,image_url,caption,sort_order,created_at').order('sort_order').order('created_at')`. Маппинг в формат фронта `{ id, img: image_url, caption, sort_order }`. Запись в `window.dbMainPage.interior`, вызов `renderInterior()`.
 
-2. **`previewFaq(id)`** — открывает модалку поверх админки с тем же оформлением, что и FAQ на фронте (`public/clinic-site.html`, строки 806–867):
-   - белая карточка `rounded-[2.5rem]`, padding, бордер `#D0C0B1/20`;
-   - заголовок `font-serif` цвета `#2A2522`, иконка-кружок `chevron-down` справа в раскрытом состоянии (повёрнута), ответ — серый текст с тем же шрифтом и отступами;
-   - содержимое (`q`, `a`) берётся из текущего инпута `#faq-q-<id>` / `#faq-a-<id>`, если строка в режиме редактирования, иначе из `dbMainPage.faq`;
-   - кнопка закрытия (`x`) в правом верхнем углу + «Закрыть» снизу;
-   - после вставки вызывать `lucide.createIcons()`.
+2. **`overrideInterior()`** — переопределяет:
+   - `window.renderInterior` — та же разметка, что сейчас (картинка + ховер с «глаз»/«корзина»), но `id` приводим к строке (`String(i.id)`) в `onclick` для совместимости с UUID.
+   - `window.addInteriorImg` — `prompt` URL → `sb.from('interior_photos').insert({ image_url: formatImageUrl(url), sort_order: 0 }).select('id,image_url').single()` → добавить в `dbMainPage.interior` и `renderInterior()`. Ошибки через `notify`.
+   - `window.deleteInterior(id)` — `customConfirm` → `sb.from('interior_photos').delete().eq('id', id)` → удалить из массива и `renderInterior()`.
 
-3. Экспорт `window.previewFaq = previewFaq` (внутри `overrideFaq`).
+3. **Bootstrap** — добавить `overrideInterior();` и `await loadInterior();` рядом с остальными `load*` в `DOMContentLoaded`.
+
+### Фронт
+
+`public/clinic-site.html` пока продолжает использовать свой собственный список интерьера — не трогаем (как договорились для FAQ). Если позже понадобится — подключим отдельным шагом.
+
+### Проверка
+
+1. Админ → Главная → блок «Интерьер» → добавить фото по URL → перезагрузить → осталось.
+2. Удалить фото → перезагрузить → удалено.
 
 ### Файлы
 
