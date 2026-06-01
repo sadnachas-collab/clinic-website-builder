@@ -1790,6 +1790,8 @@
                     await loadReviewLinks();
                     overrideFaq();
                     await loadFaq();
+                    overrideInterior();
+                    await loadInterior();
                 }
             } catch(e){
                 console.error('[admin] bootstrap error', e);
