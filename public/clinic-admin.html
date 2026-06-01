@@ -383,9 +383,10 @@
 <h2 class="text-xl font-bold text-brand-900 flex items-center gap-2">
 <i data-lucide="file-badge" class="w-6 h-6 text-brand-600">
 </i> Документы и лицензии                                </h2>
-<button type="button" onclick="addDocImg()" class="bg-brand-50 text-brand-600 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-brand-200 transition-colors flex items-center gap-1 border border-brand-200/50">
+<label for="doc-file-input" class="cursor-pointer bg-brand-50 text-brand-600 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-brand-200 transition-colors flex items-center gap-1 border border-brand-200/50">
 <i data-lucide="plus" class="w-4 h-4">
-</i> Добавить документ                                </button>
+</i> Добавить документ                                </label>
+<input type="file" id="doc-file-input" accept="image/*,application/pdf" class="hidden" onchange="if(this.files[0]){handleDocUpload(this.files[0]);} this.value='';">
 </div>
 <p class="text-sm text-gray-500 mb-6">Сюда загружаются сканы лицензий, дипломов и сертификатов клиники.</p>
 <div id="admin-docs-list" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
