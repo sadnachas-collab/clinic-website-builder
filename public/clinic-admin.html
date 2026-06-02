@@ -1796,6 +1796,10 @@
                     await loadInterior();
                     overrideDocs();
                     await loadDocs();
+                    overrideCatCategories();
+                    overrideCatProcedures();
+                    await loadCatCategories();
+                    await loadCatProcedures();
                 }
             } catch(e){
                 console.error('[admin] bootstrap error', e);
