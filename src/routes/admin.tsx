@@ -6,6 +6,7 @@ import {
   createAdmin,
   deleteAdmin,
   changeOwnPassword,
+  updateAdmin,
 } from "@/lib/admins.functions";
 
 export const Route = createFileRoute("/admin")({
