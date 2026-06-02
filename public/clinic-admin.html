@@ -1431,6 +1431,7 @@
                                     <i data-lucide="file-text" class="w-5 h-5 text-brand-600 flex-shrink-0"></i>
                                     <input type="text" value="${escapeHtml(doc.name)}" placeholder="Название документа" onchange="renameConsumerDocument('${cat.id}','${doc.id}', this.value)" class="flex-1 min-w-[180px] px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:border-brand-600 focus:bg-white outline-none text-sm">
                                     <span class="text-xs text-gray-400 truncate max-w-[160px]" title="${escapeHtml(doc.fileName || '')}">${escapeHtml(doc.fileName || 'нет файла')} · ${escapeHtml(doc.fileSize || '')}</span>
+                                    ${doc.dataUrl ? `<a href="${doc.dataUrl}" target="_blank" rel="noopener" class="text-brand-600 hover:bg-brand-50 p-2 rounded-lg" title="Предпросмотр"><i data-lucide="eye" class="w-4 h-4"></i></a>` : ''}
                                     ${doc.dataUrl ? `<a href="${doc.dataUrl}" download="${escapeHtml(doc.fileName || 'document')}" class="text-brand-600 hover:bg-brand-50 p-2 rounded-lg" title="Скачать"><i data-lucide="download" class="w-4 h-4"></i></a>` : ''}
                                     <button type="button" onclick="deleteConsumerDocument('${cat.id}','${doc.id}')" class="text-red-500 hover:bg-red-50 p-2 rounded-lg" title="Удалить"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                                 </div>
@@ -1452,11 +1453,16 @@
                     auth.innerHTML = '<p class="text-sm text-gray-400 italic">Контролирующих органов пока нет.</p>';
                 } else {
                     auth.innerHTML = dbConsumer.authorities.map(a => `
-                        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center p-4 border border-gray-200 rounded-2xl bg-white">
-                            <input type="text" value="${escapeHtml(a.name)}" onchange="updateAuthority('${a.id}','name', this.value)" placeholder="Название органа" class="md:col-span-4 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:border-brand-600 focus:bg-white outline-none text-sm">
-                            <input type="text" value="${escapeHtml(a.address)}" onchange="updateAuthority('${a.id}','address', this.value)" placeholder="Адрес" class="md:col-span-4 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:border-brand-600 focus:bg-white outline-none text-sm">
-                            <input type="text" value="${escapeHtml(a.phone)}" onchange="updateAuthority('${a.id}','phone', this.value)" placeholder="Телефон" class="md:col-span-3 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:border-brand-600 focus:bg-white outline-none text-sm">
-                            <button type="button" onclick="deleteAuthority('${a.id}')" class="md:col-span-1 text-red-500 hover:bg-red-50 p-2 rounded-lg justify-self-end" title="Удалить"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center p-4 border border-gray-200 rounded-2xl bg-white" data-auth-row="${a.id}">
+                            <input type="text" value="${escapeHtml(a.name)}" data-auth-field="name" readonly placeholder="Название органа" class="auth-input md:col-span-4 px-3 py-2 bg-transparent border border-transparent rounded-lg outline-none text-sm read-only:cursor-default">
+                            <input type="text" value="${escapeHtml(a.address)}" data-auth-field="address" readonly placeholder="Адрес" class="auth-input md:col-span-4 px-3 py-2 bg-transparent border border-transparent rounded-lg outline-none text-sm read-only:cursor-default">
+                            <input type="text" value="${escapeHtml(a.phone)}" data-auth-field="phone" readonly placeholder="Телефон" class="auth-input md:col-span-2 px-3 py-2 bg-transparent border border-transparent rounded-lg outline-none text-sm read-only:cursor-default">
+                            <div class="md:col-span-2 flex items-center justify-end gap-1">
+                                <button type="button" data-auth-btn="edit" onclick="editAuthority('${a.id}')" class="text-brand-600 hover:bg-brand-50 p-2 rounded-lg" title="Редактировать"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                                <button type="button" data-auth-btn="save" onclick="saveAuthority('${a.id}')" class="text-green-600 hover:bg-green-50 p-2 rounded-lg hidden" title="Сохранить"><i data-lucide="check" class="w-4 h-4"></i></button>
+                                <button type="button" data-auth-btn="cancel" onclick="cancelEditAuthority('${a.id}')" class="text-gray-500 hover:bg-gray-100 p-2 rounded-lg hidden" title="Отмена"><i data-lucide="x" class="w-4 h-4"></i></button>
+                                <button type="button" onclick="deleteAuthority('${a.id}')" class="text-red-500 hover:bg-red-50 p-2 rounded-lg" title="Удалить"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                            </div>
                         </div>
                     `).join('');
                 }
@@ -3547,6 +3553,63 @@
         }
 
         function overrideAuthorities(){
+            function setAuthRowMode(id, editing){
+                const row = document.querySelector('[data-auth-row="'+CSS.escape(String(id))+'"]');
+                if (!row) return;
+                row.querySelectorAll('.auth-input').forEach(function(inp){
+                    if (editing) {
+                        inp.removeAttribute('readonly');
+                        inp.classList.remove('bg-transparent','border-transparent');
+                        inp.classList.add('bg-gray-50','border-gray-200','focus:border-brand-600','focus:bg-white');
+                    } else {
+                        inp.setAttribute('readonly','');
+                        inp.classList.add('bg-transparent','border-transparent');
+                        inp.classList.remove('bg-gray-50','border-gray-200','focus:border-brand-600','focus:bg-white');
+                    }
+                });
+                const editBtn = row.querySelector('[data-auth-btn="edit"]');
+                const saveBtn = row.querySelector('[data-auth-btn="save"]');
+                const cancelBtn = row.querySelector('[data-auth-btn="cancel"]');
+                if (editBtn) editBtn.classList.toggle('hidden', editing);
+                if (saveBtn) saveBtn.classList.toggle('hidden', !editing);
+                if (cancelBtn) cancelBtn.classList.toggle('hidden', !editing);
+                if (editing) {
+                    const first = row.querySelector('.auth-input');
+                    if (first) { first.focus(); first.select && first.select(); }
+                }
+            }
+
+            window.editAuthority = function(id){ setAuthRowMode(id, true); };
+
+            window.cancelEditAuthority = function(id){
+                const a = dbConsumer.authorities.find(function(x){ return String(x.id) === String(id); });
+                const row = document.querySelector('[data-auth-row="'+CSS.escape(String(id))+'"]');
+                if (a && row){
+                    row.querySelectorAll('.auth-input').forEach(function(inp){
+                        const f = inp.getAttribute('data-auth-field');
+                        inp.value = a[f] || '';
+                    });
+                }
+                setAuthRowMode(id, false);
+            };
+
+            window.saveAuthority = async function(id){
+                const a = dbConsumer.authorities.find(function(x){ return String(x.id) === String(id); });
+                const row = document.querySelector('[data-auth-row="'+CSS.escape(String(id))+'"]');
+                if (!a || !row) return;
+                const patch = {};
+                row.querySelectorAll('.auth-input').forEach(function(inp){
+                    patch[inp.getAttribute('data-auth-field')] = String(inp.value || '').trim();
+                });
+                try {
+                    const { error } = await sb.from('authorities').update(patch).eq('id', id);
+                    if (error) throw error;
+                    Object.assign(a, patch);
+                    setAuthRowMode(id, false);
+                    notify('Сохранено');
+                } catch(e){ console.error(e); notify('Ошибка: '+errMsg(e)); }
+            };
+
             window.addAuthority = async function(){
                 try {
                     const maxSort = (dbConsumer.authorities || []).reduce(function(m, a){ return Math.max(m, a.sort_order || 0); }, 0);
@@ -3556,20 +3619,11 @@
                     if (error) throw error;
                     dbConsumer.authorities.push({ id: data.id, name: '', address: '', phone: '', sort_order: data.sort_order || 0 });
                     renderConsumer();
+                    setTimeout(function(){ setAuthRowMode(data.id, true); }, 0);
                 } catch(e){ console.error(e); notify('Ошибка: '+errMsg(e)); }
             };
 
-            window.updateAuthority = async function(id, field, value){
-                const a = dbConsumer.authorities.find(function(x){ return String(x.id) === String(id); });
-                if (!a) return;
-                const v = String(value || '').trim();
-                const patch = {}; patch[field] = v;
-                try {
-                    const { error } = await sb.from('authorities').update(patch).eq('id', id);
-                    if (error) throw error;
-                    a[field] = v;
-                } catch(e){ console.error(e); notify('Ошибка: '+errMsg(e)); }
-            };
+            window.updateAuthority = function(){ /* deprecated: replaced by saveAuthority */ };
 
             window.deleteAuthority = async function(id){
                 const ok = await customConfirm('Удалить орган?', { title: 'Удаление органа' });
