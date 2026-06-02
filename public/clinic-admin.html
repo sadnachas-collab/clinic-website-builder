@@ -1800,6 +1800,10 @@
                     overrideCatProcedures();
                     await loadCatCategories();
                     await loadCatProcedures();
+                    overrideConsumer();
+                    overrideAuthorities();
+                    await Promise.all([loadConsumerData(), loadAuthorities()]);
+                    try { window.renderConsumer && window.renderConsumer(); } catch(_){}
                 }
             } catch(e){
                 console.error('[admin] bootstrap error', e);
@@ -3398,6 +3402,192 @@
             };
         }
         window.overrideCatProcedures = overrideCatProcedures;
+
+        // ============ УГОЛОК ПОТРЕБИТЕЛЯ ============
+        async function loadConsumerData(){
+            try {
+                const [catsRes, docsRes] = await Promise.all([
+                    sb.from('consumer_categories').select('id,name,sort_order,created_at').order('sort_order', { ascending: true }).order('created_at', { ascending: true }),
+                    sb.from('consumer_documents').select('id,title,file_url,category_id,sort_order,created_at').order('sort_order', { ascending: true }).order('created_at', { ascending: true })
+                ]);
+                if (catsRes.error) throw catsRes.error;
+                if (docsRes.error) throw docsRes.error;
+                const cats = (catsRes.data || []).map(function(c){
+                    return { id: c.id, title: c.name || '', icon: 'folder', documents: [] };
+                });
+                const catMap = {};
+                cats.forEach(function(c){ catMap[c.id] = c; });
+                (docsRes.data || []).forEach(function(d){
+                    const url = d.file_url || '';
+                    const fileName = url ? (url.split('/').pop().split('?')[0]) : '';
+                    const doc = { id: d.id, name: d.title || '', fileName: fileName, fileSize: '', dataUrl: url, category_id: d.category_id };
+                    if (catMap[d.category_id]) catMap[d.category_id].documents.push(doc);
+                });
+                if (!window.dbConsumer) window.dbConsumer = { categories: [], authorities: [] };
+                dbConsumer.categories = cats;
+            } catch(e){ console.error(e); notify('Ошибка загрузки уголка: '+errMsg(e)); }
+        }
+
+        function overrideConsumer(){
+            window.addConsumerCategory = async function(){
+                const title = prompt('Название новой категории:', 'Новая категория');
+                if (!title) return;
+                try {
+                    const maxSort = (dbConsumer.categories || []).reduce(function(m, c){ return Math.max(m, c.sort_order || 0); }, 0);
+                    const { data, error } = await sb.from('consumer_categories')
+                        .insert({ name: title.trim(), sort_order: maxSort + 1 })
+                        .select('id,name,sort_order').single();
+                    if (error) throw error;
+                    dbConsumer.categories.push({ id: data.id, title: data.name, icon: 'folder', documents: [] });
+                    renderConsumer();
+                    notify('Категория добавлена');
+                } catch(e){ console.error(e); notify('Ошибка: '+errMsg(e)); }
+            };
+
+            window.renameConsumerCategory = async function(catId, value){
+                const c = dbConsumer.categories.find(function(x){ return String(x.id) === String(catId); });
+                if (!c) return;
+                const name = String(value || '').trim();
+                if (!name) return;
+                try {
+                    const { error } = await sb.from('consumer_categories').update({ name: name }).eq('id', catId);
+                    if (error) throw error;
+                    c.title = name;
+                } catch(e){ console.error(e); notify('Ошибка: '+errMsg(e)); }
+            };
+
+            window.deleteConsumerCategory = async function(catId){
+                const c = dbConsumer.categories.find(function(x){ return String(x.id) === String(catId); });
+                if (!c) return;
+                const ok = await customConfirm('Удалить категорию «' + c.title + '» со всеми документами?', { title: 'Удаление категории' });
+                if (!ok) return;
+                try {
+                    await sb.from('consumer_documents').delete().eq('category_id', catId);
+                    const { error } = await sb.from('consumer_categories').delete().eq('id', catId);
+                    if (error) throw error;
+                    dbConsumer.categories = dbConsumer.categories.filter(function(x){ return String(x.id) !== String(catId); });
+                    renderConsumer();
+                    notify('Категория удалена');
+                } catch(e){ console.error(e); notify('Ошибка: '+errMsg(e)); }
+            };
+
+            window.addConsumerDocument = async function(catId, input){
+                const f = input && input.files && input.files[0];
+                if (!f) return;
+                if (f.size > 25 * 1024 * 1024) { notify('Файл больше 25 МБ'); input.value=''; return; }
+                const cat = dbConsumer.categories.find(function(x){ return String(x.id) === String(catId); });
+                if (!cat) { input.value=''; return; }
+                const extMatch = (f.name || '').match(/\.([a-zA-Z0-9]+)$/);
+                const ext = (extMatch ? extMatch[1] : 'bin').toLowerCase();
+                const rand = Math.random().toString(36).slice(2, 8);
+                const path = 'consumer/' + Date.now() + '-' + rand + '.' + ext;
+                notify('Загрузка документа…');
+                try {
+                    const up = await sb.storage.from('documents').upload(path, f, { cacheControl: '3600', upsert: false, contentType: f.type || 'application/octet-stream' });
+                    if (up.error) throw up.error;
+                    const pub = sb.storage.from('documents').getPublicUrl(path);
+                    const publicUrl = pub && pub.data && pub.data.publicUrl;
+                    if (!publicUrl) throw new Error('Не удалось получить ссылку');
+                    const title = f.name.replace(/\.[^.]+$/, '');
+                    const maxSort = (cat.documents || []).reduce(function(m, d){ return Math.max(m, d.sort_order || 0); }, 0);
+                    const { data, error } = await sb.from('consumer_documents')
+                        .insert({ title: title, file_url: publicUrl, category_id: catId, sort_order: maxSort + 1 })
+                        .select('id,title,file_url,category_id').single();
+                    if (error) throw error;
+                    cat.documents = cat.documents || [];
+                    cat.documents.push({ id: data.id, name: data.title, fileName: f.name, fileSize: formatBytes(f.size), dataUrl: data.file_url, category_id: catId });
+                    renderConsumer();
+                    notify('Документ загружен');
+                } catch(e){ console.error(e); notify('Ошибка загрузки: '+errMsg(e)); }
+                finally { input.value = ''; }
+            };
+
+            window.renameConsumerDocument = async function(catId, docId, value){
+                const cat = dbConsumer.categories.find(function(x){ return String(x.id) === String(catId); });
+                if (!cat) return;
+                const d = (cat.documents || []).find(function(x){ return String(x.id) === String(docId); });
+                if (!d) return;
+                const title = String(value || '').trim();
+                if (!title) return;
+                try {
+                    const { error } = await sb.from('consumer_documents').update({ title: title }).eq('id', docId);
+                    if (error) throw error;
+                    d.name = title;
+                } catch(e){ console.error(e); notify('Ошибка: '+errMsg(e)); }
+            };
+
+            window.deleteConsumerDocument = async function(catId, docId){
+                const ok = await customConfirm('Удалить документ?');
+                if (!ok) return;
+                const cat = dbConsumer.categories.find(function(x){ return String(x.id) === String(catId); });
+                if (!cat) return;
+                try {
+                    const { error } = await sb.from('consumer_documents').delete().eq('id', docId);
+                    if (error) throw error;
+                    cat.documents = (cat.documents || []).filter(function(x){ return String(x.id) !== String(docId); });
+                    renderConsumer();
+                    notify('Документ удалён');
+                } catch(e){ console.error(e); notify('Ошибка: '+errMsg(e)); }
+            };
+        }
+
+        // ============ НАДЗОРНЫЕ ОРГАНЫ ============
+        async function loadAuthorities(){
+            try {
+                const { data, error } = await sb.from('authorities')
+                    .select('id,name,address,phone,sort_order,created_at')
+                    .order('sort_order', { ascending: true })
+                    .order('created_at', { ascending: true });
+                if (error) throw error;
+                if (!window.dbConsumer) window.dbConsumer = { categories: [], authorities: [] };
+                dbConsumer.authorities = (data || []).map(function(a){
+                    return { id: a.id, name: a.name || '', address: a.address || '', phone: a.phone || '', sort_order: a.sort_order || 0 };
+                });
+            } catch(e){ console.error(e); notify('Ошибка загрузки органов: '+errMsg(e)); }
+        }
+
+        function overrideAuthorities(){
+            window.addAuthority = async function(){
+                try {
+                    const maxSort = (dbConsumer.authorities || []).reduce(function(m, a){ return Math.max(m, a.sort_order || 0); }, 0);
+                    const { data, error } = await sb.from('authorities')
+                        .insert({ name: '', address: '', phone: '', sort_order: maxSort + 1 })
+                        .select('id,name,address,phone,sort_order').single();
+                    if (error) throw error;
+                    dbConsumer.authorities.push({ id: data.id, name: '', address: '', phone: '', sort_order: data.sort_order || 0 });
+                    renderConsumer();
+                } catch(e){ console.error(e); notify('Ошибка: '+errMsg(e)); }
+            };
+
+            window.updateAuthority = async function(id, field, value){
+                const a = dbConsumer.authorities.find(function(x){ return String(x.id) === String(id); });
+                if (!a) return;
+                const v = String(value || '').trim();
+                const patch = {}; patch[field] = v;
+                try {
+                    const { error } = await sb.from('authorities').update(patch).eq('id', id);
+                    if (error) throw error;
+                    a[field] = v;
+                } catch(e){ console.error(e); notify('Ошибка: '+errMsg(e)); }
+            };
+
+            window.deleteAuthority = async function(id){
+                const ok = await customConfirm('Удалить орган?', { title: 'Удаление органа' });
+                if (!ok) return;
+                try {
+                    const { error } = await sb.from('authorities').delete().eq('id', id);
+                    if (error) throw error;
+                    dbConsumer.authorities = dbConsumer.authorities.filter(function(x){ return String(x.id) !== String(id); });
+                    renderConsumer();
+                    notify('Удалено');
+                } catch(e){ console.error(e); notify('Ошибка: '+errMsg(e)); }
+            };
+
+            window.saveAuthorities = function(){
+                if (document.activeElement && typeof document.activeElement.blur === 'function') document.activeElement.blur();
+                notify('Сохранено');
+            };
+        }
     })();
     </script>
 
