@@ -440,6 +440,7 @@
     (pc.data || []).forEach(function (row) { pcMap[row.key] = row.value || {}; });
     var mainTexts = pcMap.main_texts || {};
     var footerCfg = pcMap.footer || {};
+    var aboutDoctor = pcMap.home_about_doctor || {};
 
     try { renderHero(interior.data, mainTexts); } catch (e) { console.error('[site] hero', e); }
     try { renderPromos(promos.data); } catch (e) { console.error('[site] promos', e); }
