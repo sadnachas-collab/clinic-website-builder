@@ -1808,8 +1808,10 @@
                     await loadCatProcedures();
                     overrideConsumer();
                     overrideAuthorities();
-                    await Promise.all([loadConsumerData(), loadAuthorities()]);
+                    overrideFooter();
+                    await Promise.all([loadConsumerData(), loadAuthorities(), loadFooterFromCloud()]);
                     try { window.renderConsumer && window.renderConsumer(); } catch(_){}
+                    try { window.renderFooterData && window.renderFooterData(); } catch(_){}
                 }
             } catch(e){
                 console.error('[admin] bootstrap error', e);
