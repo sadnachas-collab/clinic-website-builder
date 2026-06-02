@@ -368,7 +368,35 @@
     if (nameEl && v.name) nameEl.textContent = v.name;
     if (roleEl && v.role) roleEl.textContent = v.role;
     if (avatarEl && v.avatar) avatarEl.src = v.avatar;
-    if (photoEl && v.photo) photoEl.src = v.photo;
+    var video = v.video || '';
+    if (photoEl) {
+      var wantVideoPreview = !v.photo && !!video;
+      var isVideoNode = photoEl.tagName === 'VIDEO';
+      if (wantVideoPreview && !isVideoNode) {
+        var vid = document.createElement('video');
+        vid.id = 'about-doctor-photo';
+        vid.className = photoEl.className;
+        vid.muted = true;
+        vid.playsInline = true;
+        vid.setAttribute('playsinline', '');
+        vid.preload = 'metadata';
+        vid.src = video + '#t=0.5';
+        photoEl.parentNode.replaceChild(vid, photoEl);
+        photoEl = vid;
+      } else if (!wantVideoPreview && isVideoNode) {
+        var img = document.createElement('img');
+        img.id = 'about-doctor-photo';
+        img.className = photoEl.className;
+        img.alt = 'Врач';
+        img.src = v.photo || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'/>";
+        photoEl.parentNode.replaceChild(img, photoEl);
+        photoEl = img;
+      } else if (wantVideoPreview && isVideoNode) {
+        photoEl.src = video + '#t=0.5';
+      } else if (v.photo) {
+        photoEl.src = v.photo;
+      }
+    }
 
     var video = v.video || '';
     window.__aboutDoctorVideo = video;
