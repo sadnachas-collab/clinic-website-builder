@@ -1431,6 +1431,7 @@
                                     <i data-lucide="file-text" class="w-5 h-5 text-brand-600 flex-shrink-0"></i>
                                     <input type="text" value="${escapeHtml(doc.name)}" placeholder="Название документа" onchange="renameConsumerDocument('${cat.id}','${doc.id}', this.value)" class="flex-1 min-w-[180px] px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:border-brand-600 focus:bg-white outline-none text-sm">
                                     <span class="text-xs text-gray-400 truncate max-w-[160px]" title="${escapeHtml(doc.fileName || '')}">${escapeHtml(doc.fileName || 'нет файла')} · ${escapeHtml(doc.fileSize || '')}</span>
+                                    ${doc.dataUrl ? `<a href="${doc.dataUrl}" target="_blank" rel="noopener" class="text-brand-600 hover:bg-brand-50 p-2 rounded-lg" title="Предпросмотр"><i data-lucide="eye" class="w-4 h-4"></i></a>` : ''}
                                     ${doc.dataUrl ? `<a href="${doc.dataUrl}" download="${escapeHtml(doc.fileName || 'document')}" class="text-brand-600 hover:bg-brand-50 p-2 rounded-lg" title="Скачать"><i data-lucide="download" class="w-4 h-4"></i></a>` : ''}
                                     <button type="button" onclick="deleteConsumerDocument('${cat.id}','${doc.id}')" class="text-red-500 hover:bg-red-50 p-2 rounded-lg" title="Удалить"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                                 </div>
