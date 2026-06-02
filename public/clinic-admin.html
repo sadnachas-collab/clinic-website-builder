@@ -3321,6 +3321,8 @@
                     if (!publicUrl) throw new Error('Не удалось получить ссылку');
                     const input = document.getElementById('pe-img');
                     if (input) input.value = publicUrl;
+                    if (window.tempEditProc) window.tempEditProc.img = publicUrl;
+                    updateProcPreview(publicUrl);
                     notify('Фото загружено');
                 } catch(e){ console.error(e); notify('Ошибка загрузки: '+errMsg(e)); }
             };
