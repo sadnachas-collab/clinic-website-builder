@@ -3553,6 +3553,63 @@
         }
 
         function overrideAuthorities(){
+            function setAuthRowMode(id, editing){
+                const row = document.querySelector('[data-auth-row="'+CSS.escape(String(id))+'"]');
+                if (!row) return;
+                row.querySelectorAll('.auth-input').forEach(function(inp){
+                    if (editing) {
+                        inp.removeAttribute('readonly');
+                        inp.classList.remove('bg-transparent','border-transparent');
+                        inp.classList.add('bg-gray-50','border-gray-200','focus:border-brand-600','focus:bg-white');
+                    } else {
+                        inp.setAttribute('readonly','');
+                        inp.classList.add('bg-transparent','border-transparent');
+                        inp.classList.remove('bg-gray-50','border-gray-200','focus:border-brand-600','focus:bg-white');
+                    }
+                });
+                const editBtn = row.querySelector('[data-auth-btn="edit"]');
+                const saveBtn = row.querySelector('[data-auth-btn="save"]');
+                const cancelBtn = row.querySelector('[data-auth-btn="cancel"]');
+                if (editBtn) editBtn.classList.toggle('hidden', editing);
+                if (saveBtn) saveBtn.classList.toggle('hidden', !editing);
+                if (cancelBtn) cancelBtn.classList.toggle('hidden', !editing);
+                if (editing) {
+                    const first = row.querySelector('.auth-input');
+                    if (first) { first.focus(); first.select && first.select(); }
+                }
+            }
+
+            window.editAuthority = function(id){ setAuthRowMode(id, true); };
+
+            window.cancelEditAuthority = function(id){
+                const a = dbConsumer.authorities.find(function(x){ return String(x.id) === String(id); });
+                const row = document.querySelector('[data-auth-row="'+CSS.escape(String(id))+'"]');
+                if (a && row){
+                    row.querySelectorAll('.auth-input').forEach(function(inp){
+                        const f = inp.getAttribute('data-auth-field');
+                        inp.value = a[f] || '';
+                    });
+                }
+                setAuthRowMode(id, false);
+            };
+
+            window.saveAuthority = async function(id){
+                const a = dbConsumer.authorities.find(function(x){ return String(x.id) === String(id); });
+                const row = document.querySelector('[data-auth-row="'+CSS.escape(String(id))+'"]');
+                if (!a || !row) return;
+                const patch = {};
+                row.querySelectorAll('.auth-input').forEach(function(inp){
+                    patch[inp.getAttribute('data-auth-field')] = String(inp.value || '').trim();
+                });
+                try {
+                    const { error } = await sb.from('authorities').update(patch).eq('id', id);
+                    if (error) throw error;
+                    Object.assign(a, patch);
+                    setAuthRowMode(id, false);
+                    notify('Сохранено');
+                } catch(e){ console.error(e); notify('Ошибка: '+errMsg(e)); }
+            };
+
             window.addAuthority = async function(){
                 try {
                     const maxSort = (dbConsumer.authorities || []).reduce(function(m, a){ return Math.max(m, a.sort_order || 0); }, 0);
@@ -3562,20 +3619,11 @@
                     if (error) throw error;
                     dbConsumer.authorities.push({ id: data.id, name: '', address: '', phone: '', sort_order: data.sort_order || 0 });
                     renderConsumer();
+                    setTimeout(function(){ setAuthRowMode(data.id, true); }, 0);
                 } catch(e){ console.error(e); notify('Ошибка: '+errMsg(e)); }
             };
 
-            window.updateAuthority = async function(id, field, value){
-                const a = dbConsumer.authorities.find(function(x){ return String(x.id) === String(id); });
-                if (!a) return;
-                const v = String(value || '').trim();
-                const patch = {}; patch[field] = v;
-                try {
-                    const { error } = await sb.from('authorities').update(patch).eq('id', id);
-                    if (error) throw error;
-                    a[field] = v;
-                } catch(e){ console.error(e); notify('Ошибка: '+errMsg(e)); }
-            };
+            window.updateAuthority = function(){ /* deprecated: replaced by saveAuthority */ };
 
             window.deleteAuthority = async function(id){
                 const ok = await customConfirm('Удалить орган?', { title: 'Удаление органа' });
