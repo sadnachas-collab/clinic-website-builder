@@ -2200,6 +2200,63 @@
             };
         }
 
+        // ===== ПОДВАЛ (page_content key='footer') =====
+        async function loadFooterFromCloud(){
+            try {
+                const { data, error } = await sb
+                    .from('page_content')
+                    .select('value')
+                    .eq('key', 'footer')
+                    .maybeSingle();
+                if (error) throw error;
+                if (data && data.value && typeof data.value === 'object') {
+                    dbFooter = Object.assign({}, dbFooter, data.value);
+                    window.dbFooter = dbFooter;
+                } else {
+                    await sb.from('page_content').upsert({ key: 'footer', value: dbFooter }, { onConflict: 'key' });
+                }
+            } catch(e){
+                console.error('[footer] load', e);
+                notify('Ошибка загрузки подвала: ' + errMsg(e));
+            }
+        }
+
+        function overrideFooter(){
+            window.saveFooterData = async function(){
+                const getVal = function(id){ const el = document.getElementById(id); return el ? el.value : ''; };
+                const patch = {
+                    shortDesc:     getVal('ft-desc'),
+                    companyName:   getVal('ft-company'),
+                    ogrn:          getVal('ft-ogrn'),
+                    license:       getVal('ft-license'),
+                    copyright:     getVal('ft-copyright'),
+                    warning:       getVal('ft-warning'),
+                    rknNotice:     getVal('ft-rkn'),
+                    dpoName:       getVal('ft-dpo-name'),
+                    dpoEmail:      getVal('ft-dpo-email'),
+                    legalAddress:  getVal('ft-legal-addr'),
+                    licenseIssuer: getVal('ft-license-issuer'),
+                    policyText:    getVal('ft-policy'),
+                    termsText:     getVal('ft-terms'),
+                    consentText:   getVal('ft-consent')
+                };
+                const next = Object.assign({}, dbFooter, patch);
+                try {
+                    const { error } = await sb
+                        .from('page_content')
+                        .upsert({ key: 'footer', value: next }, { onConflict: 'key' });
+                    if (error) throw error;
+                    dbFooter = next;
+                    window.dbFooter = dbFooter;
+                    try { window.persistData && window.persistData(); } catch(_){}
+                    notify('Подвал сохранён');
+                } catch(e){
+                    console.error('[footer] save', e);
+                    notify('Ошибка сохранения подвала: ' + errMsg(e));
+                }
+            };
+        }
+
         // ===== АКЦИИ (promos) =====
         function splitBadgeDesc(description){
             const s = String(description == null ? '' : description);
