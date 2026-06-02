@@ -6,6 +6,7 @@ import {
   createAdmin,
   deleteAdmin,
   changeOwnPassword,
+  updateAdmin,
 } from "@/lib/admins.functions";
 
 export const Route = createFileRoute("/admin")({
@@ -101,6 +102,8 @@ function Admin() {
             result = await createAdmin({ data: payload as never });
           } else if (action === "deleteAdmin") {
             result = await deleteAdmin({ data: payload as never });
+          } else if (action === "updateAdmin") {
+            result = await updateAdmin({ data: payload as never });
           } else if (action === "changeOwnPassword") {
             result = await changeOwnPassword({ data: payload as never });
           } else {
