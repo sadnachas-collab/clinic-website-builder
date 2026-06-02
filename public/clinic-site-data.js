@@ -398,7 +398,6 @@
       }
     }
 
-    var video = v.video || '';
     window.__aboutDoctorVideo = video;
     if (playEl) {
       if (video) playEl.classList.remove('hidden');
