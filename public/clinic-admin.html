@@ -3701,8 +3701,164 @@
                 notify('Сохранено');
             };
         }
+
+        // ===== Parent RPC bridge (для серверных функций createServerFn) =====
+        const rpcPending = new Map();
+        function parentRpc(action, payload){
+            return new Promise(function(resolve, reject){
+                const requestId = 'rpc_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+                rpcPending.set(requestId, { resolve: resolve, reject: reject });
+                try {
+                    window.parent.postMessage({ type: 'admin-rpc-call', requestId: requestId, action: action, payload: payload || {} }, window.location.origin);
+                } catch(e){ rpcPending.delete(requestId); reject(e); return; }
+                setTimeout(function(){
+                    if (rpcPending.has(requestId)) { rpcPending.delete(requestId); reject(new Error('RPC timeout: '+action)); }
+                }, 20000);
+            });
+        }
+        window.addEventListener('message', function(e){
+            if (e.origin !== window.location.origin) return;
+            const m = e.data;
+            if (!m || m.type !== 'admin-rpc-result' || !m.requestId) return;
+            const p = rpcPending.get(m.requestId);
+            if (!p) return;
+            rpcPending.delete(m.requestId);
+            if (m.ok) p.resolve(m.data); else p.reject(new Error(m.error || 'RPC error'));
+        });
+
+        // ===== РАЗДЕЛ: ДОСТУПЫ АДМИНОВ =====
+        function mapAdminFromCloud(a){
+            const isOwner = (a.roles || []).indexOf('owner') !== -1;
+            return {
+                id: a.user_id,
+                name: a.display_name || a.login,
+                login: a.login,
+                role: isOwner ? 'Владелец' : 'Редактор',
+                isOwner: isOwner
+            };
+        }
+        async function loadAdmins(){
+            try {
+                const list = await parentRpc('listAdmins');
+                window.dbAdmins = (list || []).map(mapAdminFromCloud);
+                const me = (await sb.auth.getUser()).data.user;
+                window.__currentAdminUserId = me ? me.id : null;
+                if (typeof renderAdmins === 'function') renderAdmins();
+            } catch(e){ console.error(e); notify('Ошибка загрузки админов: '+errMsg(e)); }
+        }
+        function overrideAdmins(){
+            let isAddingAdmin = false;
+
+            window.renderAdmins = function(){
+                const host = document.getElementById('admin-users-list');
+                if (!host) return;
+                const meId = window.__currentAdminUserId;
+                host.innerHTML = (window.dbAdmins || []).map(function(a){
+                    const isMe = String(a.id) === String(meId);
+                    const canDelete = !a.isOwner && !isMe;
+                    return ''
+                        + '<div id="admin-row-'+CSS.escape(String(a.id))+'" class="flex flex-col gap-4 p-5 border rounded-2xl '+(a.isOwner ? 'bg-brand-50/30 border-brand-200' : 'bg-white hover:bg-gray-50')+' shadow-sm transition-all group">'
+                        + '<div class="flex justify-between items-center view-mode">'
+                        + '<div class="flex items-center gap-4">'
+                        + '<div class="w-12 h-12 rounded-full '+(a.isOwner ? 'bg-brand-600 text-white shadow-md' : 'bg-gray-100 text-gray-500 border border-gray-200')+' flex items-center justify-center shrink-0">'
+                        + (a.isOwner ? '<i data-lucide="crown" class="w-6 h-6"></i>' : '<i data-lucide="user" class="w-6 h-6"></i>')
+                        + '</div>'
+                        + '<div>'
+                        + '<p class="font-bold text-brand-900 text-lg">'+escapeHtml(a.name)
+                        + (a.isOwner ? ' <span class="ml-2 text-[9px] font-bold text-[#746258] uppercase tracking-widest border border-[#746258] px-2 py-0.5 rounded-full bg-white align-middle">Владелец</span>' : '')
+                        + (isMe ? ' <span class="ml-2 text-[9px] font-bold text-green-700 uppercase tracking-widest border border-green-300 px-2 py-0.5 rounded-full bg-green-50 align-middle">Это вы</span>' : '')
+                        + '</p>'
+                        + '<p class="text-sm text-gray-500">'+escapeHtml(a.role)+' · '+escapeHtml(a.login)+'</p>'
+                        + '</div></div>'
+                        + '<div class="flex gap-2">'
+                        + (isMe ? '<button onclick="changeMyPassword()" class="text-gray-400 hover:text-brand-600 p-2.5 border rounded-xl bg-white shadow-sm transition-colors" title="Сменить мой пароль"><i data-lucide="key-round" class="w-5 h-5"></i></button>' : '')
+                        + (canDelete ? '<button onclick="deleteAdmin(\''+String(a.id).replace(/\'/g,"\\'")+'\')" class="text-gray-400 hover:text-red-500 p-2.5 border rounded-xl bg-white shadow-sm transition-colors"><i data-lucide="trash-2" class="w-5 h-5"></i></button>' : '')
+                        + '</div></div>'
+                        + (a.isNew ? (
+                              '<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2 border-t border-gray-100 pt-5">'
+                            + '<div><label class="block text-[10px] font-bold uppercase text-gray-500 mb-1">Отображаемое имя</label>'
+                            + '<input type="text" id="adm-name-'+CSS.escape(String(a.id))+'" value="" placeholder="Иван Иванов" class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:border-brand-600"></div>'
+                            + '<div><label class="block text-[10px] font-bold uppercase text-gray-500 mb-1">Роль</label>'
+                            + '<select id="adm-role-'+CSS.escape(String(a.id))+'" class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:border-brand-600 bg-white">'
+                            + '<option value="editor">Редактор</option><option value="owner">Владелец</option></select></div>'
+                            + '<div><label class="block text-[10px] font-bold uppercase text-brand-600 mb-1">Логин (латиница)</label>'
+                            + '<input type="text" id="adm-login-'+CSS.escape(String(a.id))+'" value="" placeholder="ivanov" class="w-full px-3 py-2 border border-brand-200 bg-brand-50/50 rounded-lg text-sm outline-none focus:border-brand-600"></div>'
+                            + '<div><label class="block text-[10px] font-bold uppercase text-brand-600 mb-1">Пароль (мин. 6)</label>'
+                            + '<input type="text" id="adm-pwd-'+CSS.escape(String(a.id))+'" value="" class="w-full px-3 py-2 border border-brand-200 bg-brand-50/50 rounded-lg text-sm outline-none focus:border-brand-600"></div>'
+                            + '<div class="sm:col-span-2 flex justify-end gap-3 mt-2">'
+                            + '<button onclick="cancelEditAdmin(\''+String(a.id)+'\')" class="px-6 py-3 border rounded-xl text-xs uppercase tracking-widest font-bold text-gray-600 hover:bg-gray-50 transition-colors">Отмена</button>'
+                            + '<button onclick="saveAdmin(\''+String(a.id)+'\')" class="px-6 py-3 bg-green-600 text-white rounded-xl text-xs uppercase tracking-widest font-bold shadow-md hover:bg-green-700 transition-colors">Создать</button>'
+                            + '</div></div>'
+                        ) : '')
+                        + '</div>';
+                }).join('');
+                try { lucide.createIcons(); } catch(_){}
+            };
+
+            window.addAdmin = function(){
+                if (isAddingAdmin) return;
+                isAddingAdmin = true;
+                const tmpId = 'new_' + Date.now();
+                (window.dbAdmins = window.dbAdmins || []).push({ id: tmpId, name: '', role: 'Редактор', login: '', isOwner: false, isNew: true });
+                window.renderAdmins();
+            };
+
+            window.editAdmin = function(){ /* существующих не редактируем — оставляем только создание/удаление/смену своего пароля */ };
+
+            window.cancelEditAdmin = function(id){
+                window.dbAdmins = (window.dbAdmins || []).filter(function(x){ return String(x.id) !== String(id); });
+                isAddingAdmin = false;
+                window.renderAdmins();
+            };
+
+            window.saveAdmin = async function(id){
+                const name = (document.getElementById('adm-name-'+id) || {}).value;
+                const login = (document.getElementById('adm-login-'+id) || {}).value;
+                const pwd = (document.getElementById('adm-pwd-'+id) || {}).value;
+                const role = (document.getElementById('adm-role-'+id) || {}).value;
+                const n = (name || '').trim();
+                const l = (login || '').trim();
+                const p = (pwd || '').trim();
+                if (!l || !p) return notify('Логин и пароль обязательны');
+                if (!/^[a-zA-Z0-9_-]{2,50}$/.test(l)) return notify('Логин: только латиница, цифры, _ и -');
+                if (p.length < 6) return notify('Пароль минимум 6 символов');
+                try {
+                    await parentRpc('createAdmin', { login: l, password: p, role: role === 'owner' ? 'owner' : 'editor', displayName: n || l });
+                    isAddingAdmin = false;
+                    notify('Админ создан');
+                    await loadAdmins();
+                } catch(e){ console.error(e); notify('Ошибка: '+errMsg(e)); }
+            };
+
+            window.deleteAdmin = async function(id){
+                const ok = await customConfirm('Закрыть доступ для этого пользователя?', { title: 'Закрытие доступа', okText: 'Закрыть доступ' });
+                if (!ok) return;
+                try {
+                    await parentRpc('deleteAdmin', { userId: String(id) });
+                    notify('Доступ закрыт');
+                    await loadAdmins();
+                } catch(e){ console.error(e); notify('Ошибка: '+errMsg(e)); }
+            };
+
+            window.changeMyPassword = async function(){
+                const np = window.prompt('Новый пароль (мин. 6 символов):', '');
+                if (np === null) return;
+                const p = String(np).trim();
+                if (p.length < 6) return notify('Пароль минимум 6 символов');
+                try {
+                    await parentRpc('changeOwnPassword', { newPassword: p });
+                    notify('Пароль обновлён');
+                } catch(e){ console.error(e); notify('Ошибка: '+errMsg(e)); }
+            };
+        }
+        window.overrideAdmins = overrideAdmins;
+        window.loadAdmins = loadAdmins;
     })();
     </script>
+
+</body>
+
+</html>
 
 </body>
 
