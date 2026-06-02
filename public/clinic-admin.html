@@ -3122,6 +3122,13 @@
                     if (!publicUrl) throw new Error('Не удалось получить ссылку');
                     const input = document.getElementById('cat-img-'+id);
                     if (input) input.value = publicUrl;
+                    const c = (window.dbCatCategories || []).find(function(x){ return String(x.id) === String(id); });
+                    if (c) c.img = publicUrl;
+                    const row = document.getElementById('cat-row-'+id);
+                    if (row) {
+                        const imgEl = row.querySelector('img');
+                        if (imgEl) imgEl.src = publicUrl + (publicUrl.indexOf('?') === -1 ? '?t=' : '&t=') + Date.now();
+                    }
                     notify('Фото загружено. Нажмите «Сохранить»');
                 } catch(e){ console.error(e); notify('Ошибка загрузки: '+errMsg(e)); }
             };
