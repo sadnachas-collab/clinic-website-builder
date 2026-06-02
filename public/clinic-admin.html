@@ -1453,11 +1453,16 @@
                     auth.innerHTML = '<p class="text-sm text-gray-400 italic">Контролирующих органов пока нет.</p>';
                 } else {
                     auth.innerHTML = dbConsumer.authorities.map(a => `
-                        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center p-4 border border-gray-200 rounded-2xl bg-white">
-                            <input type="text" value="${escapeHtml(a.name)}" onchange="updateAuthority('${a.id}','name', this.value)" placeholder="Название органа" class="md:col-span-4 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:border-brand-600 focus:bg-white outline-none text-sm">
-                            <input type="text" value="${escapeHtml(a.address)}" onchange="updateAuthority('${a.id}','address', this.value)" placeholder="Адрес" class="md:col-span-4 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:border-brand-600 focus:bg-white outline-none text-sm">
-                            <input type="text" value="${escapeHtml(a.phone)}" onchange="updateAuthority('${a.id}','phone', this.value)" placeholder="Телефон" class="md:col-span-3 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:border-brand-600 focus:bg-white outline-none text-sm">
-                            <button type="button" onclick="deleteAuthority('${a.id}')" class="md:col-span-1 text-red-500 hover:bg-red-50 p-2 rounded-lg justify-self-end" title="Удалить"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center p-4 border border-gray-200 rounded-2xl bg-white" data-auth-row="${a.id}">
+                            <input type="text" value="${escapeHtml(a.name)}" data-auth-field="name" readonly placeholder="Название органа" class="auth-input md:col-span-4 px-3 py-2 bg-transparent border border-transparent rounded-lg outline-none text-sm read-only:cursor-default">
+                            <input type="text" value="${escapeHtml(a.address)}" data-auth-field="address" readonly placeholder="Адрес" class="auth-input md:col-span-4 px-3 py-2 bg-transparent border border-transparent rounded-lg outline-none text-sm read-only:cursor-default">
+                            <input type="text" value="${escapeHtml(a.phone)}" data-auth-field="phone" readonly placeholder="Телефон" class="auth-input md:col-span-2 px-3 py-2 bg-transparent border border-transparent rounded-lg outline-none text-sm read-only:cursor-default">
+                            <div class="md:col-span-2 flex items-center justify-end gap-1">
+                                <button type="button" data-auth-btn="edit" onclick="editAuthority('${a.id}')" class="text-brand-600 hover:bg-brand-50 p-2 rounded-lg" title="Редактировать"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                                <button type="button" data-auth-btn="save" onclick="saveAuthority('${a.id}')" class="text-green-600 hover:bg-green-50 p-2 rounded-lg hidden" title="Сохранить"><i data-lucide="check" class="w-4 h-4"></i></button>
+                                <button type="button" data-auth-btn="cancel" onclick="cancelEditAuthority('${a.id}')" class="text-gray-500 hover:bg-gray-100 p-2 rounded-lg hidden" title="Отмена"><i data-lucide="x" class="w-4 h-4"></i></button>
+                                <button type="button" onclick="deleteAuthority('${a.id}')" class="text-red-500 hover:bg-red-50 p-2 rounded-lg" title="Удалить"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                            </div>
                         </div>
                     `).join('');
                 }
