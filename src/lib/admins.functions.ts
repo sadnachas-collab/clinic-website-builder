@@ -152,3 +152,80 @@ export const changeOwnPassword = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+const UpdateAdminSchema = z.object({
+  userId: z.string().uuid(),
+  displayName: z.string().min(1).max(100).optional(),
+  role: z.enum(["owner", "editor"]).optional(),
+  newPassword: z.string().min(6).max(100).optional(),
+});
+
+export const updateAdmin = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => UpdateAdminSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { data: roles } = await context.supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId);
+    const isOwner = roles?.some((r) => r.role === "owner");
+    if (!isOwner) throw new Error("Только владелец может редактировать админов");
+
+    // Смена роли
+    if (data.role) {
+      const { data: targetRoles } = await supabaseAdmin
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", data.userId);
+      const targetIsOwner = targetRoles?.some((r) => r.role === "owner");
+
+      // Запрет понижать самого себя с owner
+      if (
+        data.userId === context.userId &&
+        targetIsOwner &&
+        data.role !== "owner"
+      ) {
+        throw new Error("Нельзя снять с себя роль владельца");
+      }
+
+      // Запрет снимать роль с последнего owner
+      if (targetIsOwner && data.role !== "owner") {
+        const { count } = await supabaseAdmin
+          .from("user_roles")
+          .select("*", { count: "exact", head: true })
+          .eq("role", "owner");
+        if ((count ?? 0) <= 1) {
+          throw new Error("Нельзя снять роль с последнего владельца");
+        }
+      }
+
+      // Меняем роль: удаляем все и вставляем нужную (owner|editor)
+      const { error: delErr } = await supabaseAdmin
+        .from("user_roles")
+        .delete()
+        .eq("user_id", data.userId);
+      if (delErr) throw new Error(delErr.message);
+      const { error: insErr } = await supabaseAdmin
+        .from("user_roles")
+        .insert({ user_id: data.userId, role: data.role });
+      if (insErr) throw new Error(insErr.message);
+    }
+
+    if (data.displayName !== undefined) {
+      const { error } = await supabaseAdmin
+        .from("admin_profiles")
+        .update({ display_name: data.displayName })
+        .eq("user_id", data.userId);
+      if (error) throw new Error(error.message);
+    }
+
+    if (data.newPassword) {
+      const { error } = await supabaseAdmin.auth.admin.updateUserById(
+        data.userId,
+        { password: data.newPassword },
+      );
+      if (error) throw new Error(error.message);
+    }
+
+    return { ok: true };
+  });
