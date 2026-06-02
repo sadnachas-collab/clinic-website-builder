@@ -1,32 +1,39 @@
-## Фикс: направления на главной не обновляются из админки
+## Проблема
 
-### Причина
-В `public/clinic-site.html` (строка 1179) объявлена локальная `const DB = {…}` с захардкоженными категориями и процедурами. В `public/clinic-site-data.js` (строки 130-132) данные из БД пишутся в `window.DB.categories` / `window.DB.procedures`. Это **разные объекты в памяти** — функция `initHomeCategories()` читает из локального `DB`, поэтому всегда показывает старые захардкоженные данные.
+В админке «Философия — врач и видео-визитка» видео загружено и сохранено в БД (`page_content.home_about_doctor.video` = ссылка на mp4 в storage). Поле `photo` при этом пустое.
 
-То же касается секций «Категория → процедуры» (`openCategoryPage`) и «Процедура» (`openProcedurePage`) — они тоже читают из локального `DB` и тоже не обновляются.
-
-### Фикс (минимальный, одна точка)
-В `public/clinic-site.html` заменить:
-```js
-const DB = { categories: {...}, procedures: {...} };
-```
-на:
-```js
-window.DB = window.DB || { categories: {}, procedures: {} };
-const DB = window.DB;
+На фронте (`public/clinic-site.html`, строка 533) в блоке стоит **захардкоженный плейсхолдер** — фото с Unsplash:
+```html
+<img id="about-doctor-photo" src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2…">
 ```
 
-Это связывает локальный `DB` и `window.DB` в один объект. Когда `clinic-site-data.js` после загрузки делает `window.DB.categories = catMap`, локальный `DB.categories` тоже видит новые данные (одна ссылка). Следующий вызов `window.initHomeCategories()` рендерит свежие категории.
+Функция `renderAboutDoctor` (`public/clinic-site-data.js`, строки 360–384) подменяет `src` только если `v.photo` непустое. Поскольку фото не задано, остаётся unsplash-картинка. Видео при этом «есть» — кнопка play появляется, по клику открывается оверлей с видео — но визуально пользователь видит чужое фото и считает, что её видео не подгрузилось.
 
-Захардкоженный объект из site.html **удаляем** — он не нужен, потому что:
-- если БД пустая, `renderCategoriesAndProcedures` уже умеет скрывать секцию `services` (строка 96 site-data.js: `hideSection('services')`);
-- если БД заполнена, всё рендерится из неё.
+## Что меняем (минимально)
 
-### Что НЕ трогаем
-- `clinic-site-data.js` — логика загрузки и записи в `window.DB` уже корректна.
-- Админка `clinic-admin.html` — данные в БД пишутся правильно (проверено: «Игкоукалывание», «Ботекс»).
-- Функции `openCategoryPage` / `openProcedurePage` / `initHomeCategories` — они читают `DB.categories[...]`, после фикса автоматически увидят свежие данные.
-- Никакой работы с БД / миграций / RLS.
+Только фронт-рендер блока. БД, админка, загрузка файлов — не трогаем.
 
-### Файлы
-- `public/clinic-site.html` — одна правка вокруг строки 1179.
+### 1. `public/clinic-site.html` (строка 533)
+
+Убрать unsplash из `src`, оставить нейтральный transparent-плейсхолдер, чтобы при отсутствии и фото и видео не светилось чужое лицо:
+```html
+<img id="about-doctor-photo" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'/>" alt="Врач" class="…">
+```
+(класс/alt сохраняем)
+
+### 2. `public/clinic-site-data.js` — `renderAboutDoctor` (строки 360–384)
+
+Расширить логику: если есть `v.video` и нет `v.photo`, заменить `<img id="about-doctor-photo">` на `<video>` с первым кадром видео в качестве постера:
+- создаём `<video src="VIDEO_URL#t=0.5" muted playsinline preload="metadata" id="about-doctor-photo" class="(те же классы)">`
+- заменяем существующий узел через `parentNode.replaceChild`
+- сохраняем ту же `id`, чтобы повторные `renderAboutDoctor` находили узел и могли переписать src
+
+Поведение play-кнопки и `openAboutDoctorVideo()` оставляем без изменений — клик по обёртке `#about-doctor-photo-wrap` по-прежнему открывает полноэкранный плеер.
+
+Приоритет: если задано `v.photo` — показываем `<img>` с фото (как сейчас). Если фото пустое, но есть видео — превью видео. Если ничего нет — прозрачный плейсхолдер.
+
+## Что не трогаем
+
+- `public/clinic-admin.html` — загрузка/удаление видео работает корректно.
+- Storage и БД — данные уже сохранены.
+- Логика `openAboutDoctorVideo` (overlay-плеер) — без изменений.
