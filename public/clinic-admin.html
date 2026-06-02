@@ -1784,6 +1784,14 @@
                     await Promise.all([loadConsumerData(), loadAuthorities(), loadFooterFromCloud(), loadAdmins()]);
                     try { window.renderConsumer && window.renderConsumer(); } catch(_){}
                     try { window.renderFooterData && window.renderFooterData(); } catch(_){}
+                    // Шапка с именем/ролью текущего администратора
+                    try {
+                        const meId = window.__currentAdminUserId;
+                        const me = (window.dbAdmins || []).find(function(a){ return String(a.id) === String(meId); });
+                        if (me) updateHeaderUser(me);
+                    } catch(_){}
+                    try { initAllData(); } catch(e){ console.error('initAllData error', e); }
+                    try { lucide.createIcons(); } catch(_){}
                 }
             } catch(e){
                 console.error('[admin] bootstrap error', e);
