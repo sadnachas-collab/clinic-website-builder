@@ -799,69 +799,13 @@
         }
         ensureOwnerAdmin();
 
-        // --- АВТОРИЗАЦИЯ ---
+        // --- АВТОРИЗАЦИЯ (выполняется внешней страницей через Supabase) ---
         function updateHeaderUser(user){
             const n=document.getElementById('current-user-name');
             const r=document.getElementById('current-user-role');
             if(n) n.innerText = (user && user.name) || '';
             if(r) r.innerText = (user && user.role) || '';
         }
-
-        function openAdminPanel(user){
-            const ls=document.getElementById('login-screen');
-            const ap=document.getElementById('admin-panel');
-            // Сначала показываем панель и скрываем экран входа
-            if(ap){ ap.classList.remove('hidden'); requestAnimationFrame(()=>ap.classList.remove('opacity-0')); }
-            if(ls){ ls.classList.add('opacity-0'); setTimeout(()=>ls.classList.add('hidden'),300); }
-            try { updateHeaderUser(user); } catch(e){ console.error('updateHeaderUser error', e); }
-            // Инициализация данных — ошибки НЕ возвращают на экран входа
-            try { initAllData(); } catch(e){ console.error('initAllData error', e); }
-            try { lucide.createIcons(); } catch(_){}
-        }
-
-        function doLogin(){
-            const loginEl=document.getElementById('admin-login');
-            const pwdEl=document.getElementById('admin-pwd');
-            const rmEl=document.getElementById('remember-me');
-            const errorMsg=document.getElementById('login-error');
-            const loginVal = (loginEl && loginEl.value || '').trim().toLowerCase();
-            const pwdVal = (pwdEl && pwdEl.value || '').trim();
-            const rememberMe = !!(rmEl && rmEl.checked);
-
-            // На всякий случай восстанавливаем владельца перед проверкой
-            ensureOwnerAdmin();
-
-            const user = dbAdmins.find(a =>
-                a && a.login &&
-                String(a.login).trim().toLowerCase() === loginVal &&
-                String(a.pwd).trim() === pwdVal
-            );
-
-            if(user){
-                if(errorMsg) errorMsg.classList.add('hidden');
-                if(rememberMe){
-                    lsSet('loggedInAdminId', String(user.id));
-                    lsSet('savedAdminLogin', String(user.login));
-                    ssDel('loggedInAdminId');
-                } else {
-                    ssSet('loggedInAdminId', String(user.id));
-                    lsDel('loggedInAdminId');
-                    lsDel('savedAdminLogin');
-                }
-                lsDel('savedAdminPwd');
-                openAdminPanel(user);
-            } else {
-                if(errorMsg) errorMsg.classList.remove('hidden');
-                // НЕ очищаем поля — пользователь видит, что ввёл
-                if(pwdEl){ pwdEl.focus(); pwdEl.select && pwdEl.select(); }
-            }
-            return false;
-        }
-
-        window.handleLogin = function(e){
-            if(e){ if(e.preventDefault) e.preventDefault(); if(e.stopPropagation) e.stopPropagation(); }
-            return doLogin();
-        };
 
         window.requestLogout = function(){
             try { window.parent && window.parent.postMessage({ type: 'admin-logout' }, '*'); } catch(_){}
@@ -870,45 +814,12 @@
         // Совместимость со старым кодом
         window.handleLogout = window.requestLogout;
 
-        function togglePasswordVisibility(){
-            const pwdInput=document.getElementById('admin-pwd');
-            const eyeIcon=document.getElementById('pwd-eye-icon');
-            if(!pwdInput||!eyeIcon) return;
-            if(pwdInput.type === 'password'){ pwdInput.type='text'; eyeIcon.setAttribute('data-lucide','eye-off'); }
-            else { pwdInput.type='password'; eyeIcon.setAttribute('data-lucide','eye'); }
-            try { lucide.createIcons(); } catch(_){}
-        }
-        window.togglePasswordVisibility = togglePasswordVisibility;
+        // Чистим следы старой схемы авторизации (localStorage-логин)
+        try {
+            lsDel('loggedInAdminId'); ssDel('loggedInAdminId');
+            lsDel('savedAdminLogin'); lsDel('savedAdminPwd');
+        } catch(_){}
 
-        document.addEventListener('DOMContentLoaded', function(){
-            try {
-                // Дублирующий обработчик submit на всякий случай
-                const form = document.querySelector('#login-screen form');
-                if(form){
-                    form.addEventListener('submit', function(ev){
-                        ev.preventDefault();
-                        ev.stopPropagation();
-                        doLogin();
-                        return false;
-                    });
-                }
-                // Восстанавливаем сохранённый логин
-                const savedLogin = lsGet('savedAdminLogin');
-                if(savedLogin){
-                    const el=document.getElementById('admin-login');
-                    if(el) el.value = savedLogin;
-                    const rm=document.getElementById('remember-me');
-                    if(rm) rm.checked = true;
-                }
-                // Автологин по сохранённой сессии
-                const loggedInUserId = lsGet('loggedInAdminId') || ssGet('loggedInAdminId');
-                if(loggedInUserId){
-                    const currentUser = dbAdmins.find(a => a && a.id != null && String(a.id) === String(loggedInUserId));
-                    if(currentUser){ openAdminPanel(currentUser); }
-                    else { lsDel('loggedInAdminId'); ssDel('loggedInAdminId'); }
-                }
-            } catch(e){ console.error('auth init error', e); }
-        });
 
         function initAllData() { renderAdmins(); renderMainPageData(); renderAboutPageData(); renderTable(); // Price list
             renderPriceFile();            renderCatCategories();            renderCatProcedures();            renderSpecialists();            renderFooterData();            renderConsumer();            updateDashboardStats();        }        function updateDashboardStats() {            document.getElementById('stat-specialists').innerText = dbSpecialists.length;            document.getElementById('stat-services').innerText = dbCatProcedures.length || 0;            document.getElementById('stat-promos').innerText = dbMainPage.promos ? dbMainPage.promos.length : 0;        }        // --- НАВИГАЦИЯ ---
