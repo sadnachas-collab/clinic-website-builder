@@ -3258,10 +3258,23 @@
                 if (!peImg) return;
                 if (document.getElementById('pe-file')) return;
                 const wrap = document.createElement('div');
-                wrap.className = 'flex gap-2 mt-2';
-                wrap.innerHTML = '<input type="file" id="pe-file" accept="image/jpeg,image/png,image/webp" class="hidden" onchange="uploadProcPhoto(this.files[0])">'
+                wrap.className = 'flex gap-2 mt-2 items-center';
+                wrap.innerHTML = '<img id="pe-img-preview" src="" class="w-16 h-16 rounded-lg object-cover bg-gray-100 border border-gray-200 hidden" alt="">'
+                    + '<input type="file" id="pe-file" accept="image/jpeg,image/png,image/webp" class="hidden" onchange="uploadProcPhoto(this.files[0])">'
                     + '<button type="button" onclick="document.getElementById(\'pe-file\').click()" class="px-3 py-1.5 bg-brand-50 text-brand-600 border border-brand-200 rounded-lg text-[11px] font-bold uppercase tracking-widest hover:bg-brand-100">Загрузить с компьютера</button>';
                 peImg.parentNode.appendChild(wrap);
+            }
+
+            function updateProcPreview(url){
+                const prev = document.getElementById('pe-img-preview');
+                if (!prev) return;
+                if (url) {
+                    prev.src = url + (url.indexOf('?') === -1 ? '?t=' : '&t=') + Date.now();
+                    prev.classList.remove('hidden');
+                } else {
+                    prev.src = '';
+                    prev.classList.add('hidden');
+                }
             }
 
             window.openProcEditorModal = function(procId){
