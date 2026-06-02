@@ -1,6 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  listAdmins,
+  createAdmin,
+  deleteAdmin,
+  changeOwnPassword,
+} from "@/lib/admins.functions";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -74,6 +80,36 @@ function Admin() {
           },
           window.location.origin,
         );
+      }
+
+      if (data.type === "admin-rpc-call" && iframeRef.current?.contentWindow) {
+        const { requestId, action, payload } = data as {
+          requestId?: string;
+          action?: string;
+          payload?: Record<string, unknown>;
+        };
+        const reply = (body: Record<string, unknown>) =>
+          iframeRef.current?.contentWindow?.postMessage(
+            { type: "admin-rpc-result", requestId, ...body },
+            window.location.origin,
+          );
+        try {
+          let result: unknown;
+          if (action === "listAdmins") {
+            result = await listAdmins();
+          } else if (action === "createAdmin") {
+            result = await createAdmin({ data: payload as never });
+          } else if (action === "deleteAdmin") {
+            result = await deleteAdmin({ data: payload as never });
+          } else if (action === "changeOwnPassword") {
+            result = await changeOwnPassword({ data: payload as never });
+          } else {
+            throw new Error("Unknown admin RPC action: " + String(action));
+          }
+          reply({ ok: true, data: result });
+        } catch (err) {
+          reply({ ok: false, error: err instanceof Error ? err.message : String(err) });
+        }
       }
     };
     window.addEventListener("message", onMessage);
