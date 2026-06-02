@@ -3040,6 +3040,341 @@
             };
         }
         window.overrideDocs = overrideDocs;
+
+        // ===== КАТЕГОРИИ ПРОЦЕДУР (procedure_categories) =====
+        async function loadCatCategories(){
+            const { data, error } = await sb
+                .from('procedure_categories')
+                .select('id,name,description,image_url,sort_order,created_at')
+                .order('sort_order', { ascending: true })
+                .order('created_at', { ascending: true });
+            if (error) { console.error(error); notify('Ошибка загрузки категорий: '+errMsg(error)); return; }
+            const list = (data || []).map(function(r){
+                return { id: r.id, title: r.name || '', desc: r.description || '', img: r.image_url || '', sort_order: r.sort_order || 0 };
+            });
+            window.dbCatCategories = list;
+            try { dbCatCategories = list; } catch(_){}
+            try { window.renderCatCategories && window.renderCatCategories(); } catch(e){ console.error(e); }
+        }
+
+        function overrideCatCategories(){
+            window.renderCatCategories = function(){
+                const el = document.getElementById('admin-cat-list');
+                if (!el) return;
+                const list = window.dbCatCategories || [];
+                const cards = list.map(function(c){
+                    const sid = String(c.id);
+                    const img = String(c.img || '').replace(/"/g, '&quot;');
+                    const title = String(c.title || '').replace(/"/g, '&quot;');
+                    const desc = String(c.desc || '').replace(/"/g, '&quot;');
+                    return '<div id="cat-row-'+sid+'" class="flex gap-4 p-4 border border-gray-200 rounded-2xl bg-white hover:bg-gray-50 group">'
+                        + '<img src="'+img+'" onerror="this.src=\'https://placehold.co/400x400/f3f4f6/a1a1aa?text=Нет+фото\'" class="w-20 h-20 rounded-xl object-cover bg-gray-100 border border-gray-200">'
+                        + '<div class="flex-1 view-mode">'
+                        +   '<p class="font-bold text-brand-900">'+title+'</p>'
+                        +   '<p class="text-xs text-gray-500 mt-1 leading-relaxed">'+desc+'</p>'
+                        + '</div>'
+                        + '<div class="flex-1 hidden edit-mode flex-col gap-2">'
+                        +   '<input type="text" id="cat-title-'+sid+'" value="'+title+'" class="w-full px-3 py-1.5 text-sm border rounded outline-none focus:border-brand-600" placeholder="Заголовок">'
+                        +   '<input type="text" id="cat-desc-'+sid+'" value="'+desc+'" class="w-full px-3 py-1.5 text-sm border rounded outline-none focus:border-brand-600" placeholder="Описание">'
+                        +   '<div class="flex gap-2">'
+                        +     '<input type="text" id="cat-img-'+sid+'" value="'+img+'" class="flex-1 px-3 py-1.5 text-sm border rounded outline-none focus:border-brand-600" placeholder="URL обложки или загрузите файл">'
+                        +     '<input type="file" id="cat-file-'+sid+'" accept="image/jpeg,image/png,image/webp" class="hidden" onchange="uploadCatPhoto(\''+sid+'\', this.files[0])">'
+                        +     '<button type="button" onclick="document.getElementById(\'cat-file-'+sid+'\').click()" class="px-3 py-1.5 bg-brand-50 text-brand-600 border border-brand-200 rounded-lg text-[11px] font-bold uppercase tracking-widest hover:bg-brand-100 whitespace-nowrap">Загрузить</button>'
+                        +   '</div>'
+                        + '</div>'
+                        + '<div class="flex flex-col gap-2 shrink-0 border-l border-gray-100 pl-4">'
+                        +   '<button onclick="editCat(\''+sid+'\')" class="view-mode p-2 bg-white rounded-lg border border-gray-200 shadow-sm hover:text-brand-600 transition-colors" title="Редактировать"><i data-lucide="edit-3" class="w-4 h-4"></i></button>'
+                        +   '<button onclick="saveCat(\''+sid+'\')" class="edit-mode hidden p-2 bg-white rounded-lg border border-green-200 shadow-sm text-green-600 hover:bg-green-50 transition-colors" title="Сохранить"><i data-lucide="save" class="w-4 h-4"></i></button>'
+                        +   '<button onclick="cancelCat(\''+sid+'\')" class="edit-mode hidden p-2 bg-white rounded-lg border border-gray-200 shadow-sm text-gray-400 hover:bg-gray-50 transition-colors" title="Отмена"><i data-lucide="x" class="w-4 h-4"></i></button>'
+                        +   '<button onclick="deleteCat(\''+sid+'\')" class="view-mode p-2 bg-white rounded-lg border border-red-200 shadow-sm text-red-500 hover:bg-red-50 transition-colors" title="Удалить"><i data-lucide="trash-2" class="w-4 h-4"></i></button>'
+                        + '</div>'
+                        + '</div>';
+                }).join('');
+                const addCard = '<button type="button" onclick="addCat()" class="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-brand-200 rounded-2xl text-brand-600 hover:bg-brand-50 transition-colors min-h-[100px] font-bold text-sm uppercase tracking-widest"><i data-lucide="plus" class="w-5 h-5"></i> Добавить категорию</button>';
+                el.innerHTML = cards + addCard;
+                try { lucide.createIcons(); } catch(_){}
+            };
+
+            window.editCat = function(id){
+                const row = document.getElementById('cat-row-'+id);
+                if (!row) return;
+                row.querySelectorAll('.view-mode').forEach(function(el){ el.classList.add('hidden'); });
+                row.querySelectorAll('.edit-mode').forEach(function(el){ el.classList.remove('hidden'); el.classList.add('flex'); });
+                row.classList.add('bg-brand-50/30','border-brand-200');
+            };
+
+            window.cancelCat = function(){ window.renderCatCategories(); };
+
+            window.uploadCatPhoto = async function(id, file){
+                if (!file) return;
+                if (!file.type || !file.type.startsWith('image/')) { notify('Можно загружать только изображения'); return; }
+                if (file.size > 10 * 1024 * 1024) { notify('Файл больше 10 МБ — слишком тяжёлый'); return; }
+                const extMatch = (file.name || '').match(/\.([a-zA-Z0-9]+)$/);
+                const ext = (extMatch ? extMatch[1] : 'jpg').toLowerCase();
+                const rand = Math.random().toString(36).slice(2, 8);
+                const path = 'categories/' + Date.now() + '-' + rand + '.' + ext;
+                notify('Загрузка фото…');
+                try {
+                    const up = await sb.storage.from('photos').upload(path, file, { cacheControl: '3600', upsert: false, contentType: file.type });
+                    if (up.error) throw up.error;
+                    const pub = sb.storage.from('photos').getPublicUrl(path);
+                    const publicUrl = pub && pub.data && pub.data.publicUrl;
+                    if (!publicUrl) throw new Error('Не удалось получить ссылку');
+                    const input = document.getElementById('cat-img-'+id);
+                    if (input) input.value = publicUrl;
+                    notify('Фото загружено. Нажмите «Сохранить»');
+                } catch(e){ console.error(e); notify('Ошибка загрузки: '+errMsg(e)); }
+            };
+
+            window.saveCat = async function(id){
+                const c = (window.dbCatCategories || []).find(function(x){ return String(x.id) === String(id); });
+                if (!c) return;
+                const title = ((document.getElementById('cat-title-'+id) || {}).value || '').trim();
+                const desc = (document.getElementById('cat-desc-'+id) || {}).value || '';
+                const img = (document.getElementById('cat-img-'+id) || {}).value || '';
+                if (!title) { notify('Введите название категории'); return; }
+                try {
+                    const { error } = await sb.from('procedure_categories')
+                        .update({ name: title, description: desc, image_url: img })
+                        .eq('id', id);
+                    if (error) throw error;
+                    c.title = title; c.desc = desc; c.img = img;
+                    window.renderCatCategories();
+                    try { window.renderCatProcedures && window.renderCatProcedures(); } catch(_){}
+                    notify('Категория сохранена');
+                } catch(e){ console.error(e); notify('Ошибка сохранения: '+errMsg(e)); }
+            };
+
+            window.addCat = async function(){
+                try {
+                    const maxSort = (window.dbCatCategories || []).reduce(function(m, c){ return Math.max(m, c.sort_order || 0); }, 0);
+                    const { data, error } = await sb.from('procedure_categories')
+                        .insert({ name: 'Новая категория', description: '', image_url: '', sort_order: maxSort + 1 })
+                        .select('id,name,description,image_url,sort_order')
+                        .single();
+                    if (error) throw error;
+                    window.dbCatCategories = window.dbCatCategories || [];
+                    window.dbCatCategories.push({ id: data.id, title: data.name, desc: data.description || '', img: data.image_url || '', sort_order: data.sort_order || 0 });
+                    try { dbCatCategories = window.dbCatCategories; } catch(_){}
+                    window.renderCatCategories();
+                    window.editCat(data.id);
+                    notify('Категория добавлена');
+                } catch(e){ console.error(e); notify('Ошибка добавления: '+errMsg(e)); }
+            };
+
+            window.deleteCat = async function(id){
+                const ok = await (typeof customConfirm === 'function' ? customConfirm('Удалить категорию? Процедуры в ней останутся без категории.') : Promise.resolve(confirm('Удалить категорию?')));
+                if (!ok) return;
+                try {
+                    const { error } = await sb.from('procedure_categories').delete().eq('id', id);
+                    if (error) throw error;
+                    window.dbCatCategories = (window.dbCatCategories || []).filter(function(x){ return String(x.id) !== String(id); });
+                    try { dbCatCategories = window.dbCatCategories; } catch(_){}
+                    window.renderCatCategories();
+                    try { window.renderCatProcedures && window.renderCatProcedures(); } catch(_){}
+                    notify('Удалено');
+                } catch(e){ console.error(e); notify('Ошибка удаления: '+errMsg(e)); }
+            };
+        }
+        window.overrideCatCategories = overrideCatCategories;
+
+        // ===== ПРОЦЕДУРЫ (procedures) =====
+        async function loadCatProcedures(){
+            const { data, error } = await sb
+                .from('procedures')
+                .select('id,category_id,name,description,price,image_url,sort_order,content,created_at')
+                .order('sort_order', { ascending: true })
+                .order('created_at', { ascending: false });
+            if (error) { console.error(error); notify('Ошибка загрузки процедур: '+errMsg(error)); return; }
+            const list = (data || []).map(function(r){
+                const c = r.content || {};
+                return {
+                    id: r.id,
+                    categoryId: r.category_id || '',
+                    title: r.name || '',
+                    priceText: r.price || '',
+                    desc: r.description || '',
+                    img: r.image_url || '',
+                    sort_order: r.sort_order || 0,
+                    howItWorks: Array.isArray(c.howItWorks) ? c.howItWorks : [],
+                    problems: Array.isArray(c.problems) ? c.problems : [],
+                    prices: Array.isArray(c.prices) ? c.prices : [],
+                    pricesChief: Array.isArray(c.pricesChief) ? c.pricesChief : [],
+                };
+            });
+            window.dbCatProcedures = list;
+            try { dbCatProcedures = list; } catch(_){}
+            try { window.renderCatProcedures && window.renderCatProcedures(); } catch(e){ console.error(e); }
+        }
+
+        function overrideCatProcedures(){
+            window.renderCatProcedures = function(){
+                const el = document.getElementById('admin-proc-list');
+                if (!el) return;
+                const cats = window.dbCatCategories || [];
+                const catMap = {};
+                cats.forEach(function(c){ catMap[c.id] = c.title; });
+                const list = window.dbCatProcedures || [];
+                el.innerHTML = list.map(function(p){
+                    const sid = String(p.id);
+                    const img = String(p.img || '').replace(/"/g, '&quot;');
+                    const title = String(p.title || '');
+                    const catName = catMap[p.categoryId] || 'Без категории';
+                    return '<tr class="hover:bg-brand-50/50 group transition-colors border-b border-gray-100">'
+                        + '<td class="px-6 py-4"><div class="flex items-center gap-3">'
+                        +   '<img src="'+img+'" onerror="this.src=\'https://placehold.co/100x100/f3f4f6/a1a1aa?text=Нет\'" class="w-10 h-10 rounded-lg object-cover bg-gray-100 border border-gray-200">'
+                        +   '<span class="font-medium text-brand-900">'+title+'</span>'
+                        + '</div></td>'
+                        + '<td class="px-6 py-4"><span class="px-3 py-1 rounded-full bg-gray-100 text-[10px] font-bold uppercase tracking-wider text-gray-600">'+catName+'</span></td>'
+                        + '<td class="px-6 py-4 font-serif text-brand-900">'+(p.priceText || '')+'</td>'
+                        + '<td class="px-6 py-4 text-right whitespace-nowrap">'
+                        +   '<button onclick="openProcEditorModal(\''+sid+'\')" class="text-brand-600 mr-4 text-sm font-medium hover:text-brand-800 transition-colors"><i data-lucide="edit" class="w-4 h-4 inline mr-1"></i>Настроить</button>'
+                        +   '<button onclick="deleteCatProcedure(\''+sid+'\')" class="text-gray-400 hover:text-red-500 transition-colors"><i data-lucide="trash-2" class="w-4 h-4 inline"></i></button>'
+                        + '</td>'
+                        + '</tr>';
+                }).join('');
+                try { lucide.createIcons(); } catch(_){}
+            };
+
+            function fillCategorySelect(selectedId){
+                const sel = document.getElementById('pe-category');
+                if (!sel) return;
+                const cats = window.dbCatCategories || [];
+                sel.innerHTML = cats.map(function(c){
+                    return '<option value="'+String(c.id)+'">'+String(c.title || '').replace(/</g,'&lt;')+'</option>';
+                }).join('');
+                if (selectedId) sel.value = selectedId;
+            }
+
+            function ensureUploadButton(){
+                const peImg = document.getElementById('pe-img');
+                if (!peImg) return;
+                if (document.getElementById('pe-file')) return;
+                const wrap = document.createElement('div');
+                wrap.className = 'flex gap-2 mt-2';
+                wrap.innerHTML = '<input type="file" id="pe-file" accept="image/jpeg,image/png,image/webp" class="hidden" onchange="uploadProcPhoto(this.files[0])">'
+                    + '<button type="button" onclick="document.getElementById(\'pe-file\').click()" class="px-3 py-1.5 bg-brand-50 text-brand-600 border border-brand-200 rounded-lg text-[11px] font-bold uppercase tracking-widest hover:bg-brand-100">Загрузить с компьютера</button>';
+                peImg.parentNode.appendChild(wrap);
+            }
+
+            window.openProcEditorModal = function(procId){
+                const cats = window.dbCatCategories || [];
+                if (procId) {
+                    const src = (window.dbCatProcedures || []).find(function(x){ return String(x.id) === String(procId); });
+                    if (!src) return;
+                    window.tempEditProc = JSON.parse(JSON.stringify(src));
+                    window.tempEditProc.pricesChief = window.tempEditProc.pricesChief || [];
+                    document.getElementById('pe-modal-title').innerText = 'Редактирование: ' + (window.tempEditProc.title || '');
+                } else {
+                    window.tempEditProc = { id: null, categoryId: cats[0] ? cats[0].id : '', title: '', priceText: '', img: '', desc: '', howItWorks: [], problems: [], prices: [], pricesChief: [] };
+                    document.getElementById('pe-modal-title').innerText = 'Новая процедура';
+                }
+                try { tempEditProc = window.tempEditProc; } catch(_){}
+                fillCategorySelect(window.tempEditProc.categoryId);
+                document.getElementById('pe-title').value = window.tempEditProc.title || '';
+                document.getElementById('pe-priceText').value = window.tempEditProc.priceText || '';
+                document.getElementById('pe-img').value = window.tempEditProc.img || '';
+                document.getElementById('pe-desc').value = window.tempEditProc.desc || '';
+                ensureUploadButton();
+                try { peRenderSteps(); peRenderProblems(); peRenderPrices(); peRenderPricesChief(); } catch(e){ console.error(e); }
+                const modal = document.getElementById('proc-editor-modal');
+                const content = document.getElementById('proc-editor-modal-content');
+                modal.classList.remove('opacity-0','pointer-events-none');
+                setTimeout(function(){ content.classList.remove('scale-95'); }, 10);
+            };
+
+            window.uploadProcPhoto = async function(file){
+                if (!file) return;
+                if (!file.type || !file.type.startsWith('image/')) { notify('Можно загружать только изображения'); return; }
+                if (file.size > 10 * 1024 * 1024) { notify('Файл больше 10 МБ — слишком тяжёлый'); return; }
+                const extMatch = (file.name || '').match(/\.([a-zA-Z0-9]+)$/);
+                const ext = (extMatch ? extMatch[1] : 'jpg').toLowerCase();
+                const rand = Math.random().toString(36).slice(2, 8);
+                const path = 'procedures/' + Date.now() + '-' + rand + '.' + ext;
+                notify('Загрузка фото…');
+                try {
+                    const up = await sb.storage.from('photos').upload(path, file, { cacheControl: '3600', upsert: false, contentType: file.type });
+                    if (up.error) throw up.error;
+                    const pub = sb.storage.from('photos').getPublicUrl(path);
+                    const publicUrl = pub && pub.data && pub.data.publicUrl;
+                    if (!publicUrl) throw new Error('Не удалось получить ссылку');
+                    const input = document.getElementById('pe-img');
+                    if (input) input.value = publicUrl;
+                    notify('Фото загружено');
+                } catch(e){ console.error(e); notify('Ошибка загрузки: '+errMsg(e)); }
+            };
+
+            window.saveProcEditorModal = async function(){
+                const t = window.tempEditProc;
+                if (!t) return;
+                t.title = (document.getElementById('pe-title').value || '').trim();
+                t.categoryId = document.getElementById('pe-category').value || null;
+                t.priceText = document.getElementById('pe-priceText').value || '';
+                t.img = document.getElementById('pe-img').value || '';
+                t.desc = document.getElementById('pe-desc').value || '';
+                t.howItWorks = t.howItWorks || [];
+                t.problems = t.problems || [];
+                t.prices = t.prices || [];
+                t.pricesChief = t.pricesChief || [];
+                if (!t.title) { notify('Название обязательно'); return; }
+                const payload = {
+                    category_id: t.categoryId || null,
+                    name: t.title,
+                    description: t.desc,
+                    price: t.priceText,
+                    image_url: t.img,
+                    content: { howItWorks: t.howItWorks, problems: t.problems, prices: t.prices, pricesChief: t.pricesChief },
+                };
+                try {
+                    let saved;
+                    if (t.id) {
+                        const { data, error } = await sb.from('procedures').update(payload).eq('id', t.id).select('id,category_id,name,description,price,image_url,sort_order,content').single();
+                        if (error) throw error;
+                        saved = data;
+                    } else {
+                        const maxSort = (window.dbCatProcedures || []).reduce(function(m, p){ return Math.max(m, p.sort_order || 0); }, 0);
+                        const { data, error } = await sb.from('procedures').insert(Object.assign({}, payload, { sort_order: maxSort + 1 })).select('id,category_id,name,description,price,image_url,sort_order,content').single();
+                        if (error) throw error;
+                        saved = data;
+                    }
+                    const c = saved.content || {};
+                    const mapped = {
+                        id: saved.id,
+                        categoryId: saved.category_id || '',
+                        title: saved.name || '',
+                        priceText: saved.price || '',
+                        desc: saved.description || '',
+                        img: saved.image_url || '',
+                        sort_order: saved.sort_order || 0,
+                        howItWorks: Array.isArray(c.howItWorks) ? c.howItWorks : [],
+                        problems: Array.isArray(c.problems) ? c.problems : [],
+                        prices: Array.isArray(c.prices) ? c.prices : [],
+                        pricesChief: Array.isArray(c.pricesChief) ? c.pricesChief : [],
+                    };
+                    window.dbCatProcedures = window.dbCatProcedures || [];
+                    const idx = window.dbCatProcedures.findIndex(function(x){ return String(x.id) === String(mapped.id); });
+                    if (idx > -1) window.dbCatProcedures[idx] = mapped; else window.dbCatProcedures.unshift(mapped);
+                    try { dbCatProcedures = window.dbCatProcedures; } catch(_){}
+                    window.renderCatProcedures();
+                    window.closeProcEditorModal();
+                    notify('Сохранено');
+                } catch(e){ console.error(e); notify('Ошибка сохранения: '+errMsg(e)); }
+            };
+
+            window.deleteCatProcedure = async function(id){
+                const ok = await (typeof customConfirm === 'function' ? customConfirm('Удалить эту процедуру навсегда?', { title: 'Удаление процедуры' }) : Promise.resolve(confirm('Удалить процедуру?')));
+                if (!ok) return;
+                try {
+                    const { error } = await sb.from('procedures').delete().eq('id', id);
+                    if (error) throw error;
+                    window.dbCatProcedures = (window.dbCatProcedures || []).filter(function(x){ return String(x.id) !== String(id); });
+                    try { dbCatProcedures = window.dbCatProcedures; } catch(_){}
+                    window.renderCatProcedures();
+                    notify('Удалено');
+                } catch(e){ console.error(e); notify('Ошибка удаления: '+errMsg(e)); }
+            };
+        }
+        window.overrideCatProcedures = overrideCatProcedures;
     })();
     </script>
 
