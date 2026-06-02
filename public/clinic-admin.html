@@ -3122,6 +3122,13 @@
                     if (!publicUrl) throw new Error('Не удалось получить ссылку');
                     const input = document.getElementById('cat-img-'+id);
                     if (input) input.value = publicUrl;
+                    const c = (window.dbCatCategories || []).find(function(x){ return String(x.id) === String(id); });
+                    if (c) c.img = publicUrl;
+                    const row = document.getElementById('cat-row-'+id);
+                    if (row) {
+                        const imgEl = row.querySelector('img');
+                        if (imgEl) imgEl.src = publicUrl + (publicUrl.indexOf('?') === -1 ? '?t=' : '&t=') + Date.now();
+                    }
                     notify('Фото загружено. Нажмите «Сохранить»');
                 } catch(e){ console.error(e); notify('Ошибка загрузки: '+errMsg(e)); }
             };
@@ -3251,10 +3258,23 @@
                 if (!peImg) return;
                 if (document.getElementById('pe-file')) return;
                 const wrap = document.createElement('div');
-                wrap.className = 'flex gap-2 mt-2';
-                wrap.innerHTML = '<input type="file" id="pe-file" accept="image/jpeg,image/png,image/webp" class="hidden" onchange="uploadProcPhoto(this.files[0])">'
+                wrap.className = 'flex gap-2 mt-2 items-center';
+                wrap.innerHTML = '<img id="pe-img-preview" src="" class="w-16 h-16 rounded-lg object-cover bg-gray-100 border border-gray-200 hidden" alt="">'
+                    + '<input type="file" id="pe-file" accept="image/jpeg,image/png,image/webp" class="hidden" onchange="uploadProcPhoto(this.files[0])">'
                     + '<button type="button" onclick="document.getElementById(\'pe-file\').click()" class="px-3 py-1.5 bg-brand-50 text-brand-600 border border-brand-200 rounded-lg text-[11px] font-bold uppercase tracking-widest hover:bg-brand-100">Загрузить с компьютера</button>';
                 peImg.parentNode.appendChild(wrap);
+            }
+
+            function updateProcPreview(url){
+                const prev = document.getElementById('pe-img-preview');
+                if (!prev) return;
+                if (url) {
+                    prev.src = url + (url.indexOf('?') === -1 ? '?t=' : '&t=') + Date.now();
+                    prev.classList.remove('hidden');
+                } else {
+                    prev.src = '';
+                    prev.classList.add('hidden');
+                }
             }
 
             window.openProcEditorModal = function(procId){
@@ -3276,6 +3296,7 @@
                 document.getElementById('pe-img').value = window.tempEditProc.img || '';
                 document.getElementById('pe-desc').value = window.tempEditProc.desc || '';
                 ensureUploadButton();
+                updateProcPreview(window.tempEditProc.img || '');
                 try { peRenderSteps(); peRenderProblems(); peRenderPrices(); peRenderPricesChief(); } catch(e){ console.error(e); }
                 const modal = document.getElementById('proc-editor-modal');
                 const content = document.getElementById('proc-editor-modal-content');
@@ -3300,6 +3321,8 @@
                     if (!publicUrl) throw new Error('Не удалось получить ссылку');
                     const input = document.getElementById('pe-img');
                     if (input) input.value = publicUrl;
+                    if (window.tempEditProc) window.tempEditProc.img = publicUrl;
+                    updateProcPreview(publicUrl);
                     notify('Фото загружено');
                 } catch(e){ console.error(e); notify('Ошибка загрузки: '+errMsg(e)); }
             };
