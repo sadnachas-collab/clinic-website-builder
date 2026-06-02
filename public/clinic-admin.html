@@ -2197,21 +2197,42 @@
             };
             set('ad-name', v.name);
             set('ad-role', v.role);
-            set('ad-video', v.video);
             setImg('ad-avatar-preview', v.avatar);
             setImg('ad-photo-preview', v.photo);
+
+            // Видео: разделяем загруженный файл и внешнюю ссылку
+            const videoUrl = v.video || '';
+            const isUploaded = !!v.videoPath; // признак, что файл лежит в нашем storage
+            const preview = document.getElementById('ad-video-preview');
+            const linkInput = document.getElementById('ad-video');
+            const status = document.getElementById('ad-video-status');
+            if (preview) {
+                if (isUploaded && videoUrl) {
+                    preview.src = videoUrl;
+                    preview.classList.remove('hidden');
+                } else {
+                    preview.removeAttribute('src');
+                    preview.classList.add('hidden');
+                }
+            }
+            if (linkInput) linkInput.value = isUploaded ? '' : videoUrl;
+            if (status) status.textContent = isUploaded ? 'Файл загружен' : '';
         }
 
         function overrideAboutDoctor(){
             window.saveAboutDoctor = async function(){
                 const get = function(id){ const el = document.getElementById(id); return el ? el.value.trim() : ''; };
                 const v = window.__aboutDoctor || {};
+                // Если есть загруженный файл — используем его URL; иначе берём ссылку из input
+                const linkVal = get('ad-video');
+                const videoFinal = v.videoPath ? (v.video || '') : linkVal;
                 const payload = {
-                    name:   get('ad-name'),
-                    role:   get('ad-role'),
-                    avatar: v.avatar || '',
-                    photo:  v.photo  || '',
-                    video:  get('ad-video')
+                    name:      get('ad-name'),
+                    role:      get('ad-role'),
+                    avatar:    v.avatar || '',
+                    photo:     v.photo  || '',
+                    video:     videoFinal,
+                    videoPath: v.videoPath || ''
                 };
                 try {
                     const { error } = await sb.from('page_content').upsert({ key:'home_about_doctor', value: payload }, { onConflict:'key' });
@@ -2243,7 +2264,6 @@
                     if (slot === 'avatar') window.__aboutDoctor.avatar = url;
                     else if (slot === 'photo') window.__aboutDoctor.photo = url;
                     renderAboutDoctorForm();
-                    // Автосохранение, чтобы файл не остался «оторванным»
                     try { await window.saveAboutDoctor(); } catch(_){}
                 } catch(e){
                     console.error(e);
@@ -2256,6 +2276,56 @@
                 if (slot === 'avatar') window.__aboutDoctor.avatar = '';
                 else if (slot === 'photo') window.__aboutDoctor.photo = '';
                 renderAboutDoctorForm();
+            };
+
+            window.handleAboutDoctorVideoUpload = async function(file){
+                if (!file) return;
+                const okTypes = ['video/mp4','video/webm','video/quicktime'];
+                if (!okTypes.includes(file.type)){ notify('Поддерживаются только MP4, WebM, MOV'); return; }
+                if (file.size > 50 * 1024 * 1024){ notify('Файл больше 50 МБ. Загрузите меньше или используйте ссылку на YouTube/Vimeo'); return; }
+                const extMatch = (file.name || '').match(/\.([a-zA-Z0-9]+)$/);
+                const ext = (extMatch ? extMatch[1] : 'mp4').toLowerCase();
+                const rand = Math.random().toString(36).slice(2, 8);
+                const path = 'about-doctor/video/visitka-' + Date.now() + '-' + rand + '.' + ext;
+                const status = document.getElementById('ad-video-status');
+                if (status) status.textContent = 'Загрузка… (' + Math.round(file.size/1024/1024*10)/10 + ' МБ)';
+                try {
+                    const up = await sb.storage.from('photos').upload(path, file, { cacheControl:'3600', upsert:false, contentType:file.type });
+                    if (up.error) throw up.error;
+                    const pub = sb.storage.from('photos').getPublicUrl(path);
+                    const url = pub && pub.data && pub.data.publicUrl;
+                    if (!url) throw new Error('Не удалось получить ссылку на файл');
+                    // Удаляем старый файл, если был
+                    const old = window.__aboutDoctor && window.__aboutDoctor.videoPath;
+                    if (old && old !== path) {
+                        try { await sb.storage.from('photos').remove([old]); } catch(_){}
+                    }
+                    window.__aboutDoctor = window.__aboutDoctor || {};
+                    window.__aboutDoctor.video = url;
+                    window.__aboutDoctor.videoPath = path;
+                    renderAboutDoctorForm();
+                    try { await window.saveAboutDoctor(); } catch(_){}
+                    if (status) status.textContent = 'Файл загружен';
+                    notify('Видео загружено');
+                } catch(e){
+                    console.error(e);
+                    if (status) status.textContent = '';
+                    notify('Ошибка загрузки видео: '+errMsg(e));
+                }
+            };
+
+            window.clearAboutDoctorVideo = async function(){
+                window.__aboutDoctor = window.__aboutDoctor || {};
+                const old = window.__aboutDoctor.videoPath;
+                if (old) {
+                    try { await sb.storage.from('photos').remove([old]); } catch(_){}
+                }
+                window.__aboutDoctor.video = '';
+                window.__aboutDoctor.videoPath = '';
+                const linkInput = document.getElementById('ad-video');
+                if (linkInput) linkInput.value = '';
+                renderAboutDoctorForm();
+                try { await window.saveAboutDoctor(); } catch(_){}
             };
         }
 
