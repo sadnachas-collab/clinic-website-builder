@@ -1,45 +1,33 @@
-## Подключаем «Уголок потребителя» + «Надзорные органы» к Lovable Cloud
+## Что правим
 
-Оба раздела используют один `renderConsumer()` и общий объект `dbConsumer = { categories, authorities }`. Делаем в одном проходе.
+### 1. Уголок потребителя — предпросмотр документа
+В списке документов категории сейчас рядом с каждым файлом есть только «Скачать» и «Удалить». Добавим иконку-глаз «Предпросмотр» — открывает `doc.dataUrl` (публичный URL из Storage) в новой вкладке. Так же как на сайте у пользователя.
 
-## 1. Уголок потребителя (`consumer_categories` + `consumer_documents`)
-
-### Загрузка
-- `loadConsumerData()` — параллельно `select` из `consumer_categories` (id, name, sort_order, created_at) и `consumer_documents` (id, title, file_url, category_id, sort_order, created_at).
-- Маппинг → `dbConsumer.categories = [{ id, title: name, icon: 'folder', documents: [{ id, name: title, fileName: <basename(file_url)>, fileSize: '', dataUrl: file_url }] }]` — структура совместима с текущим `renderConsumer`.
-
-### Override
-- `addConsumerCategory()` → `insert` в `consumer_categories` (name, sort_order = max+1) → push → `renderConsumer()`.
-- `renameConsumerCategory(id, value)` → `update {name}` в БД.
-- `deleteConsumerCategory(id)` → `delete` из `consumer_documents` по `category_id`, затем из `consumer_categories`.
-- `addConsumerDocument(catId, input)` — убрать ограничение 4 МБ (теперь ≤25 МБ). Тип файла `.pdf,.doc,.docx,.jpg,.jpeg,.png`. Загрузка: `sb.storage.from('documents').upload('consumer/<ts>-<rand>.<ext>', file)` → `getPublicUrl` → `insert` в `consumer_documents` (title, file_url, category_id, sort_order). После — push в `cat.documents` и render.
-- `renameConsumerDocument(catId, docId, value)` → `update {title}`.
-- `deleteConsumerDocument(catId, docId)` → `delete` в БД (Storage-файл не трогаем, как в `clinic_documents`).
-
-### Bucket
-`documents` уже существует и public — миграция не нужна.
-
-## 2. Надзорные органы (`authorities`)
-
-### Загрузка
-- `loadAuthorities()` — `select(id, name, address, phone, sort_order)` order by `sort_order, created_at`. Маппинг → `dbConsumer.authorities = [{ id, name, address, phone }]`.
-
-### Override
-- `addAuthority()` → `insert {name:'', address:'', phone:'', sort_order: max+1}` → push → render → автофокус на name.
-- `updateAuthority(id, field, value)` → `update { [field]: value }` (debounce не делаем — `onchange` уже срабатывает редко).
-- `deleteAuthority(id)` → `delete`.
-- `saveAuthorities()` — оставляем как есть, либо превращаем в no-op + toast «Сохранено» (изменения уже летят в БД через `updateAuthority`).
-
-## 3. Bootstrap
-В блоке инициализации (там же где `await loadCatCategories()`) добавить:
+**Файл:** `public/clinic-admin.html`, функция `renderConsumer()` (строки ~1429–1437).
+**Изменение:** перед кнопкой «Скачать» вставить:
+```html
+${doc.dataUrl ? `<a href="${doc.dataUrl}" target="_blank" rel="noopener" class="text-brand-600 hover:bg-brand-50 p-2 rounded-lg" title="Предпросмотр"><i data-lucide="eye" class="w-4 h-4"></i></a>` : ''}
 ```
-await Promise.all([loadConsumerData(), loadAuthorities()]);
-renderConsumer();
-```
-Перед этим — `overrideConsumer(); overrideAuthorities();`.
 
-## Файлы
-- `public/clinic-admin.html` — новые блоки `loadConsumerData`, `loadAuthorities`, `overrideConsumer`, `overrideAuthorities` в конце скрипта (рядом с `overrideCatCategories`).
+PDF и изображения откроются прямо в браузере; для DOC/DOCX браузер предложит скачать — это нормальное поведение для офисных форматов.
 
-## Не трогаем
-- `public/clinic-site.html`, схему БД, бакеты Storage, остальные разделы админки, существующий `renderConsumer` (оставляем как fallback, наши override’ы только подменяют CRUD-функции).
+### 2. Контролирующие органы — режим «Редактировать / Сохранить»
+Сейчас поля всегда активны и пишут в БД на `onchange` — непонятно, сохранилось ли. Сделаем явный режим: по умолчанию строка только читается, рядом кнопки «Редактировать» и «Удалить». При нажатии «Редактировать» поля становятся редактируемыми, кнопка меняется на «Сохранить» (зелёная галочка) + появляется «Отмена». «Сохранить» отправляет `update` в `authorities` и показывает toast «Сохранено». «Отмена» возвращает прежние значения без запроса в БД.
+
+**Файлы:** `public/clinic-admin.html`
+- В `renderConsumer()` (строки ~1454–1461) переписать рендер строки органа:
+  - поля `<input ... readonly class="... bg-transparent border-transparent">` + `data-row-id`, `data-field`;
+  - три кнопки: `edit` (карандаш) / `save` (галочка, скрыта) / `cancel` (крестик, скрыта) / `delete` (корзина).
+- Добавить функции `editAuthority(id)`, `cancelEditAuthority(id)`, `saveAuthority(id)`:
+  - `editAuthority` — снимает `readonly`, добавляет рамку/фон, переключает видимость кнопок, фокусирует первое поле;
+  - `cancelEditAuthority` — возвращает значения из `dbConsumer.authorities` обратно в инпуты, ставит `readonly`;
+  - `saveAuthority` — собирает `{name, address, phone}` из инпутов, `sb.from('authorities').update(...).eq('id', id)`, обновляет объект в `dbConsumer.authorities`, ставит `readonly`, toast «Сохранено»; при ошибке — toast и оставляет режим редактирования.
+- Старую `updateAuthority(id, field, value)` оставляем (используется внутри других вызовов нигде, можно удалить); `addAuthority()` после вставки сразу вызывает `editAuthority(newId)`, чтобы строка открылась на редактирование.
+- Экспортировать `window.editAuthority/saveAuthority/cancelEditAuthority`.
+
+Кнопка «Сохранить все изменения» внизу секции остаётся как было (no-op + toast).
+
+## Что не трогаем
+- БД, миграции, бакеты Storage.
+- `public/clinic-site.html` (фронт сайта).
+- Остальные разделы админки и `renderConsumer` для документов кроме добавления одной иконки.
