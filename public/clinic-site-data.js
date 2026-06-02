@@ -453,6 +453,7 @@
     try { renderConsumer(ccats.data, cdocs.data, auth.data); } catch (e) { console.error('[site] consumer', e); }
     try { renderContactsAndFooter(mainTexts, footerCfg); } catch (e) { console.error('[site] footer', e); }
     try { renderReviewLinks(mainTexts); } catch (e) { console.error('[site] revlinks', e); }
+    try { renderAboutDoctor(aboutDoctor); } catch (e) { console.error('[site] about-doctor', e); }
   }
 
   if (document.readyState === 'loading') {
