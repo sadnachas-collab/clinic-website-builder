@@ -3296,6 +3296,7 @@
                 document.getElementById('pe-img').value = window.tempEditProc.img || '';
                 document.getElementById('pe-desc').value = window.tempEditProc.desc || '';
                 ensureUploadButton();
+                updateProcPreview(window.tempEditProc.img || '');
                 try { peRenderSteps(); peRenderProblems(); peRenderPrices(); peRenderPricesChief(); } catch(e){ console.error(e); }
                 const modal = document.getElementById('proc-editor-modal');
                 const content = document.getElementById('proc-editor-modal-content');
