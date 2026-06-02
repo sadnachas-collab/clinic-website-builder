@@ -27,32 +27,7 @@
 </i>
 <p id="toast-msg" class="text-sm font-medium">Сообщение</p>
 </div>
-<!-- МОДАЛЬНОЕ ОКНО ЗАПИСИ -->
-<div id="booking-modal" class="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-[#1A1817]/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300">
-<div class="absolute inset-0" onclick="closeModal('booking-modal')">
-</div>
-<div class="relative bg-[#FDFBF9] rounded-[2.5rem] shadow-2xl w-full max-w-lg p-8 lg:p-12 transform scale-95 transition-transform duration-300" id="booking-modal-content">
-<button onclick="closeModal('booking-modal')" class="absolute top-6 right-6 text-gray-400 hover:text-[#2A2522] transition-colors">
-<i data-lucide="x" class="w-6 h-6">
-</i>
-</button>
-<h3 class="font-serif text-3xl text-[#2A2522] mb-2">Запись на прием</h3>
-<p class="text-gray-500 font-light text-sm mb-8">Оставьте ваши данные, и администратор подберет удобное время.</p>
-<form onsubmit="submitBooking(event)" class="space-y-4">
-<input type="text" required placeholder="Ваше имя" class="w-full px-5 py-4 rounded-2xl border border-[#D0C0B1]/40 bg-white focus:outline-none focus:border-[#746258] focus:ring-2 focus:ring-[#746258]/20 transition-all font-medium">
-<input type="tel" required placeholder="+7 (999) 000-00-00" class="w-full px-5 py-4 rounded-2xl border border-[#D0C0B1]/40 bg-white focus:outline-none focus:border-[#746258] focus:ring-2 focus:ring-[#746258]/20 transition-all font-medium">
-<div class="pt-2">
-<p class="text-xs text-gray-400 uppercase tracking-widest font-semibold mb-2 ml-1">Интересующая услуга / Врач</p>
-<input type="text" id="booking-interest" placeholder="Например: RF-лифтинг или Консультация" class="w-full px-5 py-4 rounded-2xl border border-[#D0C0B1]/40 bg-white focus:outline-none focus:border-[#746258] focus:ring-2 focus:ring-[#746258]/20 transition-all font-medium">
-</div>
-<label class="flex items-start gap-3 pt-2 cursor-pointer select-none">
-<input type="checkbox" id="booking-consent" required class="mt-1 w-4 h-4 accent-[#746258] shrink-0">
-<span class="text-[11px] text-gray-500 leading-relaxed">Я даю <button type="button" onclick="openModal('consent-modal')" class="underline decoration-gray-300 hover:text-[#746258]">согласие на обработку персональных данных</button> и ознакомлен(а) с <button type="button" onclick="openModal('policy-modal')" class="underline decoration-gray-300 hover:text-[#746258]">Политикой конфиденциальности</button>.</span>
-</label>
-<button type="submit" class="w-full mt-4 bg-[#746258] text-white py-4 rounded-2xl font-bold uppercase tracking-widest text-sm hover:bg-[#5A4C44] active:scale-95 transition-all duration-300 shadow-[0_10px_20px_rgb(116,98,88,0.2)]">Отправить заявку</button>
-</form>
-</div>
-</div>
+<!-- Запись на приём — открывается в новой вкладке через виджет DIKIDI (см. openBooking ниже) -->
 <!-- МОДАЛЬНОЕ ОКНО ВРАЧА -->
 <div id="doctor-modal" class="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-[#1A1817]/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300">
 <div class="absolute inset-0" onclick="closeModal('doctor-modal')">
