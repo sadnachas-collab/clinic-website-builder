@@ -1809,7 +1809,8 @@
                     overrideConsumer();
                     overrideAuthorities();
                     overrideFooter();
-                    await Promise.all([loadConsumerData(), loadAuthorities(), loadFooterFromCloud()]);
+                    overrideAdmins();
+                    await Promise.all([loadConsumerData(), loadAuthorities(), loadFooterFromCloud(), loadAdmins()]);
                     try { window.renderConsumer && window.renderConsumer(); } catch(_){}
                     try { window.renderFooterData && window.renderFooterData(); } catch(_){}
                 }
