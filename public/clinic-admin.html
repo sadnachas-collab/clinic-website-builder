@@ -1800,6 +1800,10 @@
                     overrideCatProcedures();
                     await loadCatCategories();
                     await loadCatProcedures();
+                    overrideConsumer();
+                    overrideAuthorities();
+                    await Promise.all([loadConsumerData(), loadAuthorities()]);
+                    try { window.renderConsumer && window.renderConsumer(); } catch(_){}
                 }
             } catch(e){
                 console.error('[admin] bootstrap error', e);
