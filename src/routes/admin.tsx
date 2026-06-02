@@ -1,6 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  listAdmins,
+  createAdmin,
+  deleteAdmin,
+  changeOwnPassword,
+} from "@/lib/admins.functions";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
