@@ -2157,6 +2157,94 @@
             }
         }
 
+        // ===== ФИЛОСОФИЯ — врач и видео-визитка (page_content key='home_about_doctor') =====
+        async function loadAboutDoctor(){
+            try {
+                const { data, error } = await sb.from('page_content').select('value').eq('key','home_about_doctor').maybeSingle();
+                if (error) throw error;
+                window.__aboutDoctor = (data && data.value && typeof data.value === 'object') ? data.value : {};
+            } catch(e){
+                console.error('[about-doctor] load', e);
+                notify('Ошибка загрузки блока «Философия»: '+errMsg(e));
+                window.__aboutDoctor = {};
+            }
+            renderAboutDoctorForm();
+        }
+
+        function renderAboutDoctorForm(){
+            const v = window.__aboutDoctor || {};
+            const set = function(id, val){ const el = document.getElementById(id); if (el) el.value = val || ''; };
+            const setImg = function(id, val){
+                const el = document.getElementById(id);
+                if (!el) return;
+                if (val){ el.src = val; el.style.visibility = 'visible'; }
+                else { el.removeAttribute('src'); el.style.visibility = 'hidden'; }
+            };
+            set('ad-name', v.name);
+            set('ad-role', v.role);
+            set('ad-video', v.video);
+            setImg('ad-avatar-preview', v.avatar);
+            setImg('ad-photo-preview', v.photo);
+        }
+
+        function overrideAboutDoctor(){
+            window.saveAboutDoctor = async function(){
+                const get = function(id){ const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+                const v = window.__aboutDoctor || {};
+                const payload = {
+                    name:   get('ad-name'),
+                    role:   get('ad-role'),
+                    avatar: v.avatar || '',
+                    photo:  v.photo  || '',
+                    video:  get('ad-video')
+                };
+                try {
+                    const { error } = await sb.from('page_content').upsert({ key:'home_about_doctor', value: payload }, { onConflict:'key' });
+                    if (error) throw error;
+                    window.__aboutDoctor = payload;
+                    notify('Блок «Философия» сохранён');
+                } catch(e){
+                    console.error(e);
+                    notify('Ошибка сохранения: '+errMsg(e));
+                }
+            };
+
+            window.handleAboutDoctorUpload = async function(file, slot){
+                if (!file) return;
+                if (!file.type || !file.type.startsWith('image/')){ notify('Можно загружать только изображения'); return; }
+                if (file.size > 10 * 1024 * 1024){ notify('Файл больше 10 МБ — слишком тяжёлый'); return; }
+                const extMatch = (file.name || '').match(/\.([a-zA-Z0-9]+)$/);
+                const ext = (extMatch ? extMatch[1] : 'jpg').toLowerCase();
+                const rand = Math.random().toString(36).slice(2, 8);
+                const path = 'about-doctor/' + slot + '-' + Date.now() + '-' + rand + '.' + ext;
+                notify('Загрузка фото…');
+                try {
+                    const up = await sb.storage.from('photos').upload(path, file, { cacheControl:'3600', upsert:false, contentType:file.type });
+                    if (up.error) throw up.error;
+                    const pub = sb.storage.from('photos').getPublicUrl(path);
+                    const url = pub && pub.data && pub.data.publicUrl;
+                    if (!url) throw new Error('Не удалось получить ссылку на файл');
+                    window.__aboutDoctor = window.__aboutDoctor || {};
+                    if (slot === 'avatar') window.__aboutDoctor.avatar = url;
+                    else if (slot === 'photo') window.__aboutDoctor.photo = url;
+                    renderAboutDoctorForm();
+                    // Автосохранение, чтобы файл не остался «оторванным»
+                    try { await window.saveAboutDoctor(); } catch(_){}
+                } catch(e){
+                    console.error(e);
+                    notify('Ошибка загрузки: '+errMsg(e));
+                }
+            };
+
+            window.clearAboutDoctorImg = function(slot){
+                window.__aboutDoctor = window.__aboutDoctor || {};
+                if (slot === 'avatar') window.__aboutDoctor.avatar = '';
+                else if (slot === 'photo') window.__aboutDoctor.photo = '';
+                renderAboutDoctorForm();
+            };
+        }
+
+
         function overrideFooter(){
             window.saveFooterData = async function(){
                 const getVal = function(id){ const el = document.getElementById(id); return el ? el.value : ''; };
