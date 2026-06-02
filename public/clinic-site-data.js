@@ -356,6 +356,60 @@
     refreshIcons();
   }
 
+  // ---------- ФИЛОСОФИЯ: врач и видео-визитка ----------
+  function renderAboutDoctor(v) {
+    v = v || {};
+    var nameEl = document.getElementById('about-doctor-name');
+    var roleEl = document.getElementById('about-doctor-role');
+    var avatarEl = document.getElementById('about-doctor-avatar');
+    var photoEl = document.getElementById('about-doctor-photo');
+    var playEl = document.getElementById('about-doctor-play');
+    var wrapEl = document.getElementById('about-doctor-photo-wrap');
+    if (nameEl && v.name) nameEl.textContent = v.name;
+    if (roleEl && v.role) roleEl.textContent = v.role;
+    if (avatarEl && v.avatar) avatarEl.src = v.avatar;
+    if (photoEl && v.photo) photoEl.src = v.photo;
+
+    var video = v.video || '';
+    window.__aboutDoctorVideo = video;
+    if (playEl) {
+      if (video) playEl.classList.remove('hidden');
+      else playEl.classList.add('hidden');
+    }
+    if (wrapEl) {
+      if (video) wrapEl.classList.add('cursor-pointer');
+      else wrapEl.classList.remove('cursor-pointer');
+    }
+    refreshIcons();
+  }
+
+  window.openAboutDoctorVideo = function () {
+    var url = window.__aboutDoctorVideo || '';
+    if (!url) return;
+    var embed = '';
+    var ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([\w-]{6,})/);
+    var vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+    if (ytMatch) {
+      embed = '<iframe src="https://www.youtube.com/embed/' + ytMatch[1] + '?autoplay=1&rel=0" allow="autoplay; encrypted-media; fullscreen" allowfullscreen class="w-full h-full rounded-2xl"></iframe>';
+    } else if (vimeoMatch) {
+      embed = '<iframe src="https://player.vimeo.com/video/' + vimeoMatch[1] + '?autoplay=1" allow="autoplay; fullscreen" allowfullscreen class="w-full h-full rounded-2xl"></iframe>';
+    } else {
+      embed = '<video src="' + escAttr(url) + '" controls autoplay playsinline class="w-full h-full bg-black rounded-2xl"></video>';
+    }
+    var overlay = document.createElement('div');
+    overlay.className = 'fixed inset-0 z-[200] bg-black/85 flex items-center justify-center p-4';
+    overlay.innerHTML =
+      '<button type="button" aria-label="Закрыть" class="absolute top-4 right-4 w-12 h-12 rounded-full bg-white/15 text-white text-3xl leading-none flex items-center justify-center hover:bg-white/30 transition">×</button>' +
+      '<div class="w-full max-w-4xl aspect-video">' + embed + '</div>';
+    function close(){ if (overlay.parentNode) overlay.parentNode.removeChild(overlay); document.removeEventListener('keydown', onKey); }
+    function onKey(e){ if (e.key === 'Escape') close(); }
+    overlay.addEventListener('click', function (e) {
+      if (e.target === overlay || e.target.tagName === 'BUTTON') close();
+    });
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(overlay);
+  };
+
   // ---------- ССЫЛКИ НА ОТЗЫВЫ ----------
   function renderReviewLinks(mainTexts) {
     var links = (mainTexts && mainTexts.reviewLinks) || {};
@@ -386,6 +440,7 @@
     (pc.data || []).forEach(function (row) { pcMap[row.key] = row.value || {}; });
     var mainTexts = pcMap.main_texts || {};
     var footerCfg = pcMap.footer || {};
+    var aboutDoctor = pcMap.home_about_doctor || {};
 
     try { renderHero(interior.data, mainTexts); } catch (e) { console.error('[site] hero', e); }
     try { renderPromos(promos.data); } catch (e) { console.error('[site] promos', e); }
@@ -398,6 +453,7 @@
     try { renderConsumer(ccats.data, cdocs.data, auth.data); } catch (e) { console.error('[site] consumer', e); }
     try { renderContactsAndFooter(mainTexts, footerCfg); } catch (e) { console.error('[site] footer', e); }
     try { renderReviewLinks(mainTexts); } catch (e) { console.error('[site] revlinks', e); }
+    try { renderAboutDoctor(aboutDoctor); } catch (e) { console.error('[site] about-doctor', e); }
   }
 
   if (document.readyState === 'loading') {
