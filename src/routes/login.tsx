@@ -1,9 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { seedFirstAdminIfNeeded } from "@/lib/admins.functions";
-
-const EMAIL_DOMAIN = "clinic.local";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -21,32 +17,32 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [seeding, setSeeding] = useState(true);
+  const [checkingSetup, setCheckingSetup] = useState(true);
 
   useEffect(() => {
-    // Идемпотентный сид первого админа admin/123456
-    seedFirstAdminIfNeeded()
-      .catch((e) => console.error("seed failed", e))
-      .finally(() => setSeeding(false));
-
-    // Если уже залогинен — сразу в админку
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/admin" });
-    });
+    fetch("/api/clinic/auth/bootstrap", { method: "POST", credentials: "include" })
+      .catch((e) => console.error("first admin setup failed", e))
+      .finally(async () => {
+        const session = await fetch("/api/clinic/auth/session", { credentials: "include" });
+        if (session.ok) navigate({ to: "/admin" });
+        setCheckingSetup(false);
+      });
   }, [navigate]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    const email = `${login.trim().toLowerCase()}@${EMAIL_DOMAIN}`;
-    const { error: signInErr } = await supabase.auth.signInWithPassword({
-      email,
-      password,
+    const response = await fetch("/api/clinic/auth/login", {
+      method: "POST",
+      credentials: "include",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ login, password }),
     });
     setLoading(false);
-    if (signInErr) {
-      setError("Неверный логин или пароль");
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      setError(body?.error || "Неверный логин или пароль");
       return;
     }
     navigate({ to: "/admin" });
@@ -87,21 +83,17 @@ function LoginPage() {
 
         <button
           type="submit"
-          disabled={loading || seeding}
+          disabled={loading || checkingSetup}
           style={{
             ...styles.button,
-            opacity: loading || seeding ? 0.6 : 1,
-            cursor: loading || seeding ? "wait" : "pointer",
+            opacity: loading || checkingSetup ? 0.6 : 1,
+            cursor: loading || checkingSetup ? "wait" : "pointer",
           }}
         >
-          {loading ? "Вход…" : "Войти"}
+          {checkingSetup ? "Проверка…" : loading ? "Вход…" : "Войти"}
         </button>
 
-        <div style={styles.hint}>
-          Первый вход: <code>admin</code> / <code>123456</code>
-          <br />
-          После входа смените пароль в разделе «Сотрудники».
-        </div>
+        <div style={styles.hint}>Используйте учетную запись, созданную владельцем сайта.</div>
       </form>
     </div>
   );
@@ -115,8 +107,7 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: "center",
     background: "linear-gradient(135deg, #f5f3ee 0%, #e8e4dd 100%)",
     padding: 20,
-    fontFamily:
-      "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
   },
   card: {
     width: "100%",

@@ -1,13 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/logout")({
   head: () => ({
-    meta: [
-      { title: "Выход…" },
-      { name: "robots", content: "noindex, nofollow" },
-    ],
+    meta: [{ title: "Выход…" }, { name: "robots", content: "noindex, nofollow" }],
   }),
   component: LogoutPage,
 });
@@ -15,7 +11,7 @@ export const Route = createFileRoute("/logout")({
 function LogoutPage() {
   const navigate = useNavigate();
   useEffect(() => {
-    supabase.auth.signOut().finally(() => {
+    fetch("/api/clinic/auth/logout", { method: "POST", credentials: "include" }).finally(() => {
       navigate({ to: "/login", replace: true });
     });
   }, [navigate]);

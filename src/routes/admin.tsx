@@ -1,20 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import {
-  listAdmins,
-  createAdmin,
-  deleteAdmin,
-  changeOwnPassword,
-  updateAdmin,
-} from "@/lib/admins.functions";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
-    meta: [
-      { title: "Админ-панель | VORONÉNKO" },
-      { name: "robots", content: "noindex, nofollow" },
-    ],
+    meta: [{ title: "Админ-панель | VORONÉNKO" }, { name: "robots", content: "noindex, nofollow" }],
   }),
   component: Admin,
 });
@@ -27,32 +16,26 @@ function Admin() {
   useEffect(() => {
     let mounted = true;
 
-    supabase.auth.getSession().then(({ data }) => {
+    const postInit = () => {
+      iframeRef.current?.contentWindow?.postMessage(
+        {
+          type: "admin-supabase-init",
+          url: "local-api",
+          key: "local-api",
+          access_token: "local-session",
+          refresh_token: "local-session",
+        },
+        window.location.origin,
+      );
+    };
+
+    fetch("/api/clinic/auth/session", { credentials: "include" }).then((response) => {
       if (!mounted) return;
-      if (!data.session) {
+      if (!response.ok) {
         navigate({ to: "/login", replace: true });
       } else {
         setStatus("ok");
-      }
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!mounted) return;
-      if (!session) navigate({ to: "/login", replace: true });
-      // При обновлении токена пересылаем новую сессию в iframe
-      if (session && iframeRef.current?.contentWindow) {
-        iframeRef.current.contentWindow.postMessage(
-          {
-            type: "admin-supabase-init",
-            url: import.meta.env.VITE_SUPABASE_URL,
-            key: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            access_token: session.access_token,
-            refresh_token: session.refresh_token,
-          },
-          window.location.origin,
-        );
+        setTimeout(postInit, 0);
       }
     });
 
@@ -62,25 +45,14 @@ function Admin() {
       if (!data || typeof data !== "object") return;
 
       if (data.type === "admin-logout") {
-        supabase.auth.signOut().finally(() => {
+        fetch("/api/clinic/auth/logout", { method: "POST", credentials: "include" }).finally(() => {
           navigate({ to: "/login", replace: true });
         });
         return;
       }
 
       if (data.type === "admin-iframe-ready" && iframeRef.current?.contentWindow) {
-        const { data: s } = await supabase.auth.getSession();
-        if (!s.session) return;
-        iframeRef.current.contentWindow.postMessage(
-          {
-            type: "admin-supabase-init",
-            url: import.meta.env.VITE_SUPABASE_URL,
-            key: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            access_token: s.session.access_token,
-            refresh_token: s.session.refresh_token,
-          },
-          window.location.origin,
-        );
+        postInit();
       }
 
       if (data.type === "admin-rpc-call" && iframeRef.current?.contentWindow) {
@@ -97,15 +69,22 @@ function Admin() {
         try {
           let result: unknown;
           if (action === "listAdmins") {
-            result = await listAdmins();
+            result = await apiJson("/api/clinic/admins");
           } else if (action === "createAdmin") {
-            result = await createAdmin({ data: payload as never });
+            result = await apiJson("/api/clinic/admins", "POST", payload);
           } else if (action === "deleteAdmin") {
-            result = await deleteAdmin({ data: payload as never });
+            result = await apiJson(
+              `/api/clinic/admins/${encodeURIComponent(String(payload?.userId || ""))}`,
+              "DELETE",
+            );
           } else if (action === "updateAdmin") {
-            result = await updateAdmin({ data: payload as never });
+            result = await apiJson(
+              `/api/clinic/admins/${encodeURIComponent(String(payload?.userId || ""))}`,
+              "PATCH",
+              payload,
+            );
           } else if (action === "changeOwnPassword") {
-            result = await changeOwnPassword({ data: payload as never });
+            result = await apiJson("/api/clinic/admins/change-password", "POST", payload);
           } else {
             throw new Error("Unknown admin RPC action: " + String(action));
           }
@@ -119,7 +98,6 @@ function Admin() {
 
     return () => {
       mounted = false;
-      subscription.unsubscribe();
       window.removeEventListener("message", onMessage);
     };
   }, [navigate]);
@@ -158,4 +136,16 @@ function Admin() {
       }}
     />
   );
+}
+
+async function apiJson(path: string, method = "GET", body?: unknown) {
+  const response = await fetch(path, {
+    method,
+    credentials: "include",
+    headers: body ? { "content-type": "application/json" } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const json = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(json?.error || "Ошибка запроса");
+  return json;
 }
