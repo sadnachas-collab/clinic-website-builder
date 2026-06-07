@@ -4,21 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Клиника косметологии Доктора Вороненко | VORONENKO</title>
+<link rel="preload" href="/assets/fonts/montserrat-400.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="stylesheet" href="/assets/clinic-fonts.css">
+<link rel="stylesheet" href="/assets/clinic-site.css">
+<script src="/assets/vendor/lucide.min.js" defer></script>
 </head>
 <body>
-<!-- Tailwind CSS -->
-<script src="https://cdn.tailwindcss.com">
-</script>
-<!-- Шрифты (Montserrat & Playfair Display) -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
-<!-- Иконки Lucide -->
-<script src="https://unpkg.com/lucide@latest">
-</script>
 <!-- Версия для слабовидящих реализована встроенно ниже (ГОСТ Р 52872) -->
-<!-- Настройки Tailwind -->
-<script>    tailwind.config = {        theme: {            extend: {                fontFamily: {                    sans: ['Montserrat', 'sans-serif'],                    serif: ['Playfair Display', 'serif'],                }            }        }    }</script>
 <!-- Глобальные стили -->
 <style>    body {        font-family: 'Montserrat', sans-serif;        color: #2A2522;        background-color: #FDFBF9;        -webkit-font-smoothing: antialiased;        -moz-osx-font-smoothing: grayscale;        margin: 0;        padding-bottom: env(safe-area-inset-bottom);    }    .hide-scrollbar::-webkit-scrollbar { display: none; }    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }        /* Зазор снизу под плавающую кнопку «Записаться», чтобы она не перекрывала контент */    @media (max-width: 1023px) {        body::after { content: ''; display: block; height: 96px; }    }    /* Стили для аккордеонов внутри услуги и FAQ */    .acc-content { max-height: 0; opacity: 0; overflow: hidden; transition: all 0.5s ease-in-out; }    .acc-content.active { opacity: 1; margin-top: 1rem; }</style>
 <!-- УВЕДОМЛЕНИЕ (TOAST) -->
