@@ -436,15 +436,65 @@
   }
 
   // ---------- ПРАЙС ----------
+  function renderPopularServices(rows) {
+    var list = document.getElementById("popular-services-list");
+    if (!list) return;
+    var block = list.closest(".mb-14");
+    var services = (rows || []).filter(function (row) {
+      return row && row.published !== false;
+    });
+    if (!services.length) {
+      list.innerHTML =
+        '<p class="text-sm text-gray-400 italic">Популярные услуги появятся здесь после добавления в админ-панели.</p>';
+      if (block) block.classList.remove("hidden");
+      return;
+    }
+    list.innerHTML = services
+      .map(function (srv) {
+        var name = esc(srv.name || "Услуга");
+        var desc = esc(srv.description || "");
+        var price = esc(srv.price || "Стоимость уточняйте");
+        var bookingName = escJs(srv.name || "Услуга");
+        return (
+          '<div class="flex justify-between items-end border-b border-[#D0C0B1]/30 pb-3 group cursor-pointer gap-5" onclick="openBooking(\'' +
+          bookingName +
+          "')\">" +
+          '<div class="pr-4 min-w-0">' +
+          '<p class="text-[15px] sm:text-base text-[#2A2522] font-medium group-hover:text-[#746258] transition-colors">' +
+          name +
+          "</p>" +
+          (desc
+            ? '<p class="text-xs text-gray-400 mt-1 uppercase tracking-wider font-semibold">' +
+              desc +
+              "</p>"
+            : "") +
+          "</div>" +
+          '<span class="text-[#746258] text-lg font-serif whitespace-nowrap">' +
+          price +
+          "</span>" +
+          "</div>"
+        );
+      })
+      .join("");
+    if (block) block.classList.remove("hidden");
+  }
+
   function renderPriceFiles(files) {
     var section = document.getElementById("price");
     if (!section) return;
+    var listHost = document.getElementById("price-files-list");
     var card =
       section.querySelector(".bg-white.rounded-\\[2\\.5rem\\]") ||
       section.querySelector("div > div.bg-white");
-    if (!card) return;
+    if (!listHost && card) {
+      listHost = document.createElement("div");
+      listHost.id = "price-files-list";
+      listHost.className = "mt-16 text-center border-t border-[#D0C0B1]/20 pt-12";
+      card.appendChild(listHost);
+    }
+    if (!listHost) return;
     if (!files || !files.length) {
-      card.innerHTML =
+      listHost.innerHTML =
         '<div class="text-center py-8"><p class="text-gray-500 font-light italic">Прайс-листы появятся здесь после загрузки в админ-панели.</p></div>';
       return;
     }
@@ -467,7 +517,7 @@
         );
       })
       .join("");
-    card.innerHTML =
+    listHost.innerHTML =
       '<div class="space-y-4">' +
       list +
       "</div>" +
@@ -710,8 +760,22 @@
 
   // ---------- ЗАГРУЗКА ВСЕХ ДАННЫХ ----------
   async function loadAll() {
-    var [interior, promos, cats, procs, specs, revs, faqs, prices, docs, ccats, cdocs, auth, pc] =
-      await Promise.all([
+    var [
+      interior,
+      promos,
+      cats,
+      procs,
+      specs,
+      revs,
+      faqs,
+      services,
+      prices,
+      docs,
+      ccats,
+      cdocs,
+      auth,
+      pc,
+    ] = await Promise.all([
         sb.from("interior_photos").select("*").order("sort_order", { ascending: true }),
         sb
           .from("promos")
@@ -731,6 +795,11 @@
           .eq("published", true)
           .order("sort_order", { ascending: true }),
         sb.from("faq").select("*").eq("published", true).order("sort_order", { ascending: true }),
+        sb
+          .from("services")
+          .select("*")
+          .eq("published", true)
+          .order("sort_order", { ascending: true }),
         sb.from("price_files").select("*").order("sort_order", { ascending: true }),
         sb.from("clinic_documents").select("*").order("sort_order", { ascending: true }),
         sb.from("consumer_categories").select("*").order("sort_order", { ascending: true }),
@@ -781,6 +850,11 @@
       renderDocs(docs.data);
     } catch (e) {
       console.error("[site] docs", e);
+    }
+    try {
+      renderPopularServices(services.data);
+    } catch (e) {
+      console.error("[site] services-price", e);
     }
     try {
       renderPriceFiles(prices.data);
