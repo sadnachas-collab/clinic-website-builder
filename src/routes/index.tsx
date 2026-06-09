@@ -1,6 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
+  beforeLoad: () => {
+    throw redirect({ href: "/clinic-site.html", replace: true });
+  },
   head: () => ({
     meta: [
       { title: "Клиника косметологии Доктора Вороненко | VORONÉNKO" },
@@ -21,18 +24,5 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  return (
-    <iframe
-      src="/clinic-site.html"
-      title="Клиника косметологии Доктора Вороненко"
-      style={{
-        position: "fixed",
-        inset: 0,
-        width: "100vw",
-        height: "100vh",
-        border: "none",
-        display: "block",
-      }}
-    />
-  );
+  return null;
 }
